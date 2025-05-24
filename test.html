@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Template</title>
+  <style>
+    :root {
+      --primary-color: hsl(207, 100%, 56%);
+      --text-color: hsl(209, 26%, 24%);
+      --background-color: hsl(204, 43%, 93%);
+      --page-color: hsl(0, 0%, 100%);
+      --accent-color: hsl(0, 100%, 71%);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--background-color);
+      color: var(--text-color);
+      min-height: 100vh;
+    }
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--background-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.2rem;
+      z-index: 100;
+    }
+    #loading-spinner {
+      border: 4px solid var(--page-color);
+      border-top: 4px solid var(--accent-color);
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+      margin-right: 0.5rem;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .page-container {
+      display: none;
+      padding: 1rem;
+      max-width: 800px;
+      margin: 1rem auto;
+      background: var(--page-color);
+    }
+    .page-container.active { display: block; }
+  </style>
+</head>
+<body>
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <div id="loading-spinner"></div>
+    Loading...
+  </div>
+
+  <!-- Main Content -->
+  <main>
+    <section id="home" class="page-container active">
+      <h1>Hey, It Works!</h1>
+      <p>The loading screen should be gone. Check the console (F12) for logs.</p>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      console.log("Script started—let’s see what’s happening!");
+
+      const initializeApplication = () => {
+        console.log("Initializing...");
+        // Hide loading screen after 500ms
+        setTimeout(() => {
+          const loadingScreen = document.getElementById("loading-screen");
+          if (loadingScreen) {
+            loadingScreen.style.display = "none";
+            console.log("Loading screen hidden—success!");
+          } else {
+            console.log("Loading screen not found—check your HTML!");
+          }
+          // Show the home page
+          const homePage = document.getElementById("home");
+          if (homePage) {
+            homePage.classList.add("active");
+            console.log("Home page activated.");
+          }
+        }, 500);
+      };
+
+      // Kick things off
+      initializeApplication();
+    })();
+  </script>
+</body>
+</html>

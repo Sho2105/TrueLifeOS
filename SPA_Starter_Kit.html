@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <!-- Outline: Quick Navigation
+    - Head Section: Meta and styles
+    - Body Section: Structure and content
+      - JavaScript Zone: App logic
+  -->
+  <meta name="SPA Template" content="A guide made by Sho">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Single Page Application</title>
+  <!-- Head Section: Meta and styles -->
+  <style>
+    /* CSS Zone: Root Styles (Essential for system) */
+    /* Color Variables */
+    :root {
+      --primary-color: hsl(0, 0%, 0%);
+      /* Starter color */
+      --secondary-color: hsl(200, 25%, 20%);
+      /* Starter color */
+      --background-color: hsl(0, 0%, 100%);
+      /* Starter color */
+      --card-background: hsl(0, 0%, 100%);
+      /* Starter color */
+      --accent-color: hsl(0, 0%, 0%);
+      /* Starter color */
+    }
+
+    /* Reset Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* Body Styles */
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--background-color);
+      color: var(--secondary-color);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Navigation Styles */
+    .navigation {
+      background: var(--primary-color);
+      padding: 0.5rem;
+    }
+
+    .navigation-link {
+      color: var(--card-background);
+      text-decoration: none;
+      margin: 0 0.5rem;
+      cursor: pointer;
+    }
+
+    /* Page Styles */
+    .page {
+      display: none;
+      padding: 1rem;
+      max-width: 800px;
+      width: 90%;
+      margin: 1rem auto;
+      background: var(--card-background);
+      min-height: 80vh;
+      opacity: 0;
+      transition: opacity 0.5s ease-in;
+    }
+
+    .page.active {
+      display: block;
+      opacity: 1;
+    }
+
+    /* Button Styles */
+    .color-button,
+    .custom-button {
+      background: var(--accent-color);
+      color: var(--card-background);
+      padding: 0.3rem 0.6rem;
+      border: none;
+      cursor: pointer;
+    }
+
+    /* Loading Screen Styles */
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--background-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--secondary-color);
+      font-size: 1.2rem;
+      z-index: 100;
+      opacity: 1;
+      transition: opacity 0.5s ease-in;
+    }
+
+    #loading-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Responsive Styles */
+    @media (max-width: 600px) {
+      .navigation {
+        padding: 0.3rem;
+      }
+
+      .navigation-link {
+        margin: 0 0.3rem;
+        font-size: 0.9rem;
+      }
+
+      .page {
+        margin: 0.5rem;
+        padding: 0.5rem;
+      }
+    }
+
+    /* End CSS Zone: Root Styles */
+
+    /* CSS Zone: Child Page Styles (For adding new pages) */
+    /* Add styles for new pages here */
+    /* Example: .page-x-text { color: var(--accent-color); } */
+    /* End CSS Zone: Child Page Styles */
+  </style>
+</head>
+
+<body>
+  <!-- Body Section: Structure and content -->
+  <!-- HTML Zone: Loading Screen (Essential for system) -->
+  <div id="loading-screen">Loading...</div>
+  <!-- End HTML Zone: Loading Screen -->
+
+  <!-- HTML Zone: Navigation (Essential for system) -->
+  <nav class="navigation" role="navigation">
+    <span class="navigation-link" data-page="home" role="link" tabindex="0">Home</span>
+    <span class="navigation-link" data-page="page1" role="link" tabindex="0">Page 1</span>
+    <!-- HTML Zone: Child Page Navigation Links (For adding new pages) -->
+    <!-- Add navigation links here -->
+    <!-- Example: <span class="navigation-link" data-page="page-x" role="link" tabindex="0">Page X</span> -->
+    <!-- End HTML Zone: Child Page Navigation Links -->
+  </nav>
+  <!-- End HTML Zone: Navigation -->
+
+  <!-- HTML Zone: Root Pages (Starter pages) -->
+  <main>
+    <section id="home" class="page active" role="region" aria-label="Home Page">
+      <h1>Home</h1>
+      <p>Welcome!</p>
+      <!-- Add home content here -->
+    </section>
+  </main>
+  <!-- End HTML Zone: Root Pages -->
+
+  <!-- HTML Zone: Child Page Templates (For adding new pages) -->
+  <template id="page1-template">
+    <section id="page1" class="page" role="region" aria-label="Page 1">
+      <h1>Page 1</h1>
+      <p>Sample page.</p>
+      <button class="color-button">Change Background</button>
+    </section>
+  </template>
+  <!-- Add <template> elements here -->
+  <!-- Example: <template id="page-x-template">
+               <section id="page-x" class="page" role="region" aria-label="Page X">
+                 <h1>Page X</h1>
+                 <button class="page-x-button">Custom Action</button>
+               </section>
+             </template> -->
+  <!-- End HTML Zone: Child Page Templates -->
+
+  <script>
+    /* JavaScript Zone: App Logic (Essential for system) */
+    /* IIFE: Keeps code safe (starter setup) */
+    (function () {
+      /* State: App data (starter setup) */
+      const pageState = {
+        currentPage: 'home',
+        availablePages: ['home', 'page1'],
+        colors: [
+          'hsl(207, 100%, 56%)',
+          'hsl(211, 27%, 20%)',
+          'hsl(210, 17%, 95%)',
+          'hsl(0, 0%, 100%)',
+          'hsl(0, 87%, 67%)'
+        ],
+        pageTemplates: {
+          page1: 'page1-template'
+          /* Add templates for new pages here */
+          /* Example: page-x: 'page-x-template' */
+        },
+        templateCache: new Map()
+      };
+
+      /* Core Functions: Internal logic (starter setup) */
+      const switchPage = (pageId) => {
+        console.log(`[Background Task] Switching to page: ${pageId}`);
+        if (!pageState.availablePages.includes(pageId)) {
+          console.error(`[Error] Page not found`);
+          pageId = 'home';
+        }
+        // Deactivate all pages first
+        document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+        let targetPage = document.getElementById(pageId);
+        if (!targetPage && pageState.pageTemplates[pageId]) {
+          console.log(`[BG] Loading template: ${pageId}`);
+
+          if (pageState.templateCache.has(pageId)) {
+            targetPage = pageState.templateCache.get(pageId).cloneNode(true);
+          } else {
+            const template = document.getElementById(pageState.pageTemplates[pageId]);
+            if (template?.content?.firstElementChild) { // Optional chaining FTW
+              const rawTemplate = template.content.firstElementChild.cloneNode(true);
+              pageState.templateCache.set(pageId, rawTemplate);
+              targetPage = rawTemplate.cloneNode(true);
+            } else {
+              console.error(`[Error] Template corrupt: ${pageId}`);
+              return handleFallback(); // Extract fallback logic
+            }
+          }
+          document.querySelector('main').appendChild(targetPage);
+        }
+
+        // RAF for smooth transitions
+        requestAnimationFrame(() => {
+          if (targetPage) {
+            targetPage.classList.add('active');
+            pageState.currentPage = pageId;
+          } else {
+            handleFallback();
+          }
+        });
+
+        function handleFallback() {
+          console.error(`[Error] Page load failed: ${pageId}`);
+          const homePage = document.getElementById('home');
+          homePage?.classList.add('active');
+          pageState.currentPage = 'home';
+        }
+      };
+
+      const initializeApplication = () => {
+        console.log('[Background Task] Starting app');
+        document.addEventListener('DOMContentLoaded', () => {
+          console.log('[Background Task] DOM ready');
+          try {
+            switchPage(pageState.currentPage);
+            const loadingScreen = document.getElementById('loading-screen');
+            setTimeout(() => {
+              loadingScreen.classList.add('hidden');
+              console.log('[Background Task] Loading screen off');
+            }, 500);
+          } catch (error) {
+            console.error(`[Error] App start failed`);
+            switchPage('home');
+          }
+        });
+      };
+
+      /* Global Event Listeners: App-wide events (starter setup) */
+      document.querySelector('.navigation').addEventListener('click', (event) => {
+        const pageId = event.target.getAttribute('data-page');
+        if (pageId) {
+          console.log(`[Background Task] Nav clicked: ${pageId}`);
+          switchPage(pageId);
+        }
+      });
+
+      document.querySelector('.navigation').addEventListener('keydown', (event) => {
+        if (event.target.classList.contains('navigation-link') && (event.key === 'Enter' || event.key === ' ')) {
+          const pageId = event.target.getAttribute('data-page');
+          console.log(`[Background Task] Key nav triggered: ${pageId}`);
+          switchPage(pageId);
+        }
+      });
+
+      document.querySelector('main').addEventListener('click', (event) => {
+        if (event.target.classList.contains('color-button')) {
+          const pageId = event.target.closest('.page').id;
+          console.log(`[Background Task] Color button clicked: ${pageId}`);
+          window.Application.changeBackground(pageId);
+        }
+      });
+
+      /* Initialization (starter setup) */
+      initializeApplication();
+      /* End JavaScript Zone: App Logic */
+
+      /* JavaScript Zone: Child Page Functions (For adding new pages) */
+      /* Exposed Functions: HTML-callable (starter setup for page 1) */
+      window.Application = {
+        changeBackground(pageId) {
+          console.log(`[Background Task] Changing background: ${pageId}`);
+          const randomIndex = Math.floor(Math.random() * pageState.colors.length);
+          document.getElementById(pageId).style.backgroundColor = pageState.colors[randomIndex];
+          console.log(`[Background Task] Background changed: ${pageState.colors[randomIndex]}`);
+        }
+        /* Add functions for new pages here */
+        /* Example: customAction() { console.log('Page X action'); } */
+      };
+
+      /* Child Page Event Handlers: Page-specific actions (for adding new pages) */
+      document.querySelector('main').addEventListener('click', (event) => {
+        const pageId = event.target.closest('.page')?.id;
+        if (!pageId) return;
+        /* Add handlers for new pages here */
+        /* Example: if (pageId === 'page-x' && event.target.classList.contains('page-x-button')) {
+             window.Application.customAction();
+           } */
+      });
+      /* End JavaScript Zone: Child Page Functions */
+    })();
+  </script>
+  <!-- HTML Zone: Knowledge Center (Guides for newbies) -->
+  <!--
+    KNOWLEDGE CENTER: Quick Guides
+    =============================
+    ADDING A CHILD PAGE:
+    - Navigation: Add link in CHILD PAGE NAVIGATION LINKS.
+    - Template: Add <template> in CHILD PAGE HTML.
+    - CSS: Add styles in CHILD PAGE STYLES.
+    - JavaScript: Add to CHILD PAGE JAVASCRIPT HANDLERS and CHILD PAGE JAVASCRIPT FUNCTIONS.
+    - State: Update pageState.availablePages and pageState.pageTemplates.
+    - Test: Click navigation, check console (F12).
+
+    BASE64 EMBEDDING:
+    - Embed files as <img src="data:image/[png|jpg|gif];base64,...">, <audio src="data:audio/[mp3|wav|ogg];base64,...">, or <video src="data:video/[mp4|webm];base64,...">  use sparingly.
+
+    DEBUGGING:
+    - Open dev tools (F12).
+    - Check console logs (e.g., '[Background Task] Switching to page').
+    - Fix: Match IDs, use unique classes.
+    - Test on Chrome, Firefox, Safari, Edge.
+  -->
+  <!-- End HTML Zone: Knowledge Center -->
+</body>
+
+</html>
