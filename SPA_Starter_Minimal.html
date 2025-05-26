@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Minimal SPA with loading screen and page switching -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Single Page Application</title>
+    <style>
+        /* CSS Zone: Essential Styles */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        #loading-screen.hidden {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .navigation {
+                padding: 0.3rem;
+            }
+
+            .navigation-link {
+                margin: 0 0.3rem;
+                font-size: 0.9rem;
+            }
+
+            .page {
+                margin: 0.5rem;
+                padding: 0.5rem;
+            }
+        }
+
+        /* End CSS Zone: Essential Styles */
+
+        /* CSS Zone: New Page Styles */
+
+        /* End CSS Zone: New Page Styles */
+    </style>
+</head>
+
+<body>
+    <!-- HTML Zone: Essential Structure -->
+    <div id="loading-screen">Loading...</div>
+
+    <nav class="navigation" role="navigation">
+        <!-- HTML Zone: Navigation Links -->
+
+        <!-- End HTML Zone: Navigation Links -->
+    </nav>
+
+    <main>
+        <!-- HTML Zone: Pages -->
+
+        <!-- End HTML Zone: Pages -->
+    </main>
+
+    <!-- HTML Zone: Page Templates -->
+
+    <!-- End HTML Zone: Page Templates -->
+    <!-- End HTML Zone: Essential Structure -->
+
+    <script>
+        /* JavaScript Zone: Essential Logic */
+        (function () {
+            const pageState = {
+                currentPage: '',
+                availablePages: [],
+                pageTemplates: {},
+                templateCache: new Map()
+            };
+
+            const switchPage = (pageId) => {
+                console.log(`[Background Task] Switching to page: ${pageId}`);
+                if (!pageState.availablePages.includes(pageId)) {
+                    console.error(`[Error] Page not found`);
+                    return;
+                }
+
+                document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+                let targetPage = document.getElementById(pageId);
+                if (!targetPage && pageState.pageTemplates[pageId]) {
+                    console.log(`[Background Task] Loading template: ${pageId}`);
+                    if (pageState.templateCache.has(pageId)) {
+                        targetPage = pageState.templateCache.get(pageId).cloneNode(true);
+                    } else {
+                        const template = document.getElementById(pageState.pageTemplates[pageId]);
+                        if (template?.content?.firstElementChild) {
+                            const rawTemplate = template.content.firstElementChild.cloneNode(true);
+                            pageState.templateCache.set(pageId, rawTemplate);
+                            targetPage = rawTemplate.cloneNode(true);
+                        } else {
+                            console.error(`[Error] Template corrupt: ${pageId}`);
+                            return;
+                        }
+                    }
+                    document.querySelector('main').appendChild(targetPage);
+                }
+
+                if (targetPage) {
+                    targetPage.classList.add('active');
+                    pageState.currentPage = pageId;
+                    console.log(`[Background Task] Page set: ${pageId}`);
+                } else {
+                    console.error(`[Error] Page load failed: ${pageId}`);
+                }
+            };
+
+            const initializeApplication = () => {
+                console.log('[Background Task] Starting app');
+                document.addEventListener('DOMContentLoaded', () => {
+                    console.log('[Background Task] DOM ready');
+                    try {
+                        const loadingScreen = document.getElementById('loading-screen');
+                        setTimeout(() => {
+                            loadingScreen.classList.add('hidden');
+                            console.log('[Background Task] Loading screen off');
+                        }, 500);
+                    } catch (error) {
+                        console.error(`[Error] App start failed`);
+                    }
+                });
+            };
+
+            document.querySelector('.navigation').addEventListener('click', (event) => {
+                const pageId = event.target.getAttribute('data-page');
+                if (pageId) {
+                    console.log(`[Background Task] Nav clicked: ${pageId}`);
+                    switchPage(pageId);
+                }
+            });
+
+            document.querySelector('.navigation').addEventListener('keydown', (event) => {
+                if (event.target.classList.contains('navigation-link') && (event.key === 'Enter' || event.key === ' ')) {
+                    const pageId = event.target.getAttribute('data-page');
+                    console.log(`[Background Task] Key nav triggered: ${pageId}`);
+                    switchPage(pageId);
+                }
+            });
+
+            initializeApplication();
+        })();
+        /* End JavaScript Zone: Essential Logic */
+
+        /* JavaScript Zone: New Page Functions */
+        window.Application = {};
+
+        /* End JavaScript Zone: New Page Functions */
+    </script>
+</body>
+
+</html>

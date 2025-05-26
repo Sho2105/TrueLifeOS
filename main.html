@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Head Section: Metadata -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Website</title>
+    <!-- End Head Section: Metadata -->
+
+    <!-- CSS Zone: Root Styles (Essential for system) -->
+    <style>
+        :root {
+            --color1: #000000;
+            --color2: #FFFFFF;
+            --color3: #CCCCCC;
+            --color4: #333333;
+            --color5: #999999;
+
+            input:focus,
+            textarea:focus {
+                outline: 1px solid var(--color4);
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.8;
+            background: var(--color2);
+            color: var(--color1);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .root-main {
+            max-width: 800px;
+            width: 90%;
+            margin: 1rem auto;
+            padding: 1rem;
+        }
+
+        .root-paragraph {
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .root-clickable {
+            color: var(--color4);
+            cursor: pointer;
+            text-decoration: underline;
+            transition: color 0.2s ease-in-out;
+        }
+
+        .root-clickable:hover {
+            color: var(--color1);
+        }
+
+        .root-loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--color2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--color1);
+            font-size: 1.2rem;
+            z-index: 100;
+            opacity: 1;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .root-loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .branch-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--color1);
+            opacity: 0;
+            z-index: 50;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .branch-overlay.active {
+            display: block;
+            opacity: 0.5;
+        }
+
+        .branch-tooltip,
+        .branch-popup {
+            background: var(--color2);
+            border: 1px solid var(--color3);
+            border-radius: 8px;
+            padding: 1rem;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .branch-tooltip.active,
+        .branch-popup.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .branch-tooltip {
+            position: absolute;
+            max-width: 300px;
+            width: 100%;
+            aspect-ratio: 1/1;
+            font-size: 0.9rem;
+        }
+
+        .branch-tooltip.active {
+            display: flex;
+        }
+
+        .branch-popup {
+            position: fixed;
+            max-width: 800px;
+            width: 90%;
+            aspect-ratio: 1/1;
+            max-height: 80vh;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .branch-popup.active {
+            display: flex;
+        }
+
+        .shared-toolbar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            background: var(--color2);
+            padding: 0.5rem;
+            justify-content: flex-start;
+        }
+
+        .branch-popup .shared-toolbar {
+            background: none;
+            padding: 0.5rem 0;
+        }
+
+        .shared-button {
+            background: var(--color4);
+            color: var(--color2);
+            padding: 0.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+        }
+
+        .shared-button:hover {
+            background: var(--color5);
+        }
+
+        .shared-button svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--color2);
+        }
+
+        .shared-scrollbar {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .shared-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .branch-tooltip,
+        .branch-popup,
+        .branch1-notes-container {
+            overflow: auto;
+        }
+
+        @media (max-width: 600px) {
+            .root-main {
+                padding: 0.5rem;
+            }
+
+            .branch-tooltip {
+                max-width: 90%;
+            }
+
+            .branch-popup {
+                width: 95%;
+                max-height: 85vh;
+            }
+        }
+
+        /* End CSS Zone: Root Styles */
+
+        /* CSS Zone: Child Page Styles (For adding new pages) */
+        .branch1-note-input {
+            width: 100%;
+            height: 80%;
+            padding: 0.5rem;
+            border: 1px solid var(--color3);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            resize: none;
+            margin-bottom: 0.5rem;
+            flex-grow: 1;
+        }
+
+        .branch1-note {
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--color3);
+            cursor: pointer;
+            font-size: 0.9rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .branch1-note:hover {
+            background: var(--color3);
+        }
+
+        .branch1-note.selected {
+            background: var(--color5);
+            color: var(--color2);
+        }
+
+        .branch1-notes-container {
+            flex-grow: 0;
+            max-height: 20%;
+        }
+
+        .branch2-task-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--color3);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            flex-grow: 0;
+        }
+
+        .branch2-tasks-container {
+            flex-grow: 1;
+            overflow: auto;
+        }
+
+        .branch2-task {
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--color3);
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .branch2-task:hover {
+            background: var(--color3);
+        }
+
+        .branch2-task.selected {
+            background: var(--color5);
+            color: var(--color2);
+        }
+
+        .branch2-task.dragging {
+            opacity: 0.5;
+            background: var(--color3);
+        }
+
+        .branch2-task.subtask {
+            margin-left: 1rem;
+            cursor: default;
+        }
+
+        .branch2-task-deadline {
+            font-size: 0.8rem;
+            color: var(--color5);
+            margin-left: auto;
+        }
+
+        .branch2-date-picker {
+            position: absolute;
+            background: var(--color2);
+            border: 1px solid var(--color3);
+            border-radius: 4px;
+            padding: 0.5rem;
+            z-index: 150;
+            top: 100%;
+            left: 0;
+        }
+
+        .branch2-date-picker input[type="date"] {
+            border: 1px solid var(--color5);
+            border-radius: 4px;
+            padding: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .branch3-vault-container {
+            flex-grow: 1;
+            overflow: auto;
+        }
+
+        .branch3-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            width: 100%;
+        }
+
+        .branch3-row-content {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 0.5rem;
+            align-items: center;
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .branch3-row-name {
+            flex: 0 0 100px;
+            padding: 0.5rem;
+            border: 1px solid var(--color3);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            background: var(--color4);
+            color: var(--color2);
+        }
+
+        .branch3-field {
+            flex: 1;
+            min-width: 100px;
+            max-width: 150px;
+            padding: 0.5rem;
+            border: 1px solid var(--color3);
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .branch3-row-name:focus,
+        .branch3-field:focus {
+            border: 1px solid var(--color4);
+            outline: none;
+        }
+
+        .branch3-row.selected {
+            background: var(--color5);
+        }
+
+        .branch3-row.confirm-delete {
+            background: var(--color3);
+        }
+
+        .branch3-row-button {
+            background: var(--color4);
+            color: var(--color2);
+            border: none;
+            border-radius: 4px;
+            padding: 0.3rem;
+            cursor: pointer;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .branch3-row-button:hover {
+            background: var(--color5);
+        }
+
+        .branch3-row-button svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--color2);
+        }
+
+        @media (max-width: 600px) {
+
+            .branch3-row-name,
+            .branch3-field {
+                flex: 1 1 100%;
+                max-width: 100%;
+            }
+        }
+
+        /* End CSS Zone: Child Page Styles */
+    </style>
+</head>
+
+<body>
+    <!-- HTML Zone: Loading Screen (Essential for system) -->
+    <div id="root-loading-screen" class="root-loading-screen">Loading...</div>
+    <!-- End HTML Zone: Loading Screen -->
+
+    <!-- HTML Zone: Root Pages (Starter pages) -->
+    <main class="root-main">
+        <p class="root-paragraph">
+            Welcome to this minimal site. Explore <span class="root-clickable" data-page="branch1">notes</span>,
+            check out our <span class="root-clickable" data-page="branch2">tasks</span>, or access
+            the <span class="root-clickable" data-page="branch3">vault</span>. You can
+            <span class="root-clickable" data-action="save">save</span> your work or
+            <span class="root-clickable" data-action="load">load</span> previous data.
+        </p>
+    </main>
+    <!-- End HTML Zone: Root Pages -->
+
+    <!-- HTML Zone: Child Page Templates (For adding new pages) -->
+    <!-- HTML Zone: Branch1 Templates -->
+    <template id="branch1-template">
+        <section id="branch1" class="branch-tooltip shared-scrollbar" role="region" aria-label="Features Tooltip">
+            <div class="shared-toolbar">
+                <button class="shared-button" data-action="create" title="Create">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                    </svg>
+                </button>
+                <button class="shared-button" data-action="delete" title="Delete">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 13H5v-2h14v2z" />
+                    </svg>
+                </button>
+                <button class="shared-button" data-action="expand" title="Expand">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 4H5v16h14V4zm-2 14H7V6h10v12z" />
+                    </svg>
+                </button>
+            </div>
+            <textarea class="branch1-note-input" placeholder="Write a note..."></textarea>
+            <div class="branch1-notes-container shared-scrollbar"></div>
+        </section>
+    </template>
+    <!-- End HTML Zone: Branch1 Templates -->
+
+    <!-- HTML Zone: Branch2 Templates -->
+    <template id="branch2-template">
+        <section id="branch2" class="branch-tooltip shared-scrollbar" role="region" aria-label="Tasks Tooltip">
+            <div class="shared-toolbar">
+                <button class="shared-button" data-action="create" title="Create Task">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                    </svg>
+                </button>
+                <button class="shared-button" data-action="create-subtask" title="Create Subtask">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M18 13h-4v6h-2v-6H5v-2h7V5h2v6h4v2z" />
+                    </svg>
+                </button>
+                <button class="shared-button" data-action="delete" title="Delete Task">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 13H5v-2h14v2z" />
+                    </svg>
+                </button>
+                <button class="shared-button" data-action="set-deadline" title="Set Deadline">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 4v12h-2v-12zm0 16v2h-2v-2z" />
+                    </svg>
+                </button>
+                <button class="shared-button" data-action="expand" title="Expand">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 4H5v16h14V4zm-2 14H7V6h10v12z" />
+                    </svg>
+                </button>
+            </div>
+            <div class="branch2-date-picker" style="display: none;">
+                <input type="date">
+            </div>
+            <input type="text" class="branch2-task-input" placeholder="Add a task...">
+            <div class="branch2-tasks-container shared-scrollbar"></div>
+        </section>
+    </template>
+    <!-- End HTML Zone: Branch2 Templates -->
+
+    <!-- HTML Zone: Branch3 Templates -->
+    <template id="branch3-template">
+        <section id="branch3" class="branch-tooltip shared-scrollbar" role="region" aria-label="Vault Tooltip">
+            <div class="shared-toolbar">
+                <button class="shared-button" data-action="add-row" title="Add Row">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                    </svg>
+                </button>
+                <button class="shared-button" data-action="delete-row" title="Delete Row">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 13H5v-2h14v2z" />
+                    </svg>
+                </button>
+                <button class="shared-button" data-action="expand" title="Expand">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 4H5v16h14V4zm-2 14H7V6h10v12z" />
+                    </svg>
+                </button>
+            </div>
+            <div class="branch3-vault-container shared-scrollbar"></div>
+        </section>
+    </template>
+    <!-- End HTML Zone: Branch3 Templates -->
+    <!-- End HTML Zone: Child Page Templates -->
+
+    <!-- HTML Zone: Overlay (Essential for popups) -->
+    <div id="branch-overlay" class="branch-overlay"></div>
+    <!-- End HTML Zone: Overlay -->
+
+    <!-- JavaScript Zone: App Logic (Essential for system) -->
+    <script>
+        const pageState = {
+            currentPage: '',
+            availablePages: ['branch1', 'branch2', 'branch3'],
+            pageTemplates: {
+                branch1: 'branch1-template',
+                branch2: 'branch2-template',
+                branch3: 'branch3-template'
+            },
+            templateCache: new Map(),
+            branch1: {
+                notes: []
+            },
+            branch2: {
+                tasks: []
+            },
+            branch3: {
+                table: [],
+                pendingDelete: null
+            }
+        };
+
+        (function () {
+            const initializeApplication = () => {
+                console.log('[Background Task] Starting app');
+                document.addEventListener('DOMContentLoaded', () => {
+                    console.log('[Background Task] DOM ready');
+                    try {
+                        const loadingScreen = document.getElementById('root-loading-screen');
+                        setTimeout(() => {
+                            loadingScreen.classList.add('hidden');
+                            console.log('[Background Task] Loading screen off');
+                        }, 500);
+                    } catch (error) {
+                        console.error(`[Error] App start failed`);
+                    }
+                });
+            };
+
+            document.querySelectorAll('.root-clickable').forEach(span => {
+                span.addEventListener('click', () => {
+                    const pageId = span.getAttribute('data-page');
+                    const action = span.getAttribute('data-action');
+                    if (pageId) {
+                        console.log(`[Background Task] Clickable triggered: ${pageId}`);
+                        window.Application.toggleTooltip(pageId, span);
+                    } else if (action === 'save') {
+                        console.log('[Background Task] Save triggered');
+                        window.Application.saveData();
+                    } else if (action === 'load') {
+                        console.log('[Background Task] Load triggered');
+                        window.Application.loadData();
+                    }
+                });
+            });
+
+            initializeApplication();
+        })();
+    </script>
+    <!-- End JavaScript Zone: App Logic -->
+
+    <!-- JavaScript Zone: Child Page Functions (For adding new pages) -->
+    <script>
+        window.Application = {
+            toggleTooltip(pageId, triggerElement) {
+                console.log(`[Background Task] Toggling tooltip: ${pageId}`);
+                const currentTooltip = document.querySelector('.branch-tooltip.active');
+                if (currentTooltip && currentTooltip.id === pageId) {
+                    currentTooltip.classList.remove('active');
+                    setTimeout(() => currentTooltip.remove(), 500);
+                    return;
+                }
+
+                document.querySelectorAll('.branch-tooltip').forEach(tooltip => tooltip.remove());
+                document.querySelectorAll('.branch-popup').forEach(popup => popup.remove());
+                document.getElementById('branch-overlay').classList.remove('active');
+
+                if (!pageState.availablePages.includes(pageId)) {
+                    console.error(`[Error] Tooltip not found: ${pageId}`);
+                    return;
+                }
+
+                let targetTooltip = document.getElementById(pageId);
+                if (!targetTooltip && pageState.pageTemplates[pageId]) {
+                    console.log(`[Background Task] Loading template: ${pageId}`);
+                    if (pageState.templateCache.has(pageId)) {
+                        targetTooltip = pageState.templateCache.get(pageId).cloneNode(true);
+                    } else {
+                        const template = document.getElementById(pageState.pageTemplates[pageId]);
+                        if (template?.content?.firstElementChild) {
+                            const rawTemplate = template.content.firstElementChild.cloneNode(true);
+                            pageState.templateCache.set(pageId, rawTemplate);
+                            targetTooltip = rawTemplate.cloneNode(true);
+                        } else {
+                            console.error(`[Error] Template corrupt: ${pageId}`);
+                            return;
+                        }
+                    }
+                    document.body.appendChild(targetTooltip);
+                }
+
+                requestAnimationFrame(() => {
+                    if (targetTooltip) {
+                        const rect = triggerElement.getBoundingClientRect();
+                        const maxWidth = Math.min(300, document.querySelector('.root-main').offsetWidth);
+                        targetTooltip.style.maxWidth = `${maxWidth}px`;
+                        targetTooltip.style.left = `${Math.min(rect.left + window.scrollX, window.innerWidth - maxWidth - 10)}px`;
+                        targetTooltip.style.top = `${rect.bottom + window.scrollY + 5}px`;
+                        targetTooltip.classList.add('active');
+                        pageState.currentPage = pageId;
+                        console.log(`[Background Task] Tooltip set: ${pageId}`);
+                        if (pageId === 'branch1') {
+                            this.branch1.renderNotes(targetTooltip);
+                        } else if (pageId === 'branch2') {
+                            this.branch2.renderTasks(targetTooltip);
+                        } else if (pageId === 'branch3') {
+                            this.branch3.renderTable(targetTooltip);
+                        }
+                    } else {
+                        console.error(`[Error] Tooltip load failed: ${pageId}`);
+                    }
+                });
+            },
+
+            expandPopup(pageId) {
+                console.log(`[Background Task] Expanding to popup: ${pageId}`);
+                document.querySelectorAll('.branch-tooltip').forEach(tooltip => tooltip.remove());
+                document.querySelectorAll('.branch-popup').forEach(popup => popup.remove());
+
+                if (!pageState.availablePages.includes(pageId)) {
+                    console.error(`[Error] Popup not found: ${pageId}`);
+                    return;
+                }
+
+                let targetPopup = document.getElementById(pageId);
+                if (!targetPopup && pageState.pageTemplates[pageId]) {
+                    console.log(`[Background Task] Loading template: ${pageId}`);
+                    if (pageState.templateCache.has(pageId)) {
+                        targetPopup = pageState.templateCache.get(pageId).cloneNode(true);
+                    } else {
+                        const template = document.getElementById(pageState.pageTemplates[pageId]);
+                        if (template?.content?.firstElementChild) {
+                            const rawTemplate = template.content.firstElementChild.cloneNode(true);
+                            pageState.templateCache.set(pageId, rawTemplate);
+                            targetPopup = rawTemplate.cloneNode(true);
+                        } else {
+                            console.error(`[Error] Template corrupt: ${pageId}`);
+                            return;
+                        }
+                    }
+                    targetPopup.classList.remove('branch-tooltip');
+                    targetPopup.classList.add('branch-popup', 'shared-scrollbar');
+                    document.body.appendChild(targetPopup);
+                }
+
+                requestAnimationFrame(() => {
+                    if (targetPopup) {
+                        targetPopup.classList.add('active');
+                        document.getElementById('branch-overlay').classList.add('active');
+                        pageState.currentPage = pageId;
+                        console.log(`[Background Task] Popup set: ${pageId}`);
+
+                        const expandButton = targetPopup.querySelector('.shared-button[data-action="expand"]');
+                        if (expandButton) {
+                            expandButton.innerHTML = `<svg viewBox="0 0 24 24"><path d="M19 5v14H5V5h14m2-2H3v18h18V3z"/></svg>`;
+                            expandButton.setAttribute('data-action', 'close');
+                            expandButton.setAttribute('title', 'Close');
+                        }
+                        if (pageId === 'branch1') {
+                            this.branch1.renderNotes(targetPopup);
+                        } else if (pageId === 'branch2') {
+                            this.branch2.renderTasks(targetPopup);
+                        } else if (pageId === 'branch3') {
+                            this.branch3.renderTable(targetPopup);
+                        }
+                    } else {
+                        console.error(`[Error] Popup load failed: ${pageId}`);
+                    }
+                });
+
+                document.getElementById('branch-overlay').addEventListener('click', () => this.closePopup());
+            },
+
+            closePopup() {
+                console.log('[Background Task] Closing popup');
+                document.querySelectorAll('.branch-popup').forEach(popup => {
+                    popup.classList.remove('active');
+                    setTimeout(() => popup.remove(), 500);
+                });
+                document.getElementById('branch-overlay').classList.remove('active');
+                pageState.currentPage = '';
+            },
+
+            saveData() {
+                console.log('[Background Task] Saving data');
+                const data = {
+                    root: {},
+                    branch1: {
+                        notes: pageState.branch1.notes.join('|---|')
+                    },
+                    branch2: {
+                        tasks: pageState.branch2.tasks
+                    },
+                    branch3: {
+                        table: pageState.branch3.table
+                    }
+                };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'site-data.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            },
+
+            loadData() {
+                console.log('[Background Task] Loading data');
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'application/json';
+                input.addEventListener('change', (event) => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            try {
+                                const data = JSON.parse(e.target.result);
+                                if (data.branch1?.notes) {
+                                    pageState.branch1.notes = data.branch1.notes.split('|---|').filter(note => note);
+                                    const activeTooltip1 = document.querySelector('.branch-tooltip.active#branch1');
+                                    const activePopup1 = document.querySelector('.branch-popup.active#branch1');
+                                    if (activeTooltip1) this.branch1.renderNotes(activeTooltip1);
+                                    if (activePopup1) this.branch1.renderNotes(activePopup1);
+                                }
+                                if (data.branch2?.tasks) {
+                                    pageState.branch2.tasks = data.branch2.tasks;
+                                    const activeTooltip2 = document.querySelector('.branch-tooltip.active#branch2');
+                                    const activePopup2 = document.querySelector('.branch-popup.active#branch2');
+                                    if (activeTooltip2) this.branch2.renderTasks(activeTooltip2);
+                                    if (activePopup2) this.branch2.renderTasks(activePopup2);
+                                }
+                                if (data.branch3?.table) {
+                                    pageState.branch3.table = data.branch3.table;
+                                    const activeTooltip3 = document.querySelector('.branch-tooltip.active#branch3');
+                                    const activePopup3 = document.querySelector('.branch-popup.active#branch3');
+                                    if (activeTooltip3) this.branch3.renderTable(activeTooltip3);
+                                    if (activePopup3) this.branch3.renderTable(activePopup3);
+                                }
+                            } catch (error) {
+                                console.error('[Error] Failed to load data');
+                            }
+                        };
+                        reader.readAsText(file);
+                    }
+                });
+                input.click();
+            },
+
+            branch1: {
+                createNote(container) {
+                    console.log('[Background Task] Creating note');
+                    const input = container.querySelector('.branch1-note-input');
+                    if (input.value.trim()) {
+                        pageState.branch1.notes.push(input.value.trim());
+                        input.value = '';
+                        this.renderNotes(container);
+                    }
+                },
+
+                deleteNote(container) {
+                    console.log('[Background Task] Deleting note');
+                    const selectedNote = container.querySelector('.branch1-note.selected');
+                    if (selectedNote) {
+                        const index = Array.from(container.querySelectorAll('.branch1-note')).indexOf(selectedNote);
+                        pageState.branch1.notes.splice(index, 1);
+                        container.querySelector('.branch1-note-input').value = '';
+                        this.renderNotes(container);
+                    }
+                },
+
+                selectNote(container, index) {
+                    console.log(`[Background Task] Selecting note: ${index}`);
+                    const input = container.querySelector('.branch1-note-input');
+                    const notes = container.querySelectorAll('.branch1-note');
+                    const isSelected = notes[index].classList.contains('selected');
+                    notes.forEach(note => note.classList.remove('selected'));
+                    if (!isSelected) {
+                        input.value = pageState.branch1.notes[index];
+                        notes[index].classList.add('selected');
+                    } else {
+                        input.value = '';
+                    }
+                },
+
+                renderNotes(container) {
+                    console.log('[Background Task] Rendering notes');
+                    const notesContainer = container.querySelector('.branch1-notes-container');
+                    notesContainer.innerHTML = '';
+                    pageState.branch1.notes.forEach((note, index) => {
+                        const noteElement = document.createElement('div');
+                        noteElement.className = 'branch1-note';
+                        noteElement.textContent = note;
+                        noteElement.addEventListener('click', () => {
+                            this.selectNote(container, index);
+                        });
+                        notesContainer.appendChild(noteElement);
+                    });
+                }
+            },
+
+            branch2: {
+                createTask(container, isSubtask = false) {
+                    console.log('[Background Task] Creating task');
+                    const input = container.querySelector('.branch2-task-input');
+                    if (input.value.trim()) {
+                        const selectedTask = container.querySelector('.branch2-task.selected');
+                        const newTask = {
+                            id: Date.now(),
+                            text: input.value.trim(),
+                            subtasks: [],
+                            deadline: null
+                        };
+                        if (isSubtask && selectedTask) {
+                            const taskId = selectedTask.dataset.taskId;
+                            const parentTask = this.findTask(pageState.branch2.tasks, taskId);
+                            if (parentTask) {
+                                parentTask.subtasks.push(newTask);
+                            }
+                        } else {
+                            pageState.branch2.tasks.push(newTask);
+                        }
+                        input.value = '';
+                        this.renderTasks(container);
+                    }
+                },
+
+                deleteTask(container) {
+                    console.log('[Background Task] Deleting task');
+                    const selectedTask = container.querySelector('.branch2-task.selected');
+                    if (selectedTask) {
+                        const taskId = selectedTask.dataset.taskId;
+                        pageState.branch2.tasks = this.removeTask(pageState.branch2.tasks, taskId);
+                        container.querySelector('.branch2-task-input').value = '';
+                        this.renderTasks(container);
+                    }
+                },
+
+                selectTask(container, taskId) {
+                    console.log(`[Background Task] Selecting task: ${taskId}`);
+                    const input = container.querySelector('.branch2-task-input');
+                    const tasks = container.querySelectorAll('.branch2-task');
+                    const selectedTask = container.querySelector(`.branch2-task[data-task-id="${taskId}"]`);
+                    const isSelected = selectedTask.classList.contains('selected');
+                    tasks.forEach(task => task.classList.remove('selected'));
+                    if (!isSelected) {
+                        const task = this.findTask(pageState.branch2.tasks, taskId);
+                        if (task) {
+                            input.value = task.text;
+                            selectedTask.classList.add('selected');
+                        }
+                    } else {
+                        input.value = '';
+                    }
+                },
+
+                setDeadline(container) {
+                    console.log('[Background Task] Setting deadline');
+                    const selectedTask = container.querySelector('.branch2-task.selected');
+                    if (selectedTask) {
+                        const taskId = selectedTask.dataset.taskId;
+                        const task = this.findTask(pageState.branch2.tasks, taskId);
+                        if (task) {
+                            const datePicker = container.querySelector('.branch2-date-picker');
+                            const dateInput = datePicker.querySelector('input[type="date"]');
+                            datePicker.style.display = 'block';
+                            dateInput.focus();
+                            dateInput.addEventListener('change', () => {
+                                task.deadline = dateInput.value || null;
+                                datePicker.style.display = 'none';
+                                this.sortTasks(pageState.branch2.tasks);
+                                this.renderTasks(container);
+                            }, { once: true });
+                            dateInput.addEventListener('blur', () => {
+                                datePicker.style.display = 'none';
+                            }, { once: true });
+                        }
+                    }
+                },
+
+                sortTasks(tasks) {
+                    tasks.sort((a, b) => {
+                        if (!a.deadline && !b.deadline) return 0;
+                        if (!a.deadline) return 1;
+                        if (!b.deadline) return -1;
+                        return new Date(a.deadline) - new Date(b.deadline);
+                    });
+                    tasks.forEach(task => {
+                        if (task.subtasks.length) this.sortTasks(task.subtasks);
+                    });
+                },
+
+                findTask(tasks, taskId) {
+                    for (const task of tasks) {
+                        if (task.id == taskId) return task;
+                        const subtask = this.findTask(task.subtasks, taskId);
+                        if (subtask) return subtask;
+                    }
+                    return null;
+                },
+
+                removeTask(tasks, taskId) {
+                    return tasks.filter(task => {
+                        if (task.id == taskId) return false;
+                        task.subtasks = this.removeTask(task.subtasks, taskId);
+                        return true;
+                    });
+                },
+
+                moveTask(tasks, taskId, newIndex) {
+                    const task = this.findTask(tasks, taskId);
+                    if (!task) return;
+                    const oldTasks = this.removeTask(tasks, taskId);
+                    oldTasks.splice(newIndex, 0, task);
+                    pageState.branch2.tasks = oldTasks;
+                },
+
+                renderTasks(container) {
+                    console.log('[Background Task] Rendering tasks');
+                    const tasksContainer = container.querySelector('.branch2-tasks-container');
+                    tasksContainer.innerHTML = '';
+                    const renderTask = (task, depth = 0) => {
+                        const taskElement = document.createElement('div');
+                        taskElement.className = `branch2-task ${depth > 0 ? 'subtask' : ''}`;
+                        taskElement.dataset.taskId = task.id;
+                        taskElement.innerHTML = `
+                            <span>${task.text}</span>
+                            ${task.deadline ? `<span class="branch2-task-deadline">${task.deadline}</span>` : ''}
+                        `;
+                        taskElement.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            this.selectTask(container, task.id);
+                        });
+
+                        if (depth === 0) {
+                            let holdTimeout;
+                            taskElement.draggable = true;
+                            taskElement.addEventListener('mousedown', () => {
+                                holdTimeout = setTimeout(() => {
+                                    taskElement.classList.add('dragging');
+                                }, 500);
+                            });
+                            taskElement.addEventListener('mouseup', () => {
+                                clearTimeout(holdTimeout);
+                                taskElement.classList.remove('dragging');
+                            });
+                            taskElement.addEventListener('dragstart', (e) => {
+                                e.dataTransfer.setData('text/plain', task.id);
+                            });
+                            taskElement.addEventListener('dragover', (e) => {
+                                e.preventDefault();
+                            });
+                            taskElement.addEventListener('drop', (e) => {
+                                e.preventDefault();
+                                const draggedId = e.dataTransfer.getData('text/plain');
+                                const targetId = taskElement.dataset.taskId;
+                                const newIndex = Array.from(tasksContainer.children).indexOf(taskElement);
+                                this.moveTask(pageState.branch2.tasks, draggedId, newIndex);
+                                this.renderTasks(container);
+                            });
+                        }
+
+                        tasksContainer.appendChild(taskElement);
+                        task.subtasks.forEach(subtask => renderTask(subtask, depth + 1));
+                    };
+                    pageState.branch2.tasks.forEach(task => renderTask(task));
+                }
+            },
+
+            branch3: {
+                addRow(container) {
+                    console.log('[Background Task] Adding row');
+                    pageState.branch3.table.push({ name: `Row ${pageState.branch3.table.length + 1}`, fields: ['', ''] });
+                    this.renderVault(container);
+                },
+
+                deleteRow(container) {
+                    console.log('[Background Task] Initiating row deletion');
+                    const selectedRow = container.querySelector('.branch3-row.selected');
+                    if (!selectedRow) return;
+
+                    const rowIndex = parseInt(selectedRow.dataset.row, 10);
+                    if (pageState.branch3.pendingDelete === rowIndex) {
+                        console.log('[Background Task] Confirming row deletion');
+                        pageState.branch3.table.splice(rowIndex, 1);
+                        pageState.branch3.pendingDelete = null;
+                        this.renderVault(container);
+                    } else {
+                        console.log('[Background Task] Marking row for deletion');
+                        container.querySelectorAll('.branch3-row').forEach(row => row.classList.remove('confirm-delete'));
+                        selectedRow.classList.add('confirm-delete');
+                        pageState.branch3.pendingDelete = rowIndex;
+                        setTimeout(() => {
+                            if (pageState.branch3.pendingDelete === rowIndex) {
+                                selectedRow.classList.remove('confirm-delete');
+                                pageState.branch3.pendingDelete = null;
+                            }
+                        }, 3000);
+                    }
+                },
+
+                addField(container, rowIndex) {
+                    console.log(`[Background Task] Adding field to row: ${rowIndex}`);
+                    pageState.branch3.table[rowIndex].fields.push('');
+                    this.renderVault(container);
+                },
+
+                removeField(container, rowIndex, fieldIndex) {
+                    console.log(`[Background Task] Removing field from row: ${rowIndex}, field: ${fieldIndex}`);
+                    pageState.branch3.table[rowIndex].fields.splice(fieldIndex, 1);
+                    if (pageState.branch3.table[rowIndex].fields.length === 0) {
+                        pageState.branch3.table.splice(rowIndex, 1);
+                    }
+                    this.renderVault(container);
+                },
+
+                updateName(container, rowIndex, value) {
+                    console.log(`[Background Task] Updating row name: ${rowIndex}`);
+                    pageState.branch3.table[rowIndex].name = value;
+                },
+
+                updateField(container, rowIndex, fieldIndex, value) {
+                    console.log(`[Background Task] Updating field: ${rowIndex}, ${fieldIndex}`);
+                    pageState.branch3.table[rowIndex].fields[fieldIndex] = value;
+                },
+
+                selectRow(container, rowIndex) {
+                    console.log(`[Background Task] Selecting row: ${rowIndex}`);
+                    const rows = container.querySelectorAll('.branch3-row');
+                    const selectedRow = container.querySelector(`.branch3-row[data-row="${rowIndex}"]`);
+                    const isSelected = selectedRow.classList.contains('selected');
+                    rows.forEach(row => {
+                        row.classList.remove('selected', 'confirm-delete');
+                    });
+                    pageState.branch3.pendingDelete = null;
+                    if (!isSelected) {
+                        selectedRow.classList.add('selected');
+                    }
+                },
+
+                renderVault(container) {
+                    console.log('[Background Task] Rendering vault');
+                    const vaultContainer = container.querySelector('.branch3-vault-container');
+                    vaultContainer.innerHTML = '';
+                    pageState.branch3.table.forEach((row, rowIndex) => {
+                        const rowElement = document.createElement('div');
+                        rowElement.className = 'branch3-row';
+                        rowElement.dataset.row = rowIndex;
+                        rowElement.addEventListener('click', (e) => {
+                            if (!e.target.closest('.branch3-row-name, .branch3-field, .branch3-row-button')) {
+                                this.selectRow(container, rowIndex);
+                            }
+                        });
+
+                        const contentElement = document.createElement('div');
+                        contentElement.className = 'branch3-row-content shared-scrollbar';
+
+                        const nameElement = document.createElement('input');
+                        nameElement.className = 'branch3-row-name';
+                        nameElement.value = row.name;
+                        nameElement.addEventListener('change', () => {
+                            this.updateName(container, rowIndex, nameElement.value);
+                        });
+                        contentElement.appendChild(nameElement);
+
+                        row.fields.forEach((value, fieldIndex) => {
+                            const fieldElement = document.createElement('input');
+                            fieldElement.className = 'branch3-field';
+                            fieldElement.value = value;
+                            fieldElement.addEventListener('change', () => {
+                                this.updateField(container, rowIndex, fieldIndex, fieldElement.value);
+                            });
+                            contentElement.appendChild(fieldElement);
+                        });
+
+                        const addButton = document.createElement('button');
+                        addButton.className = 'branch3-row-button';
+                        addButton.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
+                        addButton.addEventListener('click', () => this.addField(container, rowIndex));
+                        contentElement.appendChild(addButton);
+
+                        const removeButton = document.createElement('button');
+                        removeButton.className = 'branch3-row-button';
+                        removeButton.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>';
+                        removeButton.addEventListener('click', () => this.removeField(container, rowIndex, row.fields.length - 1));
+                        contentElement.appendChild(removeButton);
+
+                        rowElement.appendChild(contentElement);
+                        vaultContainer.appendChild(rowElement);
+                    });
+                }
+            }
+        };
+
+        document.body.addEventListener('click', (event) => {
+            const button = event.target.closest('.shared-button');
+            if (!button) return;
+            const action = button.getAttribute('data-action');
+            const pageId = button.closest('.branch-tooltip, .branch-popup')?.id;
+            if (!pageId) return;
+
+            if (action === 'expand') {
+                window.Application.expandPopup(pageId);
+            } else if (action === 'close') {
+                window.Application.closePopup();
+            } else if (pageId === 'branch1') {
+                if (action === 'delete') {
+                    window.Application.branch1.deleteNote(button.closest('.branch-tooltip, .branch-popup'));
+                } else if (action === 'create') {
+                    window.Application.branch1.createNote(button.closest('.branch-tooltip, .branch-popup'));
+                }
+            } else if (pageId === 'branch2') {
+                if (action === 'create') {
+                    window.Application.branch2.createTask(button.closest('.branch-tooltip, .branch-popup'));
+                } else if (action === 'create-subtask') {
+                    window.Application.branch2.createTask(button.closest('.branch-tooltip, .branch-popup'), true);
+                } else if (action === 'delete') {
+                    window.Application.branch2.deleteTask(button.closest('.branch-tooltip, .branch-popup'));
+                } else if (action === 'set-deadline') {
+                    window.Application.branch2.setDeadline(button.closest('.branch-tooltip, .branch-popup'));
+                }
+            } else if (pageId === 'branch3') {
+                if (action === 'add-row') {
+                    window.Application.branch3.addRow(button.closest('.branch-tooltip, .branch-popup'));
+                } else if (action === 'delete-row') {
+                    window.Application.branch3.deleteRow(button.closest('.branch-tooltip, .branch-popup'));
+                } else if (action === 'expand') {
+                    window.Application.expandPopup(pageId);
+                } else if (action === 'close') {
+                    window.Application.closePopup();
+                }
+            }
+        });
+    </script>
+    <!-- End JavaScript Zone: Child Page Functions -->
+</body>
+
+</html>

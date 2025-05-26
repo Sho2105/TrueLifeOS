@@ -1,102 +1,587 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Template</title>
-  <style>
-    :root {
-      --primary-color: hsl(207, 100%, 56%);
-      --text-color: hsl(209, 26%, 24%);
-      --background-color: hsl(204, 43%, 93%);
-      --page-color: hsl(0, 0%, 100%);
-      --accent-color: hsl(0, 100%, 71%);
-    }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: Arial, sans-serif;
-      background: var(--background-color);
-      color: var(--text-color);
-      min-height: 100vh;
-    }
-    #loading-screen {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: var(--background-color);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 1.2rem;
-      z-index: 100;
-    }
-    #loading-spinner {
-      border: 4px solid var(--page-color);
-      border-top: 4px solid var(--accent-color);
-      border-radius: 50%;
-      width: 24px;
-      height: 24px;
-      animation: spin 1s linear infinite;
-      margin-right: 0.5rem;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    .page-container {
-      display: none;
-      padding: 1rem;
-      max-width: 800px;
-      margin: 1rem auto;
-      background: var(--page-color);
-    }
-    .page-container.active { display: block; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TreeSheets Clone</title>
+    <style>
+        :root {
+            --color1: #000000;
+            --color2: #FFFFFF;
+            --color3: #CCCCCC;
+            --color4: #333333;
+            --color5: #999999;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-size: 16px;
+            background: var(--color2);
+            color: var(--color1);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .root-main {
+            max-width: 800px;
+            width: 90%;
+            margin: 1rem auto;
+            padding: 1rem;
+        }
+
+        .root-clickable {
+            color: var(--color4);
+            cursor: pointer;
+            text-decoration: underline;
+            transition: color 0.2s ease-in-out;
+        }
+
+        .root-clickable:hover {
+            color: var(--color1);
+        }
+
+        .root-loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--color2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--color1);
+            font-size: 1.2rem;
+            z-index: 1000;
+            opacity: 1;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .root-loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .tooltip {
+            position: fixed;
+            background: var(--color2);
+            border: 1px solid var(--color3);
+            border-radius: 8px;
+            padding: 1rem;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 400px;
+            min-width: 200px;
+            min-height: 200px;
+            max-width: 90vw;
+            max-height: 80vh;
+            resize: both;
+            overflow: auto;
+        }
+
+        .tooltip.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .tooltip-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--color3);
+        }
+
+        .tooltip-title {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .tooltip-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.2rem;
+        }
+
+        .tooltip-close svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--color4);
+        }
+
+        .shared-toolbar {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+        }
+
+        .shared-button {
+            background: var(--color4);
+            color: var(--color2);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s ease-in-out;
+        }
+
+        .shared-button:hover {
+            background: var(--color5);
+        }
+
+        .shared-button svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--color2);
+        }
+
+        .branch1-container {
+            flex-grow: 1;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .branch1-path {
+            font-size: 0.9rem;
+            color: var(--color5);
+            padding: 0.5rem 0;
+            cursor: pointer;
+        }
+
+        .branch1-path span:hover {
+            color: var(--color1);
+            text-decoration: underline;
+        }
+
+        .branch1-cell {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border: 1px solid var(--color3);
+            border-radius: 4px;
+            background: var(--color2);
+        }
+
+        .branch1-cell.selected {
+            border-color: var(--color4);
+            background: var(--color5);
+        }
+
+        .branch1-cell-content {
+            flex: 1;
+            min-width: 100px;
+            padding: 0.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            resize: none;
+            background: transparent;
+        }
+
+        .branch1-cell-content:focus {
+            outline: 1px solid var(--color4);
+        }
+
+        .shared-scrollbar {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .shared-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .root-main {
+                padding: 0.5rem;
+            }
+
+            .tooltip {
+                width: 95vw;
+                height: 85vh;
+            }
+        }
+    </style>
 </head>
 <body>
-  <!-- Loading Screen -->
-  <div id="loading-screen">
-    <div id="loading-spinner"></div>
-    Loading...
-  </div>
+    <div id="root-loading-screen" class="root-loading-screen">Loading...</div>
+    <main class="root-main">
+        <p class="root-paragraph">
+            Welcome to the app. Open <span class="root-clickable" data-page="branch1">Sheet</span>,
+            or check placeholders <span class="root-clickable" data-page="branch2">Tasks</span> or
+            <span class="root-clickable" data-page="branch3">Vault</span>. Use
+            <span class="root-clickable" data-action="save">save</span> or
+            <span class="root-clickable" data-action="load">load</span> to manage data.
+        </p>
+    </main>
 
-  <!-- Main Content -->
-  <main>
-    <section id="home" class="page-container active">
-      <h1>Hey, It Works!</h1>
-      <p>The loading screen should be gone. Check the console (F12) for logs.</p>
-    </section>
-  </main>
+    <template id="branch1-template">
+        <section id="branch1" class="tooltip shared-scrollbar" role="region" aria-label="Sheet">
+            <div class="tooltip-header">
+                <span class="tooltip-title">TreeSheets</span>
+                <button class="tooltip-close" title="Close">
+                    <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+            </div>
+            <div class="shared-toolbar">
+                <button class="shared-button" data-action="add-cell" title="Add Cell">
+                    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                </button>
+                <button class="shared-button" data-action="delete-cell" title="Delete Cell">
+                    <svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
+                </button>
+            </div>
+            <div class="branch1-path"></div>
+            <div class="branch1-container shared-scrollbar"></div>
+        </section>
+    </template>
+    <template id="branch2-template">
+        <section id="branch2" class="tooltip shared-scrollbar" role="region" aria-label="Tasks">
+            <div class="tooltip-header">
+                <span class="tooltip-title">Tasks</span>
+                <button class="tooltip-close" title="Close">
+                    <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+            </div>
+            <div class="shared-toolbar"></div>
+            <div class="branch2-container shared-scrollbar"></div>
+        </section>
+    </template>
+    <template id="branch3-template">
+        <section id="branch3" class="tooltip shared-scrollbar" role="region" aria-label="Vault">
+            <div class="tooltip-header">
+                <span class="tooltip-title">Vault</span>
+                <button class="tooltip-close" title="Close">
+                    <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+            </div>
+            <div class="shared-toolbar"></div>
+            <div class="branch3-container shared-scrollbar"></div>
+        </section>
+    </template>
 
-  <script>
-    (function () {
-      console.log("Script started—let’s see what’s happening!");
+    <script>
+        const pageState = {
+            currentPage: '',
+            availablePages: ['branch1', 'branch2', 'branch3'],
+            pageTemplates: {
+                branch1: 'branch1-template',
+                branch2: 'branch2-template',
+                branch3: 'branch3-template'
+            },
+            templateCache: new Map(),
+            branch1: {
+                cells: [{ id: Date.now(), text: '', children: [] }],
+                currentPath: []
+            },
+            branch2: {},
+            branch3: {}
+        };
 
-      const initializeApplication = () => {
-        console.log("Initializing...");
-        // Hide loading screen after 500ms
-        setTimeout(() => {
-          const loadingScreen = document.getElementById("loading-screen");
-          if (loadingScreen) {
-            loadingScreen.style.display = "none";
-            console.log("Loading screen hidden—success!");
-          } else {
-            console.log("Loading screen not found—check your HTML!");
-          }
-          // Show the home page
-          const homePage = document.getElementById("home");
-          if (homePage) {
-            homePage.classList.add("active");
-            console.log("Home page activated.");
-          }
-        }, 500);
-      };
+        const App = {
+            init() {
+                console.log('[App] Starting');
+                document.addEventListener('DOMContentLoaded', () => {
+                    const loadingScreen = document.getElementById('root-loading-screen');
+                    setTimeout(() => {
+                        loadingScreen.classList.add('hidden');
+                    }, 500);
+                    this.bindEvents();
+                });
+            },
 
-      // Kick things off
-      initializeApplication();
-    })();
-  </script>
+            bindEvents() {
+                document.querySelectorAll('.root-clickable').forEach(span => {
+                    span.addEventListener('click', () => {
+                        const pageId = span.getAttribute('data-page');
+                        const action = span.getAttribute('data-action');
+                        if (pageId) {
+                            this.toggleTooltip(pageId);
+                        } else if (action === 'save') {
+                            this.saveData();
+                        } else if (action === 'load') {
+                            this.loadData();
+                        }
+                    });
+                });
+            },
+
+            toggleTooltip(pageId) {
+                const currentTooltip = document.querySelector('.tooltip.active');
+                if (currentTooltip && currentTooltip.id === pageId) {
+                    currentTooltip.classList.remove('active');
+                    setTimeout(() => currentTooltip.remove(), 300);
+                    pageState.currentPage = '';
+                    return;
+                }
+
+                document.querySelectorAll('.tooltip').forEach(tooltip => tooltip.remove());
+                if (!pageState.availablePages.includes(pageId)) return;
+
+                let tooltip = document.getElementById(pageId);
+                if (!tooltip) {
+                    const template = document.getElementById(pageState.pageTemplates[pageId]);
+                    if (template?.content?.firstElementChild) {
+                        const rawTemplate = template.content.firstElementChild.cloneNode(true);
+                        pageState.templateCache.set(pageId, rawTemplate);
+                        tooltip = rawTemplate.cloneNode(true);
+                        document.body.appendChild(tooltip);
+                    }
+                }
+
+                requestAnimationFrame(() => {
+                    if (tooltip) {
+                        tooltip.classList.add('active');
+                        pageState.currentPage = pageId;
+                        this.makeDraggable(tooltip);
+                        this.makeResizable(tooltip);
+                        if (pageId === 'branch1') {
+                            this.branch1.render(tooltip);
+                            tooltip.querySelector('.tooltip-close').addEventListener('click', () => this.closeTooltip());
+                        }
+                    }
+                });
+            },
+
+            closeTooltip() {
+                const tooltip = document.querySelector('.tooltip.active');
+                if (tooltip) {
+                    tooltip.classList.remove('active');
+                    setTimeout(() => tooltip.remove(), 300);
+                    pageState.currentPage = '';
+                }
+            },
+
+            makeDraggable(element) {
+                const header = element.querySelector('.tooltip-header');
+                let isDragging = false, startX, startY, initialX, initialY;
+
+                header.addEventListener('mousedown', (e) => {
+                    if (e.target.closest('.tooltip-close')) return;
+                    isDragging = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    const rect = element.getBoundingClientRect();
+                    initialX = rect.left;
+                    initialY = rect.top;
+                    document.body.style.userSelect = 'none';
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    element.style.left = `${initialX + dx}px`;
+                    element.style.top = `${initialY + dy}px`;
+                    element.style.transform = 'none';
+                });
+
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                    document.body.style.userSelect = '';
+                });
+            },
+
+            makeResizable(element) {
+                element.style.resize = 'both';
+                element.addEventListener('mousedown', (e) => {
+                    if (e.target === element && e.offsetX > element.offsetWidth - 10 && e.offsetY > element.offsetHeight - 10) {
+                        element.style.width = `${element.offsetWidth}px`;
+                        element.style.height = `${element.offsetHeight}px`;
+                    }
+                });
+            },
+
+            saveData() {
+                const data = {
+                    branch1: { cells: pageState.branch1.cells },
+                    branch2: {},
+                    branch3: {}
+                };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'treesheets-data.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            },
+
+            loadData() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'application/json';
+                input.addEventListener('change', (event) => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            try {
+                                const data = JSON.parse(e.target.result);
+                                if (data.branch1?.cells) {
+                                    pageState.branch1.cells = data.branch1.cells;
+                                    const tooltip = document.querySelector('.tooltip.active#branch1');
+                                    if (tooltip) this.branch1.render(tooltip);
+                                }
+                            } catch (error) {
+                                console.error('[Error] Failed to load data');
+                            }
+                        };
+                        reader.readAsText(file);
+                    }
+                });
+                input.click();
+            },
+
+            branch1: {
+                getCurrentCells() {
+                    let cells = pageState.branch1.cells;
+                    for (const id of pageState.branch1.currentPath) {
+                        const cell = cells.find(c => c.id === id);
+                        cells = cell ? cell.children : [];
+                    }
+                    return cells;
+                },
+
+                addCell(container) {
+                    const cells = this.getCurrentCells();
+                    cells.push({ id: Date.now(), text: '', children: [] });
+                    this.render(container);
+                },
+
+                deleteCell(container) {
+                    const selectedCell = container.querySelector('.branch1-cell.selected');
+                    if (!selectedCell) return;
+                    const cellId = parseInt(selectedCell.dataset.id);
+                    const cells = this.getCurrentCells();
+                    const index = cells.findIndex(c => c.id === cellId);
+                    if (index !== -1) {
+                        cells.splice(index, 1);
+                        this.render(container);
+                    }
+                },
+
+                updateCell(container, cellId, text) {
+                    const cells = this.getCurrentCells();
+                    const cell = cells.find(c => c.id === cellId);
+                    if (cell) cell.text = text;
+                },
+
+                selectCell(container, cellId) {
+                    const cells = container.querySelectorAll('.branch1-cell');
+                    const selectedCell = container.querySelector(`.branch1-cell[data-id="${cellId}"]`);
+                    const isSelected = selectedCell?.classList.contains('selected');
+                    cells.forEach(cell => cell.classList.remove('selected'));
+                    if (!isSelected && selectedCell) {
+                        selectedCell.classList.add('selected');
+                    }
+                },
+
+                zoomIn(container, cellId) {
+                    pageState.branch1.currentPath.push(cellId);
+                    this.render(container);
+                },
+
+                navigateTo(container, index) {
+                    pageState.branch1.currentPath = pageState.branch1.currentPath.slice(0, index + 1);
+                    this.render(container);
+                },
+
+                render(container) {
+                    const pathContainer = container.querySelector('.branch1-path');
+                    const cellContainer = container.querySelector('.branch1-container');
+                    cellContainer.innerHTML = '';
+
+                    pathContainer.innerHTML = '<span data-index="-1">Root</span>';
+                    let cells = pageState.branch1.cells;
+                    pageState.branch1.currentPath.forEach((id, index) => {
+                        const cell = cells.find(c => c.id === id);
+                        if (cell) {
+                            pathContainer.innerHTML += ` / <span data-index="${index}">${cell.text || 'Untitled'}</span>`;
+                            cells = cell.children;
+                        }
+                    });
+                    pathContainer.querySelectorAll('span').forEach(span => {
+                        span.addEventListener('click', () => {
+                            const index = parseInt(span.dataset.index);
+                            this.navigateTo(container, index);
+                        });
+                    });
+
+                    cells.forEach(cell => {
+                        const cellElement = document.createElement('div');
+                        cellElement.className = 'branch1-cell';
+                        cellElement.dataset.id = cell.id;
+
+                        const content = document.createElement('textarea');
+                        content.className = 'branch1-cell-content';
+                        content.value = cell.text;
+                        content.placeholder = 'Enter text...';
+                        content.addEventListener('input', () => {
+                            this.updateCell(container, cell.id, content.value);
+                        });
+                        content.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            this.selectCell(container, cell.id);
+                        });
+
+                        const zoomButton = document.createElement('button');
+                        zoomButton.className = 'shared-button';
+                        zoomButton.innerHTML = '<svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>';
+                        zoomButton.addEventListener('click', () => this.zoomIn(container, cell.id));
+
+                        cellElement.appendChild(content);
+                        if (cell.children.length > 0 || true) {
+                            cellElement.appendChild(zoomButton);
+                        }
+                        cellElement.addEventListener('click', () => this.selectCell(container, cell.id));
+                        cellContainer.appendChild(cellElement);
+                    });
+
+                    cellContainer.style.flexDirection = cellContainer.offsetWidth < 400 ? 'column' : 'row';
+                }
+            }
+        };
+
+        document.body.addEventListener('click', (event) => {
+            const button = event.target.closest('.shared-button');
+            if (!button) return;
+            const action = button.getAttribute('data-action');
+            const container = button.closest('.tooltip');
+            if (!container) return;
+
+            if (action === 'add-cell') {
+                App.branch1.addCell(container);
+            } else if (action === 'delete-cell') {
+                App.branch1.deleteCell(container);
+            }
+        });
+
+        App.init();
+    </script>
 </body>
 </html>

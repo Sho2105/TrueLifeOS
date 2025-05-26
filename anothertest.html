@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Web App</title>
+
+    <!-- CSS: Root Styles -->
+    <style>
+        :root {
+            --color1: #000000;
+            --color2: #FFFFFF;
+            --color3: #CCCCCC;
+            --color4: #333333;
+            --color5: #999999;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-size: clamp(14px, 4vw, 16px);
+            background: var(--color2);
+            color: var(--color1);
+            min-height: 100vh;
+            display: flex;
+            touch-action: manipulation;
+        }
+
+        .root-main {
+            max-width: 800px;
+            width: 100%;
+            margin: clamp(0.5rem, 2vw, 1rem) auto;
+            padding: clamp(0.5rem, 2vw, 1rem);
+        }
+
+        .root-paragraph {
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            font-size: clamp(1rem, 3vw, 1.1rem);
+        }
+
+        .root-clickable {
+            color: var(--color4);
+            cursor: pointer;
+            text-decoration: underline;
+            transition: color 0.2s;
+            padding: 0.2rem;
+        }
+
+        .root-clickable:hover {
+            color: var(--color1);
+        }
+
+        .root-loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--color2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: clamp(1rem, 3vw, 1.2rem);
+            font-size: 1.2rem;
+            z-index: 1000;
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+
+        .root-loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .branch-tooltip {
+            position: absolute;
+            background: var(--color2);
+            border: 1px solid var(--color3);
+            border-radius: 8px;
+            padding: clamp(0.5rem, 2vw, 1rem);
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+            width: clamp(200px, 80vw, 300px);
+            height: clamp(200px, 80vh, 400px);
+            min-width: 150px;
+            min-height: 150px;
+            max-width: 95vw;
+            max-height: 90vh;
+            resize: both;
+            overflow: hidden;
+        }
+
+        .branch-tooltip.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .branch-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: move;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--color3);
+        }
+
+        .branch-title {
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+            font-weight: 500;
+            flex-grow: 1;
+        }
+
+        .shared-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+        }
+
+        .shared-button svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--color4);
+        }
+
+        .shared-button:hover svg {
+            fill: var(--color5);
+        }
+
+        .shared-input:focus {
+            outline: 1px solid var(--color4);
+        }
+
+        .shared-scrollbar {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .shared-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .shared-content {
+            flex-grow: 1;
+            overflow: auto;
+        }
+
+        .dropdown-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--color2);
+            border: 1px solid var(--color3);
+            border-radius: 4px;
+            width: 200px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 101;
+            display: none;
+            flex-direction: column;
+            padding: 0.5rem;
+        }
+
+        .dropdown-menu.active {
+            display: flex;
+        }
+
+        .dropdown-search {
+            width: 100%;
+            padding: 0.4rem;
+            border: 1px solid var(--color3);
+            border-radius: 4px;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+            margin-bottom: 0.5rem;
+        }
+
+        .dropdown-item {
+            padding: 0.4rem;
+            cursor: pointer;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dropdown-item:hover {
+            background: var(--color3);
+        }
+
+        .dropdown-item.selected {
+            background: var(--color5);
+            color: var(--color2);
+        }
+
+        @media (max-width: 640px) {
+            .root-main {
+                padding: 0.5rem;
+            }
+
+            .branch-tooltip {
+                width: 95vw;
+                height: 85vh;
+            }
+
+            .shared-button {
+                width: 40px;
+                height: 40px;
+            }
+
+            .dropdown-menu {
+                width: 150px;
+            }
+        }
+    </style>
+    <!-- End CSS: Root Styles -->
+
+    <!-- CSS: Child Page Styles -->
+    <style>
+        .branch1-data-input {
+            width: 100%;
+            padding: clamp(0.4rem, 2vw, 0.5rem);
+            border: 1px solid var(--color3);
+            border-radius: 4px;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+            resize: none;
+            margin-bottom: 0;
+            font-family: monospace;
+            flex-grow: 1;
+        }
+
+        .branch1-data-container {
+            display: none;
+        }
+
+        .branch1-notes-list {
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .branch1-data-entry {
+            padding: clamp(0.4rem, 2vw, 0.5rem);
+            border-bottom: 1px solid var(--color3);
+            cursor: pointer;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .branch1-data-entry:hover {
+            background: var(--color3);
+        }
+
+        .branch1-data-entry.selected {
+            background: var(--color5);
+            color: var(--color2);
+        }
+
+        .branch1-view-content {
+            padding: 0.5rem;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+            line-height: 1.5;
+            white-space: pre-wrap;
+            overflow: auto;
+            flex-grow: 1;
+        }
+
+        .markdown-content h1 {
+            font-size: clamp(1.3rem, 4vw, 1.5rem);
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .markdown-content h2 {
+            font-size: clamp(1.1rem, 3.5vw, 1.2rem);
+            font-weight: bold;
+            margin-bottom: 0.4rem;
+        }
+
+        .markdown-content h3 {
+            font-size: clamp(1.1rem, 3.5vw, 1.3rem);
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+
+        .markdown-content h4 {
+            font-size: clamp(1rem, 3vw, 1.2rem);
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+
+        .markdown-content h5 {
+            font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+            font-weight: 500;
+            margin-bottom: 0.2rem;
+        }
+
+        .markdown-content h6 {
+            font-size: clamp(0.8rem, 2.5vw, 1rem);
+            font-weight: 500;
+            margin-bottom: 0.2rem;
+        }
+
+        .markdown-content del {
+            text-decoration: line-through;
+        }
+
+        .markdown-content code {
+            background: var(--color3);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .markdown-content pre {
+            background: var(--color3);
+            padding: 1rem;
+            border-radius: 4px;
+            overflow: auto;
+            font-family: monospace;
+            margin-bottom: 1rem;
+        }
+
+        .markdown-content blockquote {
+            border-left: 4px solid var(--color4);
+            padding-left: 1rem;
+            margin: 1rem 0;
+            color: var(--color5);
+        }
+
+        .markdown-content hr {
+            border: none;
+            border-top: 1px solid var(--color3);
+            margin: 1rem 0;
+        }
+
+        .markdown-content ol {
+            list-style: decimal;
+            padding-left: 1.5rem;
+            margin: 0.5rem 0;
+        }
+
+        .markdown-content ul ul,
+        .markdown-content ol ol,
+        .markdown-content ul ol,
+        .markdown-content ol ul {
+            margin-left: 1rem;
+        }
+
+        .markdown-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        .markdown-content th,
+        .markdown-content td {
+            border: 1px solid var(--color3);
+            padding: 0.5rem;
+            text-align: left;
+        }
+
+        .markdown-content th {
+            background: var(--color3);
+            font-weight: bold;
+        }
+
+        .markdown-content img {
+            max-width: 100%;
+            height: auto;
+            margin: 0.5rem 0;
+        }
+
+        .markdown-content strong {
+            font-weight: bold;
+        }
+
+        .markdown-content em {
+            font-style: italic;
+        }
+
+        .markdown-content ul {
+            list-style: none;
+            padding-left: 1.5rem;
+            margin: 0.5rem 0;
+        }
+
+        .markdown-content li {
+            position: relative;
+            margin-bottom: 0.25rem;
+        }
+
+        .markdown-content input[type="checkbox"] {
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+
+        .markdown-content a {
+            color: var(--color4);
+            text-decoration: underline;
+        }
+
+        .markdown-content a:hover {
+            color: var(--color5);
+        }
+    </style>
+    <!-- End CSS: Child Page Styles -->
+</head>
+
+<body>
+    <div id="root-loading-screen" class="root-loading-screen"></div>
+
+    <main class="root-main">
+        <p class="markdown-content">
+            Welcome to the app. Explore <span class="root-clickable" data-page="branch1">Notes</span>,
+            or check placeholders <span class="root-clickable" data-page="branch2">Tasks</span>,
+            <span class="root-clickable" data-page="branch3">Vault</span>,
+            <span class="root-clickable" data-page="branch4">Ideas</span>, or
+            <span class="root-clickable" data-page="branch5">Archive</span>. Use
+            <span class="root-clickable" data-action="save">save</span> or
+            <span class="root-clickable" data-action="load">load</span> to manage data.
+        </p>
+    </main>
+
+    <template id="branch1-template">
+        <section class="branch-tooltip shared-scrollbar" data-id="branch1" role="region" aria-label="Notes">
+            <div class="branch-header">
+                <span class="branch-title">Notes</span>
+                <button class="shared-button" data-action="create" title="Create">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                    </svg>
+                </button>
+                <button class="shared-button" data-action="apply" title="Apply Changes">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" />
+                    </svg>
+                </button>
+                <button class="shared-button" data-action="delete" title="Delete">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 13H5v-2h14v2z" />
+                    </svg>
+                </button>
+                <button class="shared-button" data-action="toggle-mode" title="View Mode">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z" />
+                    </svg>
+                </button>
+                <div class="dropdown-container">
+                    <button class="shared-button" data-action="toggle-dropdown" title="Select Note">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M7 10l5 5 5-5z" />
+                        </svg>
+                    </button>
+                    <div class="dropdown-menu shared-scrollbar">
+                        <input type="text" class="dropdown-search shared-input" placeholder="Search notes...">
+                        <div class="dropdown-items"></div>
+                    </div>
+                </div>
+                <button class="shared-button" data-action="close" title="Close">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                    </svg>
+                </button>
+            </div>
+            <textarea class="branch1-data-input shared-input shared-scrollbar" placeholder="Write note..."></textarea>
+            <div class="branch1-data-container shared-scrollbar">
+                <div class="branch1-notes-list shared-scrollbar"></div>
+            </div>
+        </section>
+    </template>
+    <template id="generic-branch-template">
+        <section class="branch-tooltip shared-scrollbar" role="region">
+            <div class="branch-header">
+                <span class="branch-title"></span>
+                <button class="shared-button" data-action="close" title="Close">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                    </svg>
+                </button>
+            </div>
+            <div class="shared-content shared-scrollbar"></div>
+        </section>
+    </template>
+
+    <!-- JS: App Logic -->
+    <script>
+        (function () {
+            console.log('[Background Task] Starting app');
+
+            const pageState = {
+                activePages: new Set(),
+                availablePages: ['branch1', 'branch2', 'branch3', 'branch4', 'branch5'],
+                pageTemplates: {
+                    branch1: 'branch1-template',
+                    branch2: 'generic-branch-template',
+                    branch3: 'generic-branch-template',
+                    branch4: 'generic-branch-template',
+                    branch5: 'generic-branch-template'
+                },
+                branchTitles: {
+                    branch1: 'Notes',
+                    branch2: 'Tasks',
+                    branch3: 'Vault',
+                    branch4: 'Ideas',
+                    branch5: 'Archive'
+                },
+                templateCache: new Map(),
+                branch1: {
+                    data: [],
+                    mode: 'edit',
+                    selectedIndex: null,
+                    dropdownOpen: false
+                }
+            };
+
+            const debounce = (func, wait) => {
+                let timeout;
+                return (...args) => {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(this, args), wait);
+                };
+            };
+
+            const App = {
+                init() {
+                    console.log('[Background Task] Initializing app');
+                    document.addEventListener('DOMContentLoaded', () => {
+                        console.log('[Background Task] DOM ready');
+                        try {
+                            const loadingScreen = document.querySelector('.root-loading-screen');
+                            setTimeout(() => {
+                                loadingScreen.classList.add('hidden');
+                                console.log('[Background Task] Loading screen off');
+                            }, 300);
+                            this.bindEvents();
+                        } catch (error) {
+                            console.error('[Error] App initialization failed:', error);
+                        }
+                    });
+                },
+
+                bindEvents() {
+                    console.log('[Background Task] Binding root events');
+                    document.querySelectorAll('.root-clickable').forEach(span => {
+                        span.addEventListener('click', () => {
+                            const pageId = span.getAttribute('data-page');
+                            const action = span.getAttribute('data-action');
+                            if (pageId) {
+                                console.log(`[Background Task] Opening page: ${pageId}`);
+                                this.toggleTooltip(pageId, span);
+                            } else if (action === 'save') {
+                                console.log('[Background Task] Saving data');
+                                this.saveData();
+                            } else if (action === 'load') {
+                                console.log('[Background Task] Loading data');
+                                this.loadData();
+                            }
+                        });
+                    });
+                },
+
+                toggleTooltip(pageId, triggerElement) {
+                    console.log(`[Background Task] Toggling tooltip: ${pageId}`);
+                    const existingTooltip = document.querySelector(`.branch-tooltip[data-id="${pageId}"]`);
+                    if (existingTooltip) {
+                        console.log(`[Background Task] Closing tooltip: ${pageId}`);
+                        this.closeTooltip(pageId);
+                        return;
+                    }
+
+                    if (!pageState.availablePages.includes(pageId)) {
+                        console.error(`[Error] Page not found: ${pageId}`);
+                        return;
+                    }
+
+                    let tooltip;
+                    try {
+                        if (pageState.templateCache.has(pageId)) {
+                            console.log(`[Background Task] Using cached template: ${pageId}`);
+                            tooltip = pageState.templateCache.get(pageId).cloneNode(true);
+                        } else {
+                            const template = document.getElementById(pageState.pageTemplates[pageId]);
+                            if (!template?.content?.firstElementChild) {
+                                throw new Error(`Template corrupt: ${pageId}`);
+                            }
+                            const rawTemplate = template.content.firstElementChild.cloneNode(true);
+                            pageState.templateCache.set(pageId, rawTemplate);
+                            tooltip = rawTemplate.cloneNode(true);
+                        }
+
+                        tooltip.dataset.id = pageId;
+                        tooltip.setAttribute('aria-label', pageState.branchTitles[pageId]);
+                        tooltip.querySelector('.branch-title').textContent = pageState.branchTitles[pageId];
+                        document.body.appendChild(tooltip);
+
+                        requestAnimationFrame(() => {
+                            try {
+                                const rect = triggerElement.getBoundingClientRect();
+                                const margin = 10;
+                                const maxWidth = Math.min(300, window.innerWidth - 2 * margin);
+                                const left = Math.max(margin, Math.min(rect.left + window.scrollX, window.innerWidth - maxWidth - margin));
+                                const top = Math.max(margin, Math.min(rect.bottom + window.scrollY + 5, window.innerHeight - tooltip.offsetHeight - margin));
+                                tooltip.style.left = `${left}px`;
+                                tooltip.style.top = `${top}px`;
+                                tooltip.classList.add('active');
+                                pageState.activePages.add(pageId);
+                                this.makeDraggable(tooltip);
+                                this.makeResizable(tooltip);
+
+                                const closeButton = tooltip.querySelector('.shared-button[data-action="close"]');
+                                if (closeButton) {
+                                    const closeHandler = () => this.closeTooltip(pageId);
+                                    closeButton.addEventListener('click', closeHandler);
+                                    tooltip._closeHandler = closeHandler;
+                                }
+
+                                if (pageId === 'branch1') {
+                                    console.log('[Background Task] Rendering branch1');
+                                    this.branch1.render(tooltip);
+                                }
+                            } catch (error) {
+                                console.error(`[Error] Tooltip setup failed: ${pageId}`, error);
+                                tooltip.remove();
+                                pageState.activePages.delete(pageId);
+                            }
+                        });
+                    } catch (error) {
+                        console.error(`[Error] Template load failed: ${pageId}`, error);
+                    }
+                },
+
+                closeTooltip(pageId) {
+                    console.log(`[Background Task] Closing tooltip: ${pageId}`);
+                    const tooltip = document.querySelector(`.branch-tooltip[data-id="${pageId}"]`);
+                    if (tooltip) {
+                        tooltip.classList.remove('active');
+                        setTimeout(() => {
+                            if (tooltip._closeHandler) {
+                                tooltip.querySelector('.shared-button[data-action="close"]').removeEventListener('click', tooltip._closeHandler);
+                            }
+                            tooltip.remove();
+                            console.log(`[Background Task] Tooltip removed: ${pageId}`);
+                        }, 300);
+                        pageState.activePages.delete(pageId);
+                    }
+                },
+
+                makeDraggable(tooltip) {
+                    console.log('[Background Task] Setting up draggable tooltip');
+                    const header = tooltip.querySelector('.branch-header');
+                    let isDragging = false, startX, startY, initialX, initialY;
+
+                    const startDrag = (x, y) => {
+                        if (pageState.branch1.dropdownOpen) return;
+                        isDragging = true;
+                        startX = x;
+                        startY = y;
+                        const rect = tooltip.getBoundingClientRect();
+                        initialX = rect.left;
+                        initialY = rect.top;
+                        document.body.style.userSelect = 'none';
+                    };
+
+                    const moveDrag = debounce((x, y) => {
+                        if (!isDragging) return;
+                        const dx = x - startX;
+                        const dy = y - startY;
+                        tooltip.style.left = `${initialX + dx}px`;
+                        tooltip.style.top = `${initialY + dy}px`;
+                        tooltip.style.transform = 'none';
+                    }, 10);
+
+                    const endDrag = () => {
+                        isDragging = false;
+                        document.body.style.userSelect = '';
+                    };
+
+                    const mouseDownHandler = (e) => {
+                        if (e.target.closest('.shared-button') || e.target.closest('.dropdown-container')) return;
+                        startDrag(e.clientX, e.clientY);
+                    };
+
+                    const touchStartHandler = (e) => {
+                        if (e.target.closest('.shared-button') || e.target.closest('.dropdown-container')) return;
+                        e.preventDefault();
+                        startDrag(e.touches[0].clientX, e.touches[0].clientY);
+                    };
+
+                    const mouseMoveHandler = (e) => moveDrag(e.clientX, e.clientY);
+                    const touchMoveHandler = (e) => {
+                        e.preventDefault();
+                        moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+                    };
+
+                    const mouseUpHandler = endDrag;
+                    const touchEndHandler = endDrag;
+
+                    header.addEventListener('mousedown', mouseDownHandler);
+                    header.addEventListener('touchstart', touchStartHandler);
+                    document.addEventListener('mousemove', mouseMoveHandler);
+                    document.addEventListener('touchmove', touchMoveHandler, { passive: false });
+                    document.addEventListener('mouseup', mouseUpHandler);
+                    document.addEventListener('touchend', touchEndHandler);
+
+                    tooltip._dragCleanup = () => {
+                        header.removeEventListener('mousedown', mouseDownHandler);
+                        header.removeEventListener('touchstart', touchStartHandler);
+                        document.removeEventListener('mousemove', mouseMoveHandler);
+                        document.removeEventListener('touchmove', touchMoveHandler);
+                        document.removeEventListener('mouseup', mouseUpHandler);
+                        document.removeEventListener('touchend', touchEndHandler);
+                    };
+                },
+
+                makeResizable(tooltip) {
+                    console.log('[Background Task] Setting up resizable tooltip');
+                    tooltip.style.resize = 'both';
+                    let isResizing = false, startX, startY, startWidth, startHeight;
+
+                    const startResize = (x, y) => {
+                        const rect = tooltip.getBoundingClientRect();
+                        if (x > rect.right - 15 && y > rect.bottom - 15) {
+                            isResizing = true;
+                            startX = x;
+                            startY = y;
+                            startWidth = rect.width;
+                            startHeight = rect.height;
+                            document.body.style.userSelect = 'none';
+                        }
+                    };
+
+                    const moveResize = debounce((x, y) => {
+                        if (!isResizing) return;
+                        const dx = x - startX;
+                        const dy = y - startY;
+                        tooltip.style.width = `${Math.max(150, startWidth + dx)}px`;
+                        tooltip.style.height = `${Math.max(150, startHeight + dy)}px`;
+                    }, 10);
+
+                    const endResize = () => {
+                        isResizing = false;
+                        document.body.style.userSelect = '';
+                    };
+
+                    const mouseDownHandler = (e) => startResize(e.clientX, e.clientY);
+                    const touchStartHandler = (e) => {
+                        e.preventDefault();
+                        startResize(e.touches[0].clientX, e.touches[0].clientY);
+                    };
+
+                    const mouseMoveHandler = (e) => moveResize(e.clientX, e.clientY);
+                    const touchMoveHandler = (e) => {
+                        e.preventDefault();
+                        moveResize(e.touches[0].clientX, e.touches[0].clientY);
+                    };
+
+                    const mouseUpHandler = endResize;
+                    const touchEndHandler = endResize;
+
+                    tooltip.addEventListener('mousedown', mouseDownHandler);
+                    tooltip.addEventListener('touchstart', touchStartHandler);
+                    document.addEventListener('mousemove', mouseMoveHandler);
+                    document.addEventListener('touchmove', touchMoveHandler, { passive: false });
+                    document.addEventListener('mouseup', mouseUpHandler);
+                    document.addEventListener('touchend', touchEndHandler);
+
+                    tooltip._resizeCleanup = () => {
+                        tooltip.removeEventListener('mousedown', mouseDownHandler);
+                        tooltip.removeEventListener('touchstart', touchStartHandler);
+                        document.removeEventListener('mousemove', mouseMoveHandler);
+                        document.removeEventListener('touchmove', touchMoveHandler);
+                        document.removeEventListener('mouseup', mouseUpHandler);
+                        document.removeEventListener('touchend', touchEndHandler);
+                    };
+                },
+
+                saveData() {
+                    console.log('[Background Task] Saving data');
+                    try {
+                        const data = { branch1: { data: pageState.branch1.data } };
+                        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'notes-data.json';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        console.log('[Background Task] Data saved');
+                    } catch (error) {
+                        console.error('[Error] Save failed:', error);
+                    }
+                },
+
+                loadData() {
+                    console.log('[Background Task] Loading data');
+                    try {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'application/json';
+                        input.addEventListener('change', (event) => {
+                            const file = event.target.files[0];
+                            if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (e) => {
+                                    try {
+                                        const data = JSON.parse(e.target.result);
+                                        if (data.branch1?.data) {
+                                            pageState.branch1.data = data.branch1.data;
+                                            document.querySelectorAll('.branch-tooltip[data-id="branch1"]').forEach(tooltip => {
+                                                console.log('[Background Task] Rendering branch1 after load');
+                                                this.branch1.render(tooltip);
+                                            });
+                                            console.log('[Background Task] Data loaded');
+                                        }
+                                    } catch (error) {
+                                        console.error('[Error] Load failed:', error);
+                                    }
+                                };
+                                reader.readAsText(file);
+                            }
+                        });
+                        input.click();
+                    } catch (error) {
+                        console.error('[Error] Load setup failed:', error);
+                    }
+                }
+            };
+
+            App.branch1 = {
+                parseMarkdown(text) {
+                    console.log('[Background Task] Parsing markdown');
+                    try {
+                        return text
+                            .replace(/^###### (.*)$/gm, '<h6>$1</h6>')
+                            .replace(/^##### (.*)$/gm, '<h5>$1</h5>')
+                            .replace(/^#### (.*)$/gm, '<h4>$1</h4>')
+                            .replace(/^### (.*)$/gm, '<h3>$1</h3>')
+                            .replace(/^## (.*)$/gm, '<h2>$1</h2>')
+                            .replace(/^# (.*)$/gm, '<h1>$1</h1>')
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                            .replace(/~~(.*?)~~/g, '<del>$1</del>')
+                            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+                            .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%;">')
+                            .replace(/`([^`]+)`/g, '<code>$1</code>')
+                            .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+                            .replace(/^> (.*)$/gm, '<blockquote>$1</blockquote>')
+                            .replace(/^---$/gm, '<hr>')
+                            .replace(/^- \[ \](.*)$/gm, '<ul><li><input type="checkbox" disabled> $1</li></ul>')
+                            .replace(/^- \[x\](.*)$/gm, '<ul><li><input type="checkbox" checked disabled> $1</li></ul>')
+                            .replace(/^- (.*)$/gm, '<ul><li>$1</li></ul>')
+                            .replace(/^\d+\. (.*)$/gm, '<ol><li>$1</li></ol>')
+                            .replace(/<\/ul>\s*<ul>/g, '')
+                            .replace(/<\/ol>\s*<ol>/g, '')
+                            .replace(/^( *- |\d+\. )(.*)$/gm, (match, marker, content) => {
+                                const level = match.match(/^( *)/)[1].length / 2;
+                                const tag = marker.trim().startsWith('-') ? 'ul' : 'ol';
+                                return `${'  '.repeat(level)}<${tag}><li>${content}</li></${tag}>`;
+                            })
+                            .replace(/^\|(.+)\|$/gm, (match, row) => {
+                                const cells = row.split('|').map(cell => cell.trim()).filter(cell => cell);
+                                if (row.includes('---')) return '';
+                                const isHeader = text.match(/^\|(.+)\|\n\|[-: ]+\|$/m);
+                                const tag = isHeader && text.indexOf(row) < text.indexOf('---') ? 'th' : 'td';
+                                return `<tr>${cells.map(cell => `<${tag}>${cell}</${tag}>`).join('')}</tr>`;
+                            })
+                            .replace(/(<tr>[\s\S]*?<\/tr>)/g, '<table>$1</table>')
+                            .replace(/\n/g, '<br>')
+                            .replace(/<table>\s*<\/table>/g, '');
+                    } catch (error) {
+                        console.error('[Error] Markdown parsing failed:', error);
+                        return text;
+                    }
+                },
+
+                create(container) {
+                    console.log('[Background Task] Creating note');
+                    try {
+                        const input = container.querySelector('.branch1-data-input');
+                        if (input.value.trim()) {
+                            pageState.branch1.data.push(input.value.trim());
+                            input.value = '';
+                            pageState.branch1.selectedIndex = pageState.branch1.data.length - 1;
+                            this.render(container);
+                            console.log('[Background Task] Note created');
+                        }
+                    } catch (error) {
+                        console.error('[Error] Create note failed:', error);
+                    }
+                },
+
+                apply(container) {
+                    console.log('[Background Task] Applying note changes');
+                    try {
+                        const input = container.querySelector('.branch1-data-input');
+                        if (pageState.branch1.selectedIndex !== null && input.value.trim()) {
+                            pageState.branch1.data[pageState.branch1.selectedIndex] = input.value.trim();
+                            this.render(container);
+                            console.log('[Background Task] Note updated');
+                        }
+                    } catch (error) {
+                        console.error('[Error] Apply note failed:', error);
+                    }
+                },
+
+                delete(container) {
+                    console.log('[Background Task] Deleting note');
+                    try {
+                        if (pageState.branch1.selectedIndex !== null) {
+                            pageState.branch1.data.splice(pageState.branch1.selectedIndex, 1);
+                            pageState.branch1.selectedIndex = null;
+                            container.querySelector('.branch1-data-input').value = '';
+                            this.render(container);
+                            console.log('[Background Task] Note deleted');
+                        }
+                    } catch (error) {
+                        console.error('[Error] Delete note failed:', error);
+                    }
+                },
+
+                select(container, index) {
+                    console.log(`[Background Task] Selecting note: ${index}`);
+                    try {
+                        const input = container.querySelector('.branch1-data-input');
+                        const entries = container.querySelectorAll('.branch1-data-entry, .dropdown-item');
+                        entries.forEach(entry => entry.classList.remove('selected'));
+                        if (index !== null) {
+                            const entry = container.querySelector(`.dropdown-item[data-index="${index}"]`);
+                            const listEntry = container.querySelector(`.branch1-data-entry[data-index="${index}"]`);
+                            if (entry) entry.classList.add('selected');
+                            if (listEntry) listEntry.classList.add('selected');
+                            input.value = pageState.branch1.data[index] || '';
+                            pageState.branch1.selectedIndex = index;
+                        } else {
+                            input.value = '';
+                            pageState.branch1.selectedIndex = null;
+                        }
+                    } catch (error) {
+                        console.error('[Error] Select note failed:', error);
+                    }
+                },
+
+                toggleMode(container) {
+                    console.log('[Background Task] Toggling mode');
+                    try {
+                        pageState.branch1.mode = pageState.branch1.mode === 'edit' ? 'view' : 'edit';
+                        const toggleButton = container.querySelector('.shared-button[data-action="toggle-mode"]');
+                        toggleButton.setAttribute('title', pageState.branch1.mode === 'edit' ? 'View Mode' : 'Edit Mode');
+                        this.render(container);
+                        console.log(`[Background Task] Mode set to: ${pageState.branch1.mode}`);
+                    } catch (error) {
+                        console.error('[Error] Toggle mode failed:', error);
+                    }
+                },
+
+                toggleDropdown(container) {
+                    console.log('[Background Task] Toggling dropdown');
+                    try {
+                        const dropdown = container.querySelector('.dropdown-menu');
+                        pageState.branch1.dropdownOpen = !pageState.branch1.dropdownOpen;
+                        dropdown.classList.toggle('active', pageState.branch1.dropdownOpen);
+                        if (pageState.branch1.dropdownOpen) {
+                            this.renderDropdown(container);
+                            const searchInput = container.querySelector('.dropdown-search');
+                            searchInput.focus();
+                            console.log('[Background Task] Dropdown opened');
+                        } else {
+                            console.log('[Background Task] Dropdown closed');
+                        }
+                    } catch (error) {
+                        console.error('[Error] Toggle dropdown failed:', error);
+                    }
+                },
+
+                renderDropdown(container) {
+                    console.log('[Background Task] Rendering dropdown');
+                    try {
+                        const dropdownItems = container.querySelector('.dropdown-items');
+                        const searchInput = container.querySelector('.dropdown-search');
+                        dropdownItems.innerHTML = '';
+
+                        const searchTerm = searchInput.value.toLowerCase();
+                        const filteredData = pageState.branch1.data
+                            .map((data, index) => ({ data, index }))
+                            .filter(({ data }) => data.toLowerCase().includes(searchTerm));
+
+                        filteredData.forEach(({ data, index }) => {
+                            const item = document.createElement('div');
+                            item.className = 'dropdown-item';
+                            item.dataset.index = index;
+                            item.textContent = data.split('\n')[0] || 'Untitled';
+                            item.addEventListener('click', () => {
+                                this.select(container, index);
+                                this.toggleDropdown(container);
+                            });
+                            if (pageState.branch1.selectedIndex === index) item.classList.add('selected');
+                            dropdownItems.appendChild(item);
+                        });
+
+                        searchInput.addEventListener('input', () => this.renderDropdown(container));
+                        console.log('[Background Task] Dropdown rendered');
+                    } catch (error) {
+                        console.error('[Error] Render dropdown failed:', error);
+                    }
+                },
+
+                render(container) {
+                    console.log('[Background Task] Rendering branch1');
+                    try {
+                        const dataContainer = container.querySelector('.branch1-data-container');
+                        const notesList = container.querySelector('.branch1-notes-list');
+                        const input = container.querySelector('.branch1-data-input');
+                        notesList.innerHTML = '';
+
+                        if (pageState.branch1.mode === 'edit') {
+                            input.style.display = 'block';
+                            dataContainer.style.display = 'none';
+                            input.style.height = '100%';
+                        } else {
+                            input.style.display = 'none';
+                            dataContainer.style.display = 'flex';
+                            dataContainer.style.height = '100%';
+                            if (pageState.branch1.selectedIndex !== null && pageState.branch1.data[pageState.branch1.selectedIndex]) {
+                                const entryElement = document.createElement('div');
+                                entryElement.className = 'branch1-view-content shared-scrollbar markdown-content';
+                                entryElement.innerHTML = this.parseMarkdown(pageState.branch1.data[pageState.branch1.selectedIndex]);
+                                entryElement.addEventListener('click', () => this.select(container, pageState.branch1.selectedIndex));
+                                notesList.appendChild(entryElement);
+                            } else if (pageState.branch1.data.length > 0) {
+                                pageState.branch1.data.forEach((data, index) => {
+                                    const entryElement = document.createElement('div');
+                                    entryElement.className = 'branch1-view-content shared-scrollbar markdown-content';
+                                    entryElement.innerHTML = this.parseMarkdown(data);
+                                    entryElement.addEventListener('click', () => this.select(container, index));
+                                    if (pageState.branch1.selectedIndex === index) entryElement.classList.add('selected');
+                                    notesList.appendChild(entryElement);
+                                });
+                            }
+                        }
+
+                        if (pageState.branch1.dropdownOpen) {
+                            this.renderDropdown(container);
+                        }
+                        console.log('[Background Task] Branch1 rendered');
+                    } catch (error) {
+                        console.error('[Error] Render branch1 failed:', error);
+                    }
+                }
+            };
+
+            document.body.addEventListener('click', (event) => {
+                const button = event.target.closest('.shared-button');
+                const container = button?.closest('.branch-tooltip');
+                if (!container) {
+                    document.querySelectorAll('.dropdown-menu.active').forEach(dropdown => {
+                        dropdown.classList.remove('active');
+                        pageState.branch1.dropdownOpen = false;
+                        console.log('[Background Task] Dropdown closed via outside click');
+                    });
+                    return;
+                }
+
+                if (!button) return;
+                const action = button.getAttribute('data-action');
+                console.log(`[Background Task] Button clicked: ${action}`);
+
+                try {
+                    if (action === 'create') App.branch1.create(container);
+                    else if (action === 'apply') App.branch1.apply(container);
+                    else if (action === 'delete') App.branch1.delete(container);
+                    else if (action === 'toggle-mode') App.branch1.toggleMode(container);
+                    else if (action === 'toggle-dropdown') App.branch1.toggleDropdown(container);
+                } catch (error) {
+                    console.error(`[Error] Button action failed: ${action}`, error);
+                }
+            });
+
+            App.init();
+        })();
+    </script>
+    <!-- End JS: App Logic -->
+</body>
+
+</html>
