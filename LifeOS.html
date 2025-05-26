@@ -2,8 +2,8 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Minimal Web App</title>
 
     <!-- CSS: Root Styles -->
@@ -424,6 +424,67 @@
         .markdown-content a:hover {
             color: var(--color5);
         }
+
+        /* Branch2 Finance Tracker Styles */
+        .branch2-balance {
+            font-size: clamp(1.5rem, 5vw, 2rem);
+            font-weight: bold;
+            text-align: center;
+            padding: 1rem;
+            flex-grow: 0;
+        }
+
+        .branch2-input-container {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .branch2-amount-input {
+            width: 100px;
+            padding: 0.4rem;
+            border: 1px solid var(--color3);
+            border-radius: 4px;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+        }
+
+        .branch2-transaction-log {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+
+        .branch2-transaction {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.4rem;
+            border-bottom: 1px solid var(--color3);
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+        }
+
+        .branch2-chart {
+            padding: 0.5rem;
+            border-top: 1px solid var(--color3);
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+        }
+
+        .branch2-chart table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .branch2-chart th,
+        .branch2-chart td {
+            border: 1px solid var(--color3);
+            padding: 0.3rem;
+            text-align: left;
+        }
+
+        .branch2-chart th {
+            background: var(--color3);
+        }
     </style>
     <!-- End CSS: Child Page Styles -->
 </head>
@@ -434,8 +495,8 @@
     <main class="root-main">
         <p class="markdown-content">
             Welcome to the app. Explore <span class="root-clickable" data-page="branch1">Notes</span>,
-            or check placeholders <span class="root-clickable" data-page="branch2">Tasks</span>,
-            <span class="root-clickable" data-page="branch3">Vault</span>,
+            <span class="root-clickable" data-page="branch2">Finance</span>,
+            or check placeholders <span class="root-clickable" data-page="branch3">Vault</span>,
             <span class="root-clickable" data-page="branch4">Ideas</span>, or
             <span class="root-clickable" data-page="branch5">Archive</span>. Use
             <span class="root-clickable" data-action="save">save</span> or
@@ -492,6 +553,54 @@
             </div>
         </section>
     </template>
+
+    <template id="branch2-template">
+        <section class="branch-tooltip shared-scrollbar" data-id="branch2" role="region" aria-label="Finance">
+            <div class="branch-header">
+                <span class="branch-title">Finance</span>
+                <button class="shared-button" data-action="add" title="Add Money">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                    </svg>
+                </button>
+                <button class="shared-button" data-action="subtract" title="Subtract Money">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 13H5v-2h14v2z" />
+                    </svg>
+                </button>
+                <button class="shared-button" data-action="reset" title="Double-click to Reset Balance">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                    </svg>
+                </button>
+                <div class="dropdown-container">
+                    <button class="shared-button" data-action="toggle-dropdown" title="Select Tag">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M7 10l5 5 5-5z" />
+                        </svg>
+                    </button>
+                    <div class="dropdown-menu shared-scrollbar">
+                        <input type="text" class="dropdown-search shared-input" placeholder="Add or select tag...">
+                        <div class="dropdown-items"></div>
+                    </div>
+                </div>
+                <button class="shared-button" data-action="close" title="Close">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                    </svg>
+                </button>
+            </div>
+            <div class="branch2-balance">0 VND</div>
+            <div class="branch2-input-container">
+                <input type="number" class="branch2-amount-input shared-input" placeholder="Amount (VND)" min="0">
+            </div>
+            <div class="branch2-transaction-log shared-content shared-scrollbar"></div>
+            <div class="branch2-chart shared-scrollbar"></div>
+        </section>
+    </template>
+
     <template id="generic-branch-template">
         <section class="branch-tooltip shared-scrollbar" role="region">
             <div class="branch-header">
@@ -508,6 +617,7 @@
     </template>
 
     <!-- JS: App Logic -->
+    <!-- Replace the entire <script> section in your JS -->
     <script>
         (function () {
             console.log('[Background Task] Starting app');
@@ -517,14 +627,14 @@
                 availablePages: ['branch1', 'branch2', 'branch3', 'branch4', 'branch5'],
                 pageTemplates: {
                     branch1: 'branch1-template',
-                    branch2: 'generic-branch-template',
+                    branch2: 'branch2-template',
                     branch3: 'generic-branch-template',
                     branch4: 'generic-branch-template',
                     branch5: 'generic-branch-template'
                 },
                 branchTitles: {
                     branch1: 'Notes',
-                    branch2: 'Tasks',
+                    branch2: 'Finance',
                     branch3: 'Vault',
                     branch4: 'Ideas',
                     branch5: 'Archive'
@@ -534,6 +644,13 @@
                     data: [],
                     mode: 'edit',
                     selectedIndex: null,
+                    dropdownOpen: false
+                },
+                branch2: {
+                    balance: 0,
+                    tags: ['Food', 'Salary', 'Transport'],
+                    transactions: [],
+                    selectedTag: null,
                     dropdownOpen: false
                 }
             };
@@ -578,6 +695,21 @@
                                 this.saveData();
                             } else if (action === 'load') {
                                 console.log('[Background Task] Loading data');
+                                this.loadData();
+                            }
+                        });
+                        span.addEventListener('touchend', (e) => {
+                            e.preventDefault();
+                            const pageId = span.getAttribute('data-page');
+                            const action = span.getAttribute('data-action');
+                            if (pageId) {
+                                console.log(`[Background Task] Opening page via touch: ${pageId}`);
+                                this.toggleTooltip(pageId, span);
+                            } else if (action === 'save') {
+                                console.log('[Background Task] Saving data via touch');
+                                this.saveData();
+                            } else if (action === 'load') {
+                                console.log('[Background Task] Loading data via touch');
                                 this.loadData();
                             }
                         });
@@ -636,12 +768,19 @@
                                 if (closeButton) {
                                     const closeHandler = () => this.closeTooltip(pageId);
                                     closeButton.addEventListener('click', closeHandler);
+                                    closeButton.addEventListener('touchend', (e) => {
+                                        e.preventDefault();
+                                        closeHandler();
+                                    });
                                     tooltip._closeHandler = closeHandler;
                                 }
 
                                 if (pageId === 'branch1') {
                                     console.log('[Background Task] Rendering branch1');
                                     this.branch1.render(tooltip);
+                                } else if (pageId === 'branch2') {
+                                    console.log('[Background Task] Rendering branch2');
+                                    this.branch2.render(tooltip);
                                 }
                             } catch (error) {
                                 console.error(`[Error] Tooltip setup failed: ${pageId}`, error);
@@ -663,6 +802,8 @@
                             if (tooltip._closeHandler) {
                                 tooltip.querySelector('.shared-button[data-action="close"]').removeEventListener('click', tooltip._closeHandler);
                             }
+                            if (tooltip._dragCleanup) tooltip._dragCleanup();
+                            if (tooltip._resizeCleanup) tooltip._resizeCleanup();
                             tooltip.remove();
                             console.log(`[Background Task] Tooltip removed: ${pageId}`);
                         }, 300);
@@ -676,7 +817,7 @@
                     let isDragging = false, startX, startY, initialX, initialY;
 
                     const startDrag = (x, y) => {
-                        if (pageState.branch1.dropdownOpen) return;
+                        if (pageState.branch1?.dropdownOpen || pageState.branch2?.dropdownOpen) return;
                         isDragging = true;
                         startX = x;
                         startY = y;
@@ -802,12 +943,19 @@
                 saveData() {
                     console.log('[Background Task] Saving data');
                     try {
-                        const data = { branch1: { data: pageState.branch1.data } };
+                        const data = {
+                            branch1: { data: pageState.branch1.data },
+                            branch2: {
+                                balance: pageState.branch2.balance,
+                                tags: pageState.branch2.tags,
+                                transactions: pageState.branch2.transactions
+                            }
+                        };
                         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;
-                        a.download = 'notes-data.json';
+                        a.download = 'app-data.json';
                         a.click();
                         URL.revokeObjectURL(url);
                         console.log('[Background Task] Data saved');
@@ -835,8 +983,17 @@
                                                 console.log('[Background Task] Rendering branch1 after load');
                                                 this.branch1.render(tooltip);
                                             });
-                                            console.log('[Background Task] Data loaded');
                                         }
+                                        if (data.branch2) {
+                                            pageState.branch2.balance = data.branch2.balance || 0;
+                                            pageState.branch2.tags = data.branch2.tags || ['Food', 'Salary', 'Transport'];
+                                            pageState.branch2.transactions = data.branch2.transactions || [];
+                                            document.querySelectorAll('.branch-tooltip[data-id="branch2"]').forEach(tooltip => {
+                                                console.log('[Background Task] Rendering branch2 after load');
+                                                this.branch2.render(tooltip);
+                                            });
+                                        }
+                                        console.log('[Background Task] Data loaded');
                                     } catch (error) {
                                         console.error('[Error] Load failed:', error);
                                     }
@@ -1018,6 +1175,11 @@
                                 this.select(container, index);
                                 this.toggleDropdown(container);
                             });
+                            item.addEventListener('touchend', (e) => {
+                                e.preventDefault();
+                                this.select(container, index);
+                                this.toggleDropdown(container);
+                            });
                             if (pageState.branch1.selectedIndex === index) item.classList.add('selected');
                             dropdownItems.appendChild(item);
                         });
@@ -1050,6 +1212,10 @@
                                 entryElement.className = 'branch1-view-content shared-scrollbar markdown-content';
                                 entryElement.innerHTML = this.parseMarkdown(pageState.branch1.data[pageState.branch1.selectedIndex]);
                                 entryElement.addEventListener('click', () => this.select(container, pageState.branch1.selectedIndex));
+                                entryElement.addEventListener('touchend', (e) => {
+                                    e.preventDefault();
+                                    this.select(container, pageState.branch1.selectedIndex);
+                                });
                                 notesList.appendChild(entryElement);
                             } else if (pageState.branch1.data.length > 0) {
                                 pageState.branch1.data.forEach((data, index) => {
@@ -1057,6 +1223,10 @@
                                     entryElement.className = 'branch1-view-content shared-scrollbar markdown-content';
                                     entryElement.innerHTML = this.parseMarkdown(data);
                                     entryElement.addEventListener('click', () => this.select(container, index));
+                                    entryElement.addEventListener('touchend', (e) => {
+                                        e.preventDefault();
+                                        this.select(container, index);
+                                    });
                                     if (pageState.branch1.selectedIndex === index) entryElement.classList.add('selected');
                                     notesList.appendChild(entryElement);
                                 });
@@ -1073,6 +1243,243 @@
                 }
             };
 
+            App.branch2 = {
+                formatVND(amount) {
+                    console.log('[Background] Formatting VND');
+                    try {
+                        return amount.toLocaleString('vi-VN') + ' VND';
+                    } catch (error) {
+                        console.error('[Background Error] Formatting VND failed:', error);
+                        return amount + ' VND';
+                    }
+                },
+
+                addTransaction(container, type) {
+                    console.log(`[Background] Adding transaction: ${type}`);
+                    try {
+                        const amountInput = container.querySelector('.branch2-amount-input');
+                        const amount = parseFloat(amountInput.value);
+                        if (isNaN(amount) || amount <= 0) {
+                            amountInput.value = '';
+                            return;
+                        }
+                        if (!pageState.branch2.selectedTag) {
+                            pageState.branch2.selectedTag = pageState.branch2.tags[0] || 'Uncategorized';
+                        }
+                        const date = new Date().toISOString();
+                        const transaction = { date, amount, type, tag: pageState.branch2.selectedTag };
+                        pageState.branch2.transactions.unshift(transaction);
+                        pageState.branch2.balance += type === 'add' ? amount : -amount;
+                        amountInput.value = '';
+                        this.render(container);
+                        console.log('[Background] Transaction added');
+                    } catch (error) {
+                        console.error('[Background Error] Add transaction failed:', error);
+                    }
+                },
+
+                deleteTransaction(container, index) {
+                    console.log(`[Background] Deleting transaction at index: ${index}`);
+                    try {
+                        const transaction = pageState.branch2.transactions[index];
+                        if (transaction) {
+                            pageState.branch2.balance -= transaction.type === 'add' ? transaction.amount : -transaction.amount;
+                            pageState.branch2.transactions.splice(index, 1);
+                            this.render(container);
+                            console.log('[Background] Transaction deleted');
+                        }
+                    } catch (error) {
+                        console.error('[Background Error] Delete transaction failed:', error);
+                    }
+                },
+
+                reset(container) {
+                    console.log('[Background] Resetting finance data');
+                    try {
+                        pageState.branch2.balance = 0;
+                        pageState.branch2.tags = ['Food', 'Salary', 'Transport'];
+                        pageState.branch2.transactions = [];
+                        pageState.branch2.selectedTag = null;
+                        this.render(container);
+                        console.log('[Background] Finance data reset');
+                    } catch (error) {
+                        console.error('[Background Error] Reset failed:', error);
+                    }
+                },
+
+                selectTag(container, tag) {
+                    console.log(`[Background] Selecting tag: ${tag}`);
+                    try {
+                        pageState.branch2.selectedTag = tag;
+                        this.renderDropdown(container);
+                        this.toggleDropdown(container);
+                        console.log('[Background] Tag selected');
+                    } catch (error) {
+                        console.error('[Background Error] Select tag failed:', error);
+                    }
+                },
+
+                addTag(container, tag) {
+                    console.log(`[Background] Adding tag: ${tag}`);
+                    try {
+                        if (tag.trim() && !pageState.branch2.tags.includes(tag.trim())) {
+                            pageState.branch2.tags.push(tag.trim());
+                            pageState.branch2.selectedTag = tag.trim();
+                            this.renderDropdown(container);
+                            this.toggleDropdown(container);
+                            console.log('[Background] Tag added');
+                        }
+                    } catch (error) {
+                        console.error('[Background Error] Add tag failed:', error);
+                    }
+                },
+
+                toggleDropdown(container) {
+                    console.log('[Background] Toggling dropdown');
+                    try {
+                        const dropdown = container.querySelector('.dropdown-menu');
+                        pageState.branch2.dropdownOpen = !pageState.branch2.dropdownOpen;
+                        dropdown.classList.toggle('active', pageState.branch2.dropdownOpen);
+                        if (pageState.branch2.dropdownOpen) {
+                            this.renderDropdown(container);
+                            const searchInput = container.querySelector('.dropdown-search');
+                            searchInput.focus();
+                            console.log('[Background] Dropdown opened');
+                        } else {
+                            console.log('[Background] Dropdown closed');
+                        }
+                    } catch (error) {
+                        console.error('[Background Error] Toggle dropdown failed:', error);
+                    }
+                },
+
+                renderDropdown(container) {
+                    console.log('[Background] Rendering dropdown');
+                    try {
+                        const dropdownItems = container.querySelector('.dropdown-items');
+                        const searchInput = container.querySelector('.dropdown-search');
+                        dropdownItems.innerHTML = '';
+
+                        const searchTerm = searchInput.value.trim();
+                        const filteredTags = pageState.branch2.tags.filter(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+
+                        if (searchTerm && !pageState.branch2.tags.includes(searchTerm)) {
+                            const addItem = document.createElement('div');
+                            addItem.className = 'dropdown-item';
+                            addItem.textContent = `Add "${searchTerm}"`;
+                            addItem.addEventListener('click', () => {
+                                this.addTag(container, searchTerm);
+                                searchInput.value = '';
+                            });
+                            addItem.addEventListener('touchend', (e) => {
+                                e.preventDefault();
+                                this.addTag(container, searchTerm);
+                                searchInput.value = '';
+                            });
+                            dropdownItems.appendChild(addItem);
+                        }
+
+                        filteredTags.forEach(tag => {
+                            const item = document.createElement('div');
+                            item.className = 'dropdown-item';
+                            item.textContent = tag;
+                            item.addEventListener('click', () => this.selectTag(container, tag));
+                            item.addEventListener('touchend', (e) => {
+                                e.preventDefault();
+                                this.selectTag(container, tag);
+                            });
+                            if (pageState.branch2.selectedTag === tag) item.classList.add('selected');
+                            dropdownItems.appendChild(item);
+                        });
+
+                        searchInput.addEventListener('input', () => this.renderDropdown(container));
+                        console.log('[Background] Dropdown loaded');
+                    } catch (error) {
+                        console.error('[Background Error] Render dropdown failed:', error);
+                    }
+                },
+
+                renderChart(container) {
+                    console.log('[Background] Rendering chart');
+                    try {
+                        const chart = container.querySelector('.branch2-chart');
+                        const now = new Date();
+                        const currentMonth = now.getMonth();
+                        const currentYear = now.getFullYear();
+
+                        const monthlyTransactions = pageState.branch2.transactions.filter(t => {
+                            const date = new Date(t.date);
+                            return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+                        });
+
+                        const tagSummary = {};
+                        pageState.branch2.tags.forEach(tag => {
+                            tagSummary[tag] = { in: 0, out: 0 };
+                        });
+
+                        monthlyTransactions.forEach(t => {
+                            if (tagSummary[t.tag]) {
+                                if (t.type === 'add') tagSummary[t.tag].in += t.amount;
+                                else tagSummary[t.tag].out += t.amount;
+                            }
+                        });
+
+                        let html = '<table><tr><th>Tag</th><th>In (VND)</th><th>Out (VND)</th></tr>';
+                        for (const [tag, { in: inflow, out: outflow }] of Object.entries(tagSummary)) {
+                            if (inflow || outflow) {
+                                html += `<tr><td>${tag}</td><td>${this.formatVND(inflow)}</td><td>${this.formatVND(outflow)}</td></tr>`;
+                            }
+                        }
+                        html += '</table>';
+                        chart.innerHTML = html;
+                    } catch (error) {
+                        console.error('[Background Error] Render chart failed:', error);
+                        container.querySelector('.branch2-chart').innerHTML = 'Error rendering chart';
+                    }
+                },
+
+                render(container) {
+                    console.log('[Background] Rendering branch2');
+                    try {
+                        const balanceDisplay = container.querySelector('.branch2-balance');
+                        const transactionLog = container.querySelector('.branch2-transaction-log');
+
+                        balanceDisplay.textContent = this.formatVND(pageState.branch2.balance);
+                        transactionLog.innerHTML = '';
+
+                        pageState.branch2.transactions.slice(0, 50).forEach((t, index) => {
+                            const entry = document.createElement('div');
+                            entry.className = 'branch2-transaction';
+                            const date = new Date(t.date).toLocaleDateString('vi-VN');
+                            const sign = t.type === 'add' ? '+' : '-';
+                            const textSpan = document.createElement('span');
+                            textSpan.textContent = `${date} | ${sign}${this.formatVND(t.amount)} | ${t.tag}`;
+                            const deleteButton = document.createElement('button');
+                            deleteButton.className = 'shared-button';
+                            deleteButton.title = 'Delete';
+                            deleteButton.innerHTML = `<svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>`;
+                            deleteButton.addEventListener('click', () => this.deleteTransaction(container, index));
+                            deleteButton.addEventListener('touchend', (e) => {
+                                e.preventDefault();
+                                this.deleteTransaction(container, index);
+                            });
+                            entry.appendChild(textSpan);
+                            entry.appendChild(deleteButton);
+                            transactionLog.appendChild(entry);
+                        });
+
+                        this.renderChart(container);
+
+                        if (pageState.branch2.dropdownOpen) {
+                            this.renderDropdown(container);
+                        }
+                        console.log('[Background] Branch2 rendered');
+                    } catch (error) {
+                        console.error('[Background Error] Render branch2 failed:', error);
+                    }
+                }
+            };
+
             document.body.addEventListener('click', (event) => {
                 const button = event.target.closest('.shared-button');
                 const container = button?.closest('.branch-tooltip');
@@ -1080,6 +1487,7 @@
                     document.querySelectorAll('.dropdown-menu.active').forEach(dropdown => {
                         dropdown.classList.remove('active');
                         pageState.branch1.dropdownOpen = false;
+                        pageState.branch2.dropdownOpen = false;
                         console.log('[Background Task] Dropdown closed via outside click');
                     });
                     return;
@@ -1090,14 +1498,79 @@
                 console.log(`[Background Task] Button clicked: ${action}`);
 
                 try {
-                    if (action === 'create') App.branch1.create(container);
-                    else if (action === 'apply') App.branch1.apply(container);
-                    else if (action === 'delete') App.branch1.delete(container);
-                    else if (action === 'toggle-mode') App.branch1.toggleMode(container);
-                    else if (action === 'toggle-dropdown') App.branch1.toggleDropdown(container);
+                    if (container.dataset.id === 'branch1') {
+                        if (action === 'create') App.branch1.create(container);
+                        else if (action === 'apply') App.branch1.apply(container);
+                        else if (action === 'delete') App.branch1.delete(container);
+                        else if (action === 'toggle-mode') App.branch1.toggleMode(container);
+                        else if (action === 'toggle-dropdown') App.branch1.toggleDropdown(container);
+                    } else if (container.dataset.id === 'branch2') {
+                        if (action === 'add') App.branch2.addTransaction(container, 'add');
+                        else if (action === 'subtract') App.branch2.addTransaction(container, 'subtract');
+                        else if (action === 'toggle-dropdown') App.branch2.toggleDropdown(container);
+                    }
                 } catch (error) {
                     console.error(`[Error] Button action failed: ${action}`, error);
                 }
+            });
+
+            document.body.addEventListener('touchend', (event) => {
+                const button = event.target.closest('.shared-button');
+                const container = button?.closest('.branch-tooltip');
+                if (!container || !button) return;
+                event.preventDefault();
+                const action = button.getAttribute('data-action');
+                console.log(`[Background Task] Button touched: ${action}`);
+
+                try {
+                    if (container.dataset.id === 'branch1') {
+                        if (action === 'create') App.branch1.create(container);
+                        else if (action === 'apply') App.branch1.apply(container);
+                        else if (action === 'delete') App.branch1.delete(container);
+                        else if (action === 'toggle-mode') App.branch1.toggleMode(container);
+                        else if (action === 'toggle-dropdown') App.branch1.toggleDropdown(container);
+                    } else if (container.dataset.id === 'branch2') {
+                        if (action === 'add') App.branch2.addTransaction(container, 'add');
+                        else if (action === 'subtract') App.branch2.addTransaction(container, 'subtract');
+                        else if (action === 'toggle-dropdown') App.branch2.toggleDropdown(container);
+                    }
+                } catch (error) {
+                    console.error(`[Error] Button touch action failed: ${action}`, error);
+                }
+            });
+
+            document.body.addEventListener('dblclick', (event) => {
+                const button = event.target.closest('.shared-button');
+                const container = button?.closest('.branch-tooltip');
+                if (!container || !button) return;
+                const action = button.getAttribute('data-action');
+                console.log(`[Background Task] Double-clicked button: ${action}`);
+                try {
+                    if (container.dataset.id === 'branch2' && action === 'reset') {
+                        App.branch2.reset(container);
+                    }
+                } catch (error) {
+                    console.error('[Error] Double-click action failed:', error);
+                }
+            });
+
+            let lastTouchTime = 0;
+            document.body.addEventListener('touchend', (event) => {
+                const button = event.target.closest('.shared-button');
+                const container = button?.closest('.branch-tooltip');
+                if (!container || !button || button.getAttribute('data-action') !== 'reset' || container.dataset.id !== 'branch2') return;
+
+                const currentTime = new Date().getTime();
+                if (currentTime - lastTouchTime < 300) {
+                    event.preventDefault();
+                    console.log('[Background Task] Double-tapped reset button');
+                    try {
+                        App.branch2.reset(container);
+                    } catch (error) {
+                        console.error('[Error] Double-tap reset failed:', error);
+                    }
+                }
+                lastTouchTime = currentTime;
             });
 
             App.init();
