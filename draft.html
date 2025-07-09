@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+Rules: No libraries, no frameworks, no external dependencies, modular, responsive, self-contained, 5 HSL color variables, "root" prefix for core, "branchX" for branch-specific. Hardcode branch values, minimal effects (hover/click scale), isolate branches.
+Dev Guide: New branch format:
+  branchX: (() => {
+    const container = document.createElement('div');
+    container.innerHTML = `<div id="branchX-content">Hello, Branch X!</div>`;
+    return { id: 'branchX', content: container.firstElementChild, css: `#branchX-content { color: hsl(0, 0%, 75%); }`, init: zone => {} };
+  })()
+IMPORTANT: This block cannot be edited except by Sho-the author.
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Life OS</title>
+  <style>
+    :root {
+      --color-background: hsl(0, 0%, 10%); /* Deep black */
+      --color-text: hsl(0, 0%, 90%); /* Soft white */
+      --color-primary: hsl(0, 0%, 75%); /* Light gray */
+      --color-secondary: hsl(0, 0%, 50%); /* Mid gray */
+      --color-highlight: hsl(200, 100%, 50%); /* Cyan highlight */
+      --root-toolbar-size: 25px;
+      --root-padding: 10px;
+      --root-font-size: 15px;
+      --root-font-family: 'Courier New', monospace;
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: var(--root-font-family);
+      color: var(--color-text);
+      font-size: var(--root-font-size);
+      scrollbar-width: none;
+    }
+    *::-webkit-scrollbar { display: none; }
+    input, button {
+      background: transparent;
+      border: none;
+      padding: calc(var(--root-padding) / 2);
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
+    input:focus {
+      outline: none;
+      color: var(--color-primary);
+    }
+    input::placeholder {
+      color: var(--color-secondary);
+    }
+    button {
+      color: var(--color-highlight);
+      cursor: pointer;
+    }
+    button:hover { transform: scale(1.05); }
+    button:active { transform: scale(0.95); }
+    output { color: var(--color-primary); }
+    #root-data-file-input { display: none; }
+    body {
+      height: 100vh;
+      overflow: hidden;
+      background: var(--color-background);
+      position: fixed;
+      width: 100%;
+    }
+    #root-background canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+    #root-foreground {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 3;
+    }
+    #root-toolbar-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .root-toolbar {
+      background: transparent;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+      position: absolute;
+      display: flex;
+      align-items: center;
+      padding: 0 calc(var(--root-padding) / 2);
+      pointer-events: auto;
+      font-size: var(--root-font-size);
+      touch-action: auto;
+    }
+    #root-toolbar-input {
+      top: 0;
+      left: var(--root-toolbar-size);
+      width: 50%;
+      height: var(--root-toolbar-size);
+    }
+    #root-toolbar-input input {
+      width: 100%;
+    }
+    #root-toolbar-output {
+      top: 0;
+      right: var(--root-toolbar-size);
+      width: 50%;
+      height: var(--root-toolbar-size);
+      overflow-y: auto;
+      scroll-behavior: smooth;
+    }
+    #root-toolbar-output span {
+      width: 100%;
+      text-align: right;
+    }
+    #root-toolbar-bottom {
+      bottom: 0;
+      left: var(--root-toolbar-size);
+      right: var(--root-toolbar-size);
+      height: var(--root-toolbar-size);
+      justify-content: center;
+    }
+    #root-toolbar-left {
+      left: 0;
+      top: var(--root-toolbar-size);
+      bottom: var(--root-toolbar-size);
+      width: var(--root-toolbar-size);
+      writing-mode: vertical-rl;
+      justify-content: center;
+    }
+    #root-toolbar-right {
+      right: 0;
+      top: var(--root-toolbar-size);
+      bottom: var(--root-toolbar-size);
+      width: var(--root-toolbar-size);
+      writing-mode: vertical-rl;
+      justify-content: center;
+    }
+    #root-command-input:hover, #root-command-input:focus { transform: scale(1.02); }
+    #root-branch-zone {
+      position: fixed;
+      top: var(--root-toolbar-size);
+      left: var(--root-toolbar-size);
+      right: var(--root-toolbar-size);
+      bottom: var(--root-toolbar-size);
+      background: var(--color-background);
+      display: none;
+      flex-direction: column;
+      padding: var(--root-padding);
+      overflow: auto;
+      touch-action: auto;
+      animation: fade 0.5s ease;
+    }
+    #root-branch-loading {
+      color: var(--color-primary);
+      text-align: center;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #branch1-content {
+      color: var(--color-primary);
+      text-align: center;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    @keyframes fade { 0% { opacity: 0; } 100% { opacity: 1; } }
+  </style>
+</head>
+<body>
+  <div id="root-background"><canvas id="root-background-canvas"></canvas></div>
+  <div id="root-foreground">
+    <div id="root-toolbar-container">
+      <div id="root-toolbar-input" class="root-toolbar">
+        <input id="root-command-input" type="text" placeholder="TYPE SHIT HERE" aria-label="Command input">
+      </div>
+      <div id="root-toolbar-output" class="root-toolbar">
+        <span id="root-command-output"></span>
+      </div>
+      <div id="root-toolbar-bottom" class="root-toolbar">BOTTOM</div>
+      <div id="root-toolbar-left" class="root-toolbar">LEFT</div>
+      <div id="root-toolbar-right" class="root-toolbar">RIGHT</div>
+    </div>
+    <div id="root-branch-zone"></div>
+    <input id="root-data-file-input" type="file" accept=".json">
+  </div>
+  <script>
+    const rootState = {
+      currentBranch: '',
+      templateCache: new Map(),
+      cacheLimit: 5,
+      isBusy: false,
+      commandQueue: [],
+      listeners: new Map(),
+      listenersLimit: 50,
+      colors: (() => {
+        const fallback = {
+          background: 'hsl(0, 0%, 10%)',
+          text: 'hsl(0, 0%, 90%)',
+          primary: 'hsl(0, 0%, 75%)',
+          secondary: 'hsl(0, 0%, 50%)',
+          highlight: 'hsl(200, 100%, 50%)'
+        };
+        try {
+          const styles = getComputedStyle(document.documentElement);
+          return {
+            background: styles.getPropertyValue('--color-background').trim() || fallback.background,
+            text: styles.getPropertyValue('--color-text').trim() || fallback.text,
+            primary: styles.getPropertyValue('--color-primary').trim() || fallback.primary,
+            secondary: styles.getPropertyValue('--color-secondary').trim() || fallback.secondary,
+            highlight: styles.getPropertyValue('--color-highlight').trim() || fallback.highlight
+          };
+        } catch (e) {
+          console.error('[Error] Colors: Failed to fetch', e.message);
+          return fallback;
+        }
+      })(),
+      events: {
+        handlers: {},
+        on(event, callback) {
+          try {
+            if (!this.handlers[event]) this.handlers[event] = [];
+            if (this.handlers[event].length < 10) this.handlers[event].push(callback);
+          } catch (e) {
+            console.error(`[Error] Event ${event}: Failed to register`, e.message);
+          }
+        },
+        emitAsync(event, data) {
+          try {
+            if (!this.handlers[event]) return Promise.resolve([]);
+            return Promise.all(this.handlers[event].map(async callback => {
+              try { return await callback(data); } catch (e) {
+                console.error(`[Error] Event ${event}: Handler failed`, e.message);
+                return null;
+              }
+            })).then(results => results.filter(r => r));
+          } catch (e) {
+            console.error(`[Error] Event ${event}: Emit failed`, e.message);
+            return Promise.reject(e);
+          }
+        },
+        off(event, callback) {
+          try {
+            if (!this.handlers[event]) return;
+            if (callback) this.handlers[event] = this.handlers[event].filter(cb => cb !== callback);
+            else delete this.handlers[event];
+            if (!this.handlers[event]?.length) delete this.handlers[event];
+          } catch (e) {
+            console.error(`[Error] Event ${event}: Failed to clear`, e.message);
+          }
+        }
+      },
+      dataManager: {
+        data: {},
+        async saveData() {
+          try {
+            if (rootState.isBusy) throw new Error('System busy');
+            rootState.isBusy = true;
+            const output = document.getElementById('root-command-output');
+            output.textContent = 'SAVING...';
+            const states = await rootState.events.emitAsync('save');
+            const data = { app: 'life-os', version: '1.0', data: {} };
+            states.forEach(s => s?.id && typeof s.state === 'object' && (data.data[s.id] = s.state));
+            const jsonString = JSON.stringify(data, null, 2);
+            if (jsonString.length > 10 * 1024 * 1024) throw new Error('Data too large, max 10MB');
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'data.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            localStorage.setItem('life-os-backup', jsonString);
+            output.textContent = 'SAVED DATA.JSON';
+          } catch (e) {
+            showError('Oof, file too big, keep it under 10MB!', '[Error] Save: Failed', e.message);
+          } finally {
+            rootState.isBusy = false;
+            processCommandQueue();
+          }
+        },
+        async loadData(file) {
+          try {
+            if (rootState.isBusy) throw new Error('System busy');
+            if (file.size > 10 * 1024 * 1024) throw new Error('File too large, max 10MB');
+            rootState.isBusy = true;
+            const output = document.getElementById('root-command-output');
+            output.textContent = 'LOADING...';
+            const backup = localStorage.getItem('life-os-backup');
+            let backupData = {};
+            try {
+              if (backup) backupData = JSON.parse(backup);
+            } catch (e) {
+              console.error('[Error] Backup: Corrupt', e.message);
+            }
+            const reader = new FileReader();
+            reader.onload = async e => {
+              try {
+                const data = JSON.parse(e.target.result);
+                if (data.app !== 'life-os' || data.version !== '1.0') throw new Error('Invalid file format');
+                rootState.dataManager.data = data.data;
+                await rootState.events.emitAsync('load', data.data);
+                localStorage.setItem('life-os-backup', JSON.stringify(data));
+                if (rootState.currentBranch && branches[rootState.currentBranch]) {
+                  output.textContent = 'LOADED, RELOADING';
+                  await loadBranch(document.getElementById('root-branch-zone'), branches[rootState.currentBranch]);
+                } else {
+                  output.textContent = 'LOADED DATA';
+                }
+              } catch (e) {
+                showError(e.message.includes('Invalid file') ? 'Oof, bad file format, try again!' : 'Oof, bad JSON, try again!', '[Error] Load: Failed', e.message);
+                if (backupData.app === 'life-os' && backupData.version === '1.0') {
+                  rootState.dataManager.data = backupData.data;
+                  await rootState.events.emitAsync('load', backupData.data);
+                  if (rootState.currentBranch && branches[rootState.currentBranch]) {
+                    output.textContent = 'RESTORED, RELOADING';
+                    await loadBranch(document.getElementById('root-branch-zone'), branches[rootState.currentBranch]);
+                  } else {
+                    output.textContent = 'RESTORED BACKUP';
+                  }
+                }
+              } finally {
+                rootState.isBusy = false;
+                processCommandQueue();
+              }
+            };
+            reader.readAsText(file);
+          } catch (e) {
+            showError('Oof, file too big, keep it under 10MB!', '[Error] Load: Failed', e.message);
+            rootState.isBusy = false;
+            processCommandQueue();
+          }
+        }
+      }
+    };
+
+    function showError(message, logPrefix, logMessage) {
+      console.error(logPrefix, logMessage);
+      document.getElementById('root-command-output').textContent = message;
+    }
+
+    function processCommandQueue() {
+      try {
+        if (rootState.isBusy || !rootState.commandQueue.length) return;
+        const cmd = rootState.commandQueue.shift();
+        handleCommand(cmd.event, cmd.input, cmd.output, cmd.fileInput);
+      } catch (e) {
+        showError('Oof, command queue broke, try again!', '[Error] CommandQueue: Failed', e.message);
+      }
+    }
+
+    function applyStyles(id, css) {
+      try {
+        document.querySelectorAll('style[id$="-style"]').forEach(el => el.remove());
+        if (!css) return;
+        const style = document.createElement('style');
+        style.id = `${id}-style`;
+        style.textContent = `#root-branch-zone ${css}`;
+        document.head.appendChild(style);
+      } catch (e) {
+        console.error(`[Error] Styles ${id}: Failed`, e.message);
+      }
+    }
+
+    function loadBranchById(id, zone, output) {
+      if (!branches[id]) {
+        showError(`Oof, branch ${id} not found!`, `[Error] Load ${id}: Not found`);
+        return;
+      }
+      zone.style.display = 'none';
+      output.textContent = '';
+      loadBranch(zone, branches[id]).then(() => {
+        output.textContent = `LOADED: ${id}`;
+        rootState.currentBranch = id;
+        if (rootState.dataManager.data[id]) rootState.events.emitAsync('load', rootState.dataManager.data);
+      }).catch(e => {
+        showError(`Oof, failed to load ${id}, try again!`, `[Error] Load ${id}: Failed`, e.message);
+      });
+    }
+
+    function handleCommand(e, input, output, fileInput) {
+      try {
+        if (e.key !== 'Enter') return;
+        if (rootState.isBusy) {
+          rootState.commandQueue.push({ event: e, input, output, fileInput });
+          output.textContent = 'Queued command!';
+          return;
+        }
+        const cmd = input.value.trim().toLowerCase().replace(/\s+/g, ' ');
+        output.textContent = cmd || '';
+        input.value = '';
+
+        const zone = document.getElementById('root-branch-zone');
+        if (!zone) {
+          showError('Oof, branch zone missing, refresh!', '[Error] Command: Zone missing');
+          return;
+        }
+
+        if (cmd.startsWith('branch ')) {
+          const id = cmd.replace('branch ', '');
+          loadBranchById(id, zone, output);
+        } else if (cmd === 'root') {
+          zone.style.display = 'none';
+          document.querySelectorAll('style[id$="-style"]').forEach(el => el.remove());
+          zone.innerHTML = '';
+          output.textContent = 'BACK TO ROOT';
+          rootState.currentBranch = '';
+        } else if (cmd === 'help') {
+          const branchCmds = Object.keys(branches).map(id => `branch ${id}`);
+          output.textContent = `COMMANDS: ${branchCmds.length ? branchCmds.join(', ') + ', ' : ''}root, help, clear, export, import`;
+        } else if (cmd === 'clear') {
+          output.textContent = '';
+        } else if (cmd === 'export') {
+          rootState.dataManager.saveData();
+        } else if (cmd === 'import') {
+          fileInput.value = '';
+          fileInput.click();
+          fileInput.onchange = () => {
+            if (fileInput.files.length) rootState.dataManager.loadData(fileInput.files[0]);
+          };
+        } else {
+          showError('Yo, bad command, try again!', '[Error] Command: Invalid', cmd);
+        }
+      } catch (e) {
+        showError('Oof, command broke, try again!', '[Error] Command: Failed', e.message);
+      }
+    }
+
+    function initializeApplication() {
+      try {
+        console.log('[Init] Starting');
+        const bgCanvas = document.getElementById('root-background-canvas');
+        const zone = document.getElementById('root-branch-zone');
+        if (!bgCanvas || !zone) throw new Error('Missing DOM elements');
+
+        const resizeBackground = () => {
+          try {
+            const dpr = window.devicePixelRatio || 1;
+            bgCanvas.width = window.innerWidth * dpr;
+            bgCanvas.height = window.innerHeight * dpr;
+            bgCanvas.style.width = `${window.innerWidth}px`;
+            bgCanvas.style.height = `${window.innerHeight}px`;
+            const ctx = bgCanvas.getContext('2d');
+            if (!ctx) throw new Error('Canvas context failed');
+            ctx.scale(dpr, dpr);
+            ctx.fillStyle = rootState.colors.background;
+            ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+          } catch (e) {
+            console.error('[Error] ResizeBackground: Failed', e.message);
+          }
+        };
+        resizeBackground();
+        window.addEventListener('resize', resizeBackground);
+        document.getElementById('root-command-input').addEventListener('focusin', resizeBackground);
+        document.getElementById('root-command-input').addEventListener('focusout', resizeBackground);
+
+        const input = document.getElementById('root-command-input');
+        const output = document.getElementById('root-command-output');
+        const outputContainer = document.getElementById('root-toolbar-output');
+        const fileInput = document.getElementById('root-data-file-input');
+        if (!input || !output || !outputContainer || !fileInput) throw new Error('Missing input/output elements');
+
+        const handler = e => handleCommand(e, input, output, fileInput);
+        if (!rootState.listeners.has(input)) {
+          if (rootState.listeners.size >= rootState.listenersLimit) {
+            showError('Oof, too many listeners, chill!', '[Error] Listeners: Max reached');
+            return;
+          }
+          input.addEventListener('keypress', handler);
+          rootState.listeners.set(input, handler);
+        }
+
+        outputContainer.addEventListener('wheel', e => {
+          e.preventDefault();
+          outputContainer.scrollTop += e.deltaY * 0.5;
+        });
+
+        console.log('[Init] Started');
+      } catch (e) {
+        showError('Oof, app failed to start, refresh!', '[Error] Init: Failed', e.message);
+      }
+    }
+
+    function showLoadingScreen(zone) {
+      try {
+        zone.innerHTML = `<div id="root-branch-loading">LOADING...</div>`;
+        zone.style.display = 'flex';
+      } catch (e) {
+        console.error('[Error] LoadingScreen: Failed', e.message);
+      }
+    }
+
+    function loadBranch(zone, { id, content, css, init }) {
+      try {
+        if (!zone || !id || !content) throw new Error('Invalid branch parameters');
+        showLoadingScreen(zone);
+        return new Promise((resolve, reject) => {
+          try {
+            const cacheKey = `${id}-template`;
+            let cached = rootState.templateCache.get(cacheKey);
+            if (!cached) {
+              cached = { content, css, lastUsed: Date.now() };
+              rootState.templateCache.set(cacheKey, cached);
+              if (rootState.templateCache.size > rootState.cacheLimit) {
+                const oldestKey = [...rootState.templateCache.entries()]
+                  .reduce((min, [key, val]) => val.lastUsed < min.lastUsed ? { key, lastUsed: val.lastUsed } : min, { lastUsed: Infinity }).key;
+                rootState.templateCache.delete(oldestKey);
+              }
+            } else {
+              cached.lastUsed = Date.now();
+            }
+
+            rootState.listeners.forEach((handler, el) => {
+              el.removeEventListener('click', handler);
+              el.removeEventListener('touchstart', handler);
+              el.removeEventListener('touchend', handler);
+              el.removeEventListener('touchmove', handler);
+            });
+            rootState.events.off('save');
+            rootState.events.off('load');
+            rootState.listeners.clear();
+            rootState.listeners.set(document.getElementById('root-command-input'), rootState.listeners.get(document.getElementById('root-command-input')));
+
+            zone.innerHTML = '';
+            zone.appendChild(cached.content.cloneNode(true));
+            applyStyles(id, css);
+            if (init) init(zone);
+            resolve();
+          } catch (e) {
+            console.error(`[Error] Branch ${id}: Failed to load`, e.message);
+            zone.innerHTML = '';
+            zone.style.display = 'none';
+            document.querySelectorAll('style[id$="-style"]').forEach(el => el.remove());
+            rootState.currentBranch = '';
+            reject(e);
+          }
+        }).then(() => {
+          zone.style.display = 'flex';
+          document.getElementById('root-command-output').textContent = '';
+        });
+      } catch (e) {
+        showError(`Oof, branch ${id} broke, try again!`, `[Error] Branch ${id}: Failed`, e.message);
+        zone.innerHTML = '';
+        zone.style.display = 'none';
+        document.querySelectorAll('style[id$="-style"]').forEach(el => el.remove());
+        rootState.currentBranch = '';
+        return Promise.reject(e);
+      }
+    }
+
+    const branches = {
+      '1': (() => {
+        const container = document.createElement('div');
+        container.innerHTML = `<div id="branch1-content">Under Construction</div>`;
+        return {
+          id: '1',
+          content: container.firstElementChild,
+          css: `#branch1-content { color: var(--color-primary); text-align: center; flex: 1; display: flex; align-items: center; justify-content: center; }`,
+          init: () => {}
+        };
+      })()
+    };
+
+    initializeApplication();
+  </script>
+</body>
+</html>

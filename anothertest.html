@@ -1,1246 +1,706 @@
-<!-- Rules:
-Naming: Use `root-` for core/shared elements, `branchX-` for page-specific
-Rules: No external libs, no internet, minimal, responsive, self-contained, future proof, no abbreviations
-Add Branch: Clone a template (e.g., `branch1-notes-template`), add to `rootState.pageTemplates` and `availablePages`, define `rootApplication.branchX.render`, setup buttons in `rootButtonLibrary.setupBranchX`.
--->
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>LifeOS</title>
-  <!-- CSS Zone: Root Styles -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interface</title>
+  <!-- 
+  Features: Command-driven UI, root page, pluggable branch apps, loading states, lifecycle hooks.
+  Rules: No external libraries, no internet dependencies, minimal codebase, expandable, modular, responsive, self-contained, 5 HSL color variables, no abbreviations, "root" prefix for core, "branch" prefix for pages, grouped code zones.
+  Dev Guide:
+    - Add branch: Register in `root.branches` with { html, init?, destroy?, meta? }.
+    - Add command: Use `root.commands.register(name, fn)`.
+    - Debug: Check console for '[root]' or '[Error]' logs.
+    - Mobile: Touch-friendly, capped branch height, no scrollbars.
+  -->
   <style>
     :root {
-      --primary: hsl(0, 0%, 0%);
-      --secondary: hsl(0, 0%, 20%);
-      --background: hsl(0, 0%, 100%);
-      --card: hsl(0, 0%, 80%);
-      --accent: hsl(0, 0%, 60%);
+      --color-primary: hsl(0, 0%, 95%);
+      --color-background: hsl(0, 0%, 0%);
+      --color-accent-dark: hsl(0, 0%, 25%);
+      --color-accent-light: hsl(0, 0%, 50%);
+      --color-glow: hsl(0, 0%, 75%);
+      --inset-size: 25px;
+      --grid-size: 30px;
     }
 
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: system-ui, -apple-system, Roboto, sans-serif;
+      scrollbar-width: none;
+    }
+
+    *::-webkit-scrollbar {
+      display: none;
     }
 
     body {
-      background: var(--background);
-      color: var(--primary);
+      font-family: system-ui, sans-serif;
+      background: var(--color-background);
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      font-size: clamp(10px, 3vw, 12px);
-      line-height: 1.3;
+      overflow: hidden;
+      touch-action: manipulation;
+      -webkit-overflow-scrolling: touch;
     }
 
-    .root-main {
-      max-width: 98vw;
+    .root-background {
+      position: fixed;
+      top: 0;
+      left: 0;
       width: 100%;
-      margin: 0.2rem auto;
-      flex-grow: 1;
-      display: flex;
-      flex-direction: column;
+      height: 100%;
+      background: var(--color-background);
+      z-index: 1;
     }
 
-    .root-page {
-      display: none;
-      flex-direction: row;
-      flex-wrap: wrap;
-      gap: 0.2rem;
+    .root-background-media {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 2;
     }
 
-    .root-page.active {
-      display: flex;
+    .root-foreground {
+      position: fixed;
+      top: var(--inset-size);
+      left: var(--inset-size);
+      width: calc(100% - 50px);
+      height: calc(100% - 50px);
+      display: grid;
+      z-index: 5;
     }
 
-    .root-sidebar {
-      display: flex;
-      flex-direction: column;
-      gap: 0.2rem;
-      width: clamp(30px, 8vw, 40px);
-      min-width: 30px;
+    .root-middleground {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 4;
     }
 
-    .root-content {
-      flex-grow: 1;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
+    .branch-middleground-zone-top,
+    .branch-middleground-zone-right,
+    .branch-middleground-zone-bottom,
+    .branch-middleground-zone-left {
+      position: fixed;
     }
 
-    .root-clickable {
-      color: var(--secondary);
-      cursor: pointer;
-      text-decoration: underline;
-      padding: 0.1rem;
+    .branch-middleground-zone-top {
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--inset-size);
     }
 
-    .root-clickable:hover {
-      color: var(--accent);
+    .branch-middleground-zone-right {
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: var(--inset-size);
     }
 
-    .root-button {
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 0.2rem;
+    .branch-middleground-zone-bottom {
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--inset-size);
+    }
+
+    .branch-middleground-zone-left {
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: var(--inset-size);
+    }
+
+    .branch-middleground-interface {
+      position: fixed;
+      top: var(--inset-size);
+      left: var(--inset-size);
+      right: var(--inset-size);
+      height: var(--inset-size);
       display: flex;
       align-items: center;
-      justify-content: center;
-      width: clamp(20px, 6vw, 24px);
-      height: clamp(20px, 6vw, 24px);
-      position: relative;
+      color: var(--color-primary);
+      font-family: monospace;
+      font-size: 12px;
+      transform: translateY(-100%);
+      transition: opacity 0.3s ease;
     }
 
-    .root-button svg {
-      width: clamp(10px, 3vw, 12px);
-      height: clamp(10px, 3vw, 12px);
-      fill: var(--secondary);
+    .branch-middleground-interface-input {
+      background: none;
+      border: none;
+      color: var(--color-primary);
+      font-family: monospace;
+      font-size: 12px;
+      width: 50%;
+      padding: 0 5px;
+      outline: none;
+      transition: text-shadow 0.3s ease;
     }
 
-    .root-button:hover svg {
-      fill: var(--accent);
+    .branch-middleground-interface-input:focus {
+      text-shadow: 0 0 5px var(--color-glow);
     }
 
-    .root-tooltip-zone {
+    .branch-middleground-interface-output {
+      flex-grow: 1;
+      padding: 0 5px;
+      color: var(--color-glow);
+      font-family: monospace;
+      font-size: 12px;
+      text-align: right;
+      opacity: 0.7;
+      transition: opacity 0.3s ease;
+    }
+
+    .branch-middleground-interface-output.hidden {
+      display: none;
+    }
+
+    .branch-middleground-axis-x,
+    .branch-middleground-axis-y {
       position: fixed;
-      bottom: 1rem;
-      right: 1rem;
-      background: var(--secondary);
-      color: var(--background);
-      padding: 0.4rem 0.8rem;
-      font-size: clamp(8px, 2vw, 10px);
-      border-radius: 4px;
-      z-index: 100;
-      max-width: 50vw;
+      background: repeating-linear-gradient(
+        var(--gradient-direction, to right),
+        var(--color-primary) 0,
+        var(--color-primary) 1px,
+        transparent 1px,
+        transparent var(--gradient-interval, var(--grid-size))
+      );
+      opacity: 0.8;
+      transition: opacity 0.3s ease;
+    }
+
+    .branch-middleground-axis-x:hover,
+    .branch-middleground-axis-y:hover {
+      opacity: 1;
+    }
+
+    .branch-middleground-axis-x {
+      bottom: var(--inset-size);
+      left: var(--inset-size);
+      right: var(--inset-size);
+      height: 10px;
+      transform: translateY(100%);
+      --gradient-interval: 30px;
+    }
+
+    .branch-middleground-axis-x::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(
+        to right,
+        var(--color-primary) 0,
+        var(--color-primary) 1px,
+        transparent 1px,
+        transparent 300px
+      );
+    }
+
+    .branch-middleground-axis-y {
+      top: var(--inset-size);
+      left: var(--inset-size);
+      bottom: var(--inset-size);
+      width: 10px;
+      transform: translateX(-100%);
+      --gradient-direction: to bottom;
+      --gradient-interval: 30px;
+    }
+
+    .branch-middleground-axis-y::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(
+        to bottom,
+        var(--color-primary) 0,
+        var(--color-primary) 1px,
+        transparent 1px,
+        transparent 300px
+      );
+    }
+
+    .branch-content-loading {
+      position: fixed;
+      top: var(--inset-size);
+      left: var(--inset-size);
+      width: calc(100% - 50px);
+      height: calc(100% - 50px);
+      background: var(--color-background);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--color-primary);
+      font-family: monospace;
+      font-size: 16px;
+      z-index: 6;
       display: none;
       opacity: 0;
-      transition: opacity 0.2s;
+      transition: opacity 0.3s ease;
     }
 
-    .root-tooltip-zone.active {
+    .branch-content-loading.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .branch-content-container {
+      grid-area: 1 / 1;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      color: var(--color-primary);
+      font-family: monospace;
+      font-size: 12px;
+      padding: 1rem;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .branch-content-container.active {
       display: block;
       opacity: 1;
     }
 
-    .root-loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.2);
+    @media (max-width: 768px) {
+      .branch-content-container {
+        touch-action: none;
+      }
+    }
+
+    .branch-content-showcase {
+      max-width: 600px;
+      margin: 0 auto;
       display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: clamp(0.8rem, 2vw, 1rem);
-      z-index: 1000;
-      display: none;
-    }
-
-    .root-loading-overlay.active {
-      display: flex;
-    }
-
-    .root-loading-screen {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: var(--background);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: clamp(0.8rem, 2vw, 1rem);
-      z-index: 1000;
-    }
-
-    .root-loading-screen.hidden {
-      display: none;
-    }
-
-    .root-input,
-    textarea,
-    select,
-    input[type="text"],
-    input[type="password"],
-    input[type="email"],
-    input[type="tel"],
-    input[type="url"],
-    input[type="search"],
-    input[type="number"],
-    input[type="date"],
-    input[type="time"],
-    input[type="datetime-local"],
-    input[type="month"],
-    input[type="week"],
-    input[type="color"],
-    input[type="file"],
-    input[type="range"] {
-      appearance: none;
-      -webkit-appearance: none;
-      padding: 0.2rem;
-      background: var(--background);
-      color: var(--primary);
-      font-size: clamp(0.6rem, 1.8vw, 0.8rem);
-      width: 100%;
-      font-family: monospace;
-      outline: none;
-    }
-
-    .root-input:focus,
-    textarea:focus,
-    select:focus,
-    input:focus {
-      outline: 1px solid var(--secondary);
-    }
-
-    input[type="checkbox"],
-    input[type="radio"] {
-      appearance: none;
-      -webkit-appearance: none;
-      width: 12px;
-      height: 12px;
-      background: var(--background);
-      cursor: pointer;
-    }
-
-    input[type="checkbox"]:checked,
-    input[type="radio"]:checked {
-      background: var(--secondary);
-    }
-
-    input[type="checkbox"] {
-      border-radius: 2px;
-    }
-
-    input[type="radio"] {
-      border-radius: 50%;
-    }
-
-    select {
-      background: var(--background) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23000000"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 0.2rem center;
-      background-size: 10px;
-      padding-right: 1rem;
-    }
-
-    input[type="range"] {
-      height: 4px;
-      background: var(--card);
-      cursor: pointer;
-    }
-
-    input[type="range"]::-webkit-slider-thumb {
-      appearance: none;
-      width: 12px;
-      height: 12px;
-      background: var(--secondary);
-      border-radius: 50%;
-    }
-
-    input[type="file"]::-webkit-file-upload-button {
-      background: none;
-      border: none;
-      color: var(--secondary);
-      font-size: clamp(0.6rem, 1.8vw, 0.8rem);
-      cursor: pointer;
-      padding: 0.2rem;
-    }
-
-    progress,
-    meter {
-      appearance: none;
-      -webkit-appearance: none;
-      width: 100%;
-      height: 8px;
-      background: var(--card);
-    }
-
-    progress::-webkit-progress-bar,
-    meter::-webkit-meter-bar {
-      background: var(--card);
-    }
-
-    progress::-webkit-progress-value,
-    meter::-webkit-meter-optimum-value {
-      background: var(--secondary);
-    }
-
-    .root-scrollbar {
-      scrollbar-width: none;
-    }
-
-    .root-scrollbar::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .root-scrollbar::-webkit-scrollbar-track {
-      background: var(--background);
-    }
-
-    .root-scrollbar::-webkit-scrollbar-thumb {
-      background: var(--secondary);
-      border-radius: 3px;
-    }
-
-    @media (max-width: 600px) {
-      .root-main {
-        max-width: 100vw;
-        margin: 0.1rem auto;
-      }
-
-      .root-sidebar {
-        width: clamp(25px, 10vw, 35px);
-      }
-
-      .root-button {
-        width: clamp(18px, 5vw, 22px);
-        height: clamp(18px, 5vw, 22px);
-      }
-
-      .root-button svg {
-        width: clamp(8px, 2.5vw, 10px);
-        height: clamp(8px, 2.5vw, 10px);
-      }
-    }
-
-    @media (max-width: 400px) {
-      body {
-        font-size: clamp(8px, 2.5vw, 10px);
-      }
-
-      .root-sidebar {
-        width: clamp(20px, 8vw, 30px);
-      }
-
-      .root-content {
-        min-width: 60%;
-      }
-    }
-  </style>
-  <!-- End CSS Zone: Root Styles -->
-
-  <!-- CSS Zone: Branch1 Notes Styles -->
-  <style>
-    .branch1-note-input {
-      resize: vertical;
-      min-height: clamp(60px, 15vh, 80px);
-      flex-grow: 1;
-    }
-
-    .branch1-note-view {
-      flex-grow: 1;
-      padding: 0.2rem;
-      font-size: clamp(0.6rem, 1.8vw, 0.8rem);
-      font-family: monospace;
-      white-space: pre-wrap;
-      display: none;
+      flex-direction: column;
+      gap: 1rem;
+      max-height: calc(100vh - 100px);
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
-    .branch1-note-view.active {
-      display: block;
+    .branch-content-showcase h2 {
+      font-size: 14px;
+      color: var(--color-primary);
+      letter-spacing: 1px;
+      text-shadow: 0 0 3px var(--color-glow);
+      transition: text-shadow 0.3s ease;
     }
 
-    .branch1-note-view h1 {
-      font-size: 1.2em;
-      margin: 0.5em 0;
+    .branch-content-showcase label {
+      font-size: 12px;
+      color: var(--color-primary);
+      opacity: 0.8;
+      transition: opacity 0.3s ease;
     }
 
-    .branch1-note-view h2 {
-      font-size: 1.1em;
-      margin: 0.4em 0;
+    .branch-content-showcase label:hover {
+      opacity: 1;
     }
 
-    .branch1-note-view h3 {
-      font-size: 1em;
-      margin: 0.3em 0;
-    }
-
-    .branch1-note-view strong {
-      font-weight: bold;
-    }
-
-    .branch1-note-view em {
-      font-style: italic;
-    }
-
-    .branch1-note-view a {
-      color: var(--secondary);
-      text-decoration: underline;
-    }
-
-    .branch1-note-view a:hover {
-      color: var(--accent);
-    }
-
-    .branch1-note-view ul,
-    .branch1-note-view ol {
-      margin: 0.5em 0;
-      padding-left: 1.5em;
-    }
-
-    .branch1-note-view li {
-      margin: 0.2em 0;
-    }
-
-    .branch1-note-view img {
-      max-width: 100%;
-      height: auto;
-      margin: 0.5em 0;
-    }
-
-    .branch1-note-view audio,
-    .branch1-note-view video {
-      max-width: 100%;
-      margin: 0.5em 0;
-    }
-
-    .branch1-note-view blockquote {
-      margin: 0.5em 0;
-      padding-left: 1em;
-      color: var(--secondary);
-    }
-
-    .branch1-note-view pre {
-      background: var(--card);
-      padding: 0.5em;
-      overflow-x: auto;
-    }
-
-    .branch1-note-view code {
-      background: var(--card);
-      padding: 0.1em 0.2em;
-    }
-
-    .branch1-note-view table {
-      border-collapse: collapse;
-      margin: 0.5em 0;
-    }
-
-    .branch1-note-view th,
-    .branch1-note-view td {
-      border: 1px solid var(--secondary);
-      padding: 0.3em;
-    }
-
-    .branch1-note-view hr {
+    .branch-content-showcase input,
+    .branch-content-showcase select,
+    .branch-content-showcase textarea,
+    .branch-content-showcase button {
+      background: none;
+      color: var(--color-primary);
+      font-family: monospace;
+      font-size: 12px;
+      padding: 0.6rem;
       border: none;
-      border-top: 1px solid var(--secondary);
-      margin: 0.5em 0;
+      width: 100%;
+      outline: none;
+      transition: text-shadow 0.3s ease;
     }
 
-    .branch1-note-view del {
-      text-decoration: line-through;
+    .branch-content-showcase input:focus,
+    .branch-content-showcase select:focus,
+    .branch-content-showcase textarea:focus,
+    .branch-content-showcase button:focus {
+      text-shadow: 0 0 5px var(--color-glow);
     }
-  </style>
-  <!-- End CSS Zone: Branch1 Notes Styles -->
 
-  <!-- CSS Zone: Branch2 Game Styles -->
-  <style>
-    .branch2-game-canvas {
-      width: clamp(150px, 70vw, 300px);
-      height: clamp(100px, 50vw, 200px);
+    .branch-content-showcase button {
+      cursor: pointer;
+      padding: 0.6rem 1.2rem;
+      width: auto;
+      display: inline-block;
+      letter-spacing: 0.5px;
+      opacity: 0.8;
+      transition: opacity 0.3s ease, transform 0.2s ease;
+    }
+
+    .branch-content-showcase button:hover {
+      opacity: 1;
+      transform: translateY(-1px);
+    }
+
+    .branch-content-showcase input[type="checkbox"],
+    .branch-content-showcase input[type="radio"] {
+      width: auto;
+      margin-right: 0.5rem;
+      accent-color: var(--color-primary);
+      transition: transform 0.2s ease;
+    }
+
+    .branch-content-showcase input[type="checkbox"]:hover,
+    .branch-content-showcase input[type="radio"]:hover {
+      transform: scale(1.1);
+    }
+
+    .branch-content-showcase textarea {
+      resize: vertical;
+      min-height: 60px;
+      max-height: 120px;
+    }
+
+    .branch-content-showcase select {
+      appearance: none;
+      background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2210%22%20height%3D%226%22%20viewBox%3D%220%200%2010%206%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M1%201L5%205L9%201%22%20stroke%3D%22%23F5F5F5%22%20stroke-width%3D%221.5%22%2F%3E%3C%2Fsvg%3E');
+      background-repeat: no-repeat;
+      background-position: right 0.6rem center;
+      background-size: 10px;
+      padding-right: 1.6rem;
+    }
+
+    .branch-content-showcase datalist {
+      display: none;
+    }
+
+    .branch-content-showcase progress {
+      width: 100%;
+      height: 6px;
+      background: var(--color-accent-dark);
+      border-radius: 2px;
+      transition: opacity 0.3s ease;
+    }
+
+    .branch-content-showcase progress::-webkit-progress-bar {
+      background: var(--color-accent-dark);
+    }
+
+    .branch-content-showcase progress::-webkit-progress-value {
+      background: var(--color-primary);
+      opacity: 0.9;
+    }
+
+    .branch-content-showcase progress::-moz-progress-bar {
+      background: var(--color-primary);
+      opacity: 0.9;
+    }
+
+    .branch-content-showcase details {
+      padding: 0.6rem;
+      transition: opacity 0.3s ease;
+    }
+
+    .branch-content-showcase details[open] {
+      opacity: 0.9;
+    }
+
+    .branch-content-showcase summary {
+      cursor: pointer;
+      transition: text-shadow 0.3s ease;
+    }
+
+    .branch-content-showcase summary:hover {
+      text-shadow: 0 0 5px var(--color-glow);
+    }
+
+    .branch-content-showcase fieldset {
+      margin: 0.5rem 0;
+      padding: 0.6rem;
+    }
+
+    .branch-content-showcase legend {
+      font-size: 12px;
+      color: var(--color-primary);
+      transition: text-shadow 0.3s ease;
+    }
+
+    .branch-content-showcase legend:hover {
+      text-shadow: 0 0 3px var(--color-glow);
     }
   </style>
-  <!-- End CSS Zone: Branch2 Game Styles -->
 </head>
-
 <body>
-  <!-- HTML Zone: Root Page Code -->
-  <div class="root-loading-screen">Loading...</div>
-  <div class="root-loading-overlay">Uploading...</div>
-  <div class="root-tooltip-zone"></div>
-  <main class="root-main">
-    <section id="home" class="root-page active" role="region" aria-label="Home Page">
-      <p>
-        Explore <span class="root-clickable" data-page="notes">Notes</span> or
-        <span class="root-clickable" data-page="game">Game</span>.
-      </p>
-    </section>
-  </main>
-  <!-- End HTML Zone: Root Page Code -->
-
-  <!-- HTML Zone: Child Page Code -->
-  <template id="branch1-notes-template">
-    <section id="notes" class="root-page" role="region" aria-label="Notes Page">
-      <div class="root-sidebar"></div>
-      <div class="root-content">
-        <h1>Notes</h1>
-        <textarea class="root-input branch1-note-input root-scrollbar" placeholder="Write note..."
-          data-input="note"></textarea>
-        <div class="branch1-note-view root-scrollbar"></div>
-      </div>
-    </section>
-  </template>
-  <template id="branch2-game-template">
-    <section id="game" class="root-page" role="region" aria-label="Game Page">
-      <div class="root-sidebar"></div>
-      <div class="root-content">
-        <h1>Game</h1>
-        <canvas class="branch2-game-canvas" width="300" height="200"></canvas>
-      </div>
-    </section>
-  </template>
-  <!-- End HTML Zone: Child Page Code -->
-
-  <!-- JS Zone: Root Logic -->
+  <div class="root-background">
+    <!-- <video class="root-background-media" autoplay loop muted src="data:video/mp4;base64,AAAA..."></video> -->
+  </div>
+  <div class="root-foreground" id="foreground">
+    <div class="branch-content-loading" id="loadingScreen">Loading...</div>
+  </div>
+  <div class="root-middleground">
+    <div class="branch-middleground-zone-top"></div>
+    <div class="branch-middleground-zone-right"></div>
+    <div class="branch-middleground-zone-bottom"></div>
+    <div class="branch-middleground-zone-left"></div>
+    <div class="branch-middleground-interface">
+      <input type="text" id="interfaceInput" class="branch-middleground-interface-input" placeholder="Type command..." aria-label="Command input">
+      <span id="interfaceOutput" class="branch-middleground-interface-output hidden"></span>
+    </div>
+    <div class="branch-middleground-axis-x"></div>
+    <div class="branch-middleground-axis-y"></div>
+  </div>
   <script>
     (function () {
-      const rootState = {
-        currentPage: 'home',
-        availablePages: ['home', 'notes', 'game'],
-        pageTemplates: {
-          notes: 'branch1-notes-template',
-          game: 'branch2-game-template'
+      const root = {
+        config: {
+          gridSize: 30,
+          maxInputLength: 100,
+          logPrefix: '[root]',
+          errorPrefix: '[Error]'
         },
-        templateCache: new Map(),
-        branch1: {
-          text: '',
-          isViewMode: false,
-          cachedHtml: '',
-          history: [''],
-          historyIndex: 0,
-          maxHistory: 50
-        },
-        branch2: {}
-      };
 
-      const rootSwitchPage = (pageId) => {
-        console.log(`[Background] Switching to: ${pageId}`);
-        try {
-          if (!rootState.availablePages.includes(pageId)) throw new Error(`Page not found: ${pageId}`);
-          document.querySelectorAll('.root-page').forEach(page => page.classList.remove('active'));
-          let targetPage = document.getElementById(pageId);
-          if (!targetPage && rootState.pageTemplates[pageId]) {
-            console.log(`[Background] Loading template: ${pageId}`);
-            if (rootState.templateCache.has(pageId)) {
-              targetPage = rootState.templateCache.get(pageId).cloneNode(true);
-            } else {
-              const template = document.getElementById(rootState.pageTemplates[pageId]);
-              if (template?.content?.firstElementChild) {
-                const rawTemplate = template.content.firstElementChild.cloneNode(true);
-                rootState.templateCache.set(pageId, rawTemplate);
-                targetPage = rawTemplate.cloneNode(true);
-              } else {
-                throw new Error(`Template corrupt: ${pageId}`);
-              }
-              document.querySelector('.root-main').appendChild(targetPage);
-              if (pageId === 'notes') {
-                rootButtonLibrary.setupBranch1(targetPage);
-                rootApplication.branch1.render(targetPage);
-              } else if (pageId === 'game') {
-                rootButtonLibrary.setupBranch2(targetPage);
-                rootApplication.branch2.render(targetPage);
-              }
-              targetPage.querySelectorAll('.root-input').forEach(input => rootInputHandler.bindInput(input, targetPage));
+        branches: {
+          'branch-1': {
+            meta: { name: 'Interactive Elements', description: 'Form controls demo' },
+            html: `
+              <div class="branch-content-showcase">
+                <h2>Branch 1: Interactive Elements</h2>
+                <label for="textInput" aria-label="Text input">Text Input</label>
+                <input type="text" id="textInput" placeholder="Enter text..." aria-label="Enter text">
+                <label for="numberInput" aria-label="Number input">Number Input</label>
+                <input type="number" id="numberInput" min="0" max="100" value="50" aria-label="Enter number between 0 and 100">
+                <label for="rangeInput" aria-label="Range slider">Range Slider</label>
+                <input type="range" id="rangeInput" min="0" max="100" value="50" aria-label="Adjust range from 0 to 100">
+                <label for="colorInput" aria-label="Color picker">Color Picker</label>
+                <input type="color" id="colorInput" value="#ffffff" aria-label="Select color">
+                <label for="dateInput" aria-label="Date picker">Date Picker</label>
+                <input type="date" id="dateInput" aria-label="Select date">
+                <label for="selectInput" aria-label="Select dropdown">Select Dropdown</label>
+                <select id="selectInput" aria-label="Choose an option">
+                  <option value="option1">Option 1</option>
+                  <option value="option2">Option 2</option>
+                  <option value="option3">Option 3</option>
+                </select>
+                <label for="datalistInput" aria-label="Datalist input">Datalist Input</label>
+                <input list="datalistOptions" id="datalistInput" placeholder="Type or select..." aria-label="Type or select from list">
+                <datalist id="datalistOptions">
+                  <option value="Choice 1">
+                  <option value="Choice 2">
+                  <option value="Choice 3">
+                </datalist>
+                <label for="textareaInput" aria-label="Textarea">Textarea</label>
+                <textarea id="textareaInput" placeholder="Enter multiple lines..." aria-label="Enter multiple lines"></textarea>
+                <fieldset>
+                  <legend>Checkboxes</legend>
+                  <label><input type="checkbox" checked aria-label="Checkbox 1"> Checkbox 1</label>
+                  <label><input type="checkbox" aria-label="Checkbox 2"> Checkbox 2</label>
+                </fieldset>
+                <fieldset>
+                  <legend>Radio Buttons</legend>
+                  <label><input type="radio" name="radio" checked aria-label="Radio 1"> Radio 1</label>
+                  <label><input type="radio" name="radio" aria-label="Radio 2"> Radio 2</label>
+                </fieldset>
+                <label for="progressBar" aria-label="Progress bar">Progress Bar</label>
+                <progress id="progressBar" value="70" max="100" aria-label="Progress at 70%"></progress>
+                <details>
+                  <summary aria-label="Toggle details">Toggle Details</summary>
+                  <p>Hidden content for the sci-fi vibe.</p>
+                </details>
+                <button aria-label="Activate button">Activate</button>
+              </div>
+            `,
+            init() {
+              const button = document.querySelector('#branch-1 button');
+              const handler = () => console.log(`${root.config.logPrefix} Button clicked`);
+              button.addEventListener('click', handler);
+              return { button, handler };
+            },
+            destroy({ button, handler }) {
+              button?.removeEventListener('click', handler);
             }
           }
-          if (targetPage) {
-            targetPage.classList.add('active');
-            rootState.currentPage = pageId;
-            document.querySelector('.root-loading-screen').classList.add('hidden');
-            console.log('[Background] Loading screen hidden');
-          } else {
-            throw new Error(`Page load failed: ${pageId}`);
+        },
+
+        elements: {
+          background: document.querySelector('.root-background'),
+          foreground: document.querySelector('.root-foreground'),
+          loadingScreen: document.querySelector('#loadingScreen'),
+          input: document.querySelector('#interfaceInput'),
+          output: document.querySelector('#interfaceOutput')
+        },
+
+        state: {
+          currentBranch: null,
+          isLoading: false
+        },
+
+        utils: {
+          log(...args) {
+            console.log(root.config.logPrefix, ...args);
+          },
+          error(...args) {
+            console.error(root.config.errorPrefix, ...args);
+          },
+          debounce(fn, delay) {
+            let timeout;
+            return (...args) => {
+              clearTimeout(timeout);
+              timeout = setTimeout(() => fn(...args), delay);
+            };
+          },
+          waitForFrame() {
+            return new Promise(resolve => requestAnimationFrame(resolve));
           }
-        } catch (error) {
-          console.error(`[Error] ${error}`);
-          document.getElementById('home').classList.add('active');
-          rootState.currentPage = 'home';
-          document.querySelector('.root-loading-screen').classList.add('hidden');
-          alert('Failed to load page.');
-        }
-      };
+        },
 
-      const rootButtonLibrary = {
-        getBackButton() {
-          const btn = document.createElement('button');
-          btn.className = 'root-button';
-          btn.dataset.action = 'back';
-          btn.dataset.tooltip = 'Back';
-          btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>';
-          return btn;
+        background: {
+          resize() {
+            const { gridSize } = root.config;
+            const width = window.visualViewport?.width || window.innerWidth;
+            const height = window.visualViewport?.height || window.innerHeight;
+            root.elements.background.style.width = `${Math.ceil(width / gridSize) * gridSize}px`;
+            root.elements.background.style.height = `${Math.ceil(height / gridSize) * gridSize}px`;
+          }
         },
-        getSaveButton() {
-          const btn = document.createElement('button');
-          btn.className = 'root-button';
-          btn.dataset.action = 'save';
-          btn.dataset.tooltip = 'Save';
-          btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M17 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm3-10H5V5h10v4z"/></svg>';
-          return btn;
-        },
-        getLoadButton() {
-          const btn = document.createElement('button');
-          btn.className = 'root-button';
-          btn.dataset.action = 'load';
-          btn.dataset.tooltip = 'Load';
-          btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>';
-          return btn;
-        },
-        getViewButton() {
-          const btn = document.createElement('button');
-          btn.className = 'root-button';
-          btn.dataset.action = 'toggle-view';
-          btn.dataset.tooltip = 'Toggle View';
-          btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>';
-          return btn;
-        },
-        getImportButton() {
-          const btn = document.createElement('button');
-          btn.className = 'root-button';
-          btn.dataset.action = 'import';
-          btn.dataset.tooltip = 'Import Media (Max 10MB)';
-          btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5m0 0l-5 5m5-5v12"/></svg>';
-          return btn;
-        },
-        getUndoButton() {
-          const btn = document.createElement('button');
-          btn.className = 'root-button';
-          btn.dataset.action = 'undo';
-          btn.dataset.tooltip = 'Undo';
-          btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>';
-          return btn;
-        },
-        getRedoButton() {
-          const btn = document.createElement('button');
-          btn.className = 'root-button';
-          btn.dataset.action = 'redo';
-          btn.dataset.tooltip = 'Redo';
-          btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg>';
-          return btn;
-        },
-        setupBranch1(container) {
-          const sidebar = container.querySelector('.root-sidebar');
-          sidebar.appendChild(this.getSaveButton());
-          sidebar.appendChild(this.getLoadButton());
-          sidebar.appendChild(this.getImportButton());
-          sidebar.appendChild(this.getViewButton());
-          sidebar.appendChild(this.getUndoButton());
-          sidebar.appendChild(this.getRedoButton());
-          sidebar.appendChild(this.getBackButton());
-        },
-        setupBranch2(container) {
-          const sidebar = container.querySelector('.root-sidebar');
-          sidebar.appendChild(this.getBackButton());
-        }
-      };
 
-      const rootInputHandler = {
-        bindInput(input, container) {
-          if (input.dataset.input === 'note') {
-            input.addEventListener('input', (e) => {
-              const newText = e.target.value.trim();
-              if (newText !== rootState.branch1.text) {
-                rootState.branch1.text = newText;
-                rootState.branch1.history = rootState.branch1.history.slice(0, rootState.branch1.historyIndex + 1);
-                rootState.branch1.history.push(newText);
-                if (rootState.branch1.history.length > rootState.branch1.maxHistory) {
-                  rootState.branch1.history.shift();
-                }
-                rootState.branch1.historyIndex = rootState.branch1.history.length - 1;
-                rootState.branch1.cachedHtml = '';
+        foreground: {
+          async loadBranch(id) {
+            if (!root.branches[id]) return `Error: Branch ${id} not found`;
+            if (root.state.isLoading) return 'Error: Branch loading in progress';
+
+            root.state.isLoading = true;
+            root.elements.loadingScreen.classList.add('active');
+
+            try {
+              root.foreground.unloadBranch();
+              const container = document.createElement('div');
+              container.id = id;
+              container.className = 'branch-content-container active';
+              container.innerHTML = root.branches[id].html;
+              root.elements.foreground.appendChild(container);
+
+              await root.utils.waitForFrame();
+              const branchState = root.branches[id].init ? await Promise.resolve(root.branches[id].init()) : null;
+
+              root.state.currentBranch = { id, container, state: branchState };
+              root.state.isLoading = false;
+              root.elements.loadingScreen.classList.remove('active');
+              root.utils.log(`Loaded ${id}`);
+              return `Opened Branch ${id.replace('branch-', '')}`;
+            } catch (error) {
+              root.utils.error(`Load failed for ${id}:`, error);
+              root.state.isLoading = false;
+              root.elements.loadingScreen.classList.remove('active');
+              root.foreground.unloadBranch();
+              return `Error: ${error.message}`;
+            }
+          },
+
+          unloadBranch() {
+            const { currentBranch } = root.state;
+            if (!currentBranch) return;
+            const { id, container, state } = currentBranch;
+            if (root.branches[id]?.destroy) root.branches[id].destroy(state);
+            container.remove();
+            root.state.currentBranch = null;
+            root.utils.log(`Unloaded ${id}`);
+          }
+        },
+
+        commands: {
+          registry: new Map([
+            ['help', () => `Commands: ${[...root.commands.registry.keys()].join(', ')}`],
+            ['open', async (args) => {
+              if (args[0] === 'branch' && args[1]) {
+                return await root.foreground.loadBranch(`branch-${args[1]}`);
               }
+              return 'Invalid. Try: open branch 1';
+            }],
+            ['root', () => {
+              root.foreground.unloadBranch();
+              return 'Returned to root';
+            }],
+            ['clear', () => {
+              root.elements.output.classList.add('hidden');
+              return 'Cleared output';
+            }],
+            ['list', () => {
+              return Object.keys(root.branches)
+                .map(id => {
+                  const { meta = {} } = root.branches[id];
+                  return `${id.replace('branch-', '')}: ${meta.name || id} - ${meta.description || 'No description'}`;
+                })
+                .join('\n');
+            }]
+          ]),
+
+          register(name, fn) {
+            root.commands.registry.set(name.toLowerCase(), fn);
+            root.utils.log(`Registered command: ${name}`);
+          },
+
+          async handle(input) {
+            root.elements.output.classList.add('hidden');
+            const trimmed = input.trim().slice(0, root.config.maxInputLength);
+            if (!trimmed) return;
+
+            const [cmd, ...args] = trimmed.split(/\s+/);
+            const handler = root.commands.registry.get(cmd.toLowerCase());
+            const response = handler ? await Promise.resolve(handler(args)) : `Unknown command: ${cmd}`;
+
+            root.elements.output.textContent = response;
+            root.elements.output.classList.remove('hidden');
+          }
+        },
+
+        init() {
+          root.utils.log('Starting');
+          const mediaLoad = root.elements.background.querySelector('.root-background-media')
+            ? new Promise(resolve => {
+                const media = root.elements.background.querySelector('.root-background-media');
+                if (media.complete) resolve();
+                else media.addEventListener('loadeddata', resolve, { once: true });
+              })
+            : Promise.resolve();
+
+          Promise.all([
+            new Promise(resolve => {
+              if (document.readyState === 'complete') resolve();
+              else window.addEventListener('load', resolve, { once: true });
+            }),
+            mediaLoad
+          ])
+            .then(() => {
+              root.elements.input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && e.target.value.trim()) {
+                  root.commands.handle(e.target.value);
+                  e.target.value = '';
+                }
+              });
+
+              root.elements.input.addEventListener('focusin', () => root.elements.input.focus());
+              window.addEventListener('resize', root.utils.debounce(root.background.resize, 100));
+
+              root.background.resize();
+              root.utils.log('Initialized');
+            })
+            .catch(error => {
+              root.utils.error('Init failed:', error);
+              root.elements.input.placeholder = 'Error loading interface';
             });
-            input.addEventListener('touchstart', (e) => {
-              e.preventDefault();
-              input.focus();
-            });
-            input.addEventListener('click', () => input.focus());
-          }
         }
       };
 
-      const rootMediaHandler = {
-        fileToBase64(file) {
-          return new Promise((resolve, reject) => {
-            try {
-              const reader = new FileReader();
-              reader.onload = () => resolve(reader.result);
-              reader.onerror = () => reject(new Error('Failed to read file'));
-              reader.readAsDataURL(file);
-            } catch (error) {
-              reject(error);
-            }
-          });
-        },
-        getFileType(file) {
-          const type = file.type.split('/')[0];
-          if (type === 'image') return 'image';
-          if (type === 'audio') return 'audio';
-          if (type === 'video') return 'video';
-          return null;
-        },
-        insertMedia(container, base64, type, alt = 'media') {
-          try {
-            const input = container.querySelector('.branch1-note-input');
-            const cursorPos = input.selectionStart;
-            const textBefore = rootState.branch1.text.slice(0, cursorPos);
-            const textAfter = rootState.branch1.text.slice(cursorPos);
-            let markdown = '';
-            if (type === 'image') {
-              markdown = `![${alt}](${base64})\n`;
-            } else if (type === 'audio') {
-              markdown = `[audio](${base64})\n`;
-            } else if (type === 'video') {
-              markdown = `[video](${base64})\n`;
-            }
-            rootState.branch1.text = textBefore + markdown + textAfter;
-            rootState.branch1.history = rootState.branch1.history.slice(0, rootState.branch1.historyIndex + 1);
-            rootState.branch1.history.push(rootState.branch1.text);
-            if (rootState.branch1.history.length > rootState.branch1.maxHistory) {
-              rootState.branch1.history.shift();
-            }
-            rootState.branch1.historyIndex = rootState.branch1.history.length - 1;
-            rootState.branch1.cachedHtml = '';
-            rootApplication.branch1.render(container);
-          } catch (error) {
-            console.error(`[Error] Media insertion failed: ${error}`);
-            alert('Failed to insert media.');
-          }
-        }
-      };
-
-      const rootTooltipHandler = {
-        showTooltip(text) {
-          const zone = document.querySelector('.root-tooltip-zone');
-          zone.textContent = text;
-          zone.classList.add('active');
-        },
-        hideTooltip() {
-          const zone = document.querySelector('.root-tooltip-zone');
-          zone.classList.remove('active');
-        }
-      };
-
-      const rootInitialize = () => {
-        console.log('[Background] Starting app');
-        document.addEventListener('DOMContentLoaded', () => {
-          console.log('[Background] DOM ready');
-          try {
-            rootSwitchPage(rootState.currentPage);
-            document.querySelector('.root-loading-screen').classList.add('hidden');
-          } catch (error) {
-            console.error(`[Error] App start failed: ${error}`);
-            rootSwitchPage('home');
-            document.querySelector('.root-loading-screen').classList.add('hidden');
-            alert('Failed to initialize app.');
-          }
-        });
-
-        document.querySelector('.root-main').addEventListener('click', (event) => {
-          const span = event.target.closest('.root-clickable');
-          const button = event.target.closest('.root-button');
-          const container = button?.closest('.root-page') || span?.closest('.root-page');
-          if (span) {
-            const pageId = span.dataset.page;
-            if (pageId) {
-              console.log(`[Background] Nav clicked: ${pageId}`);
-              rootSwitchPage(pageId);
-            }
-            return;
-          }
-          if (!button || !container) return;
-          const action = button.dataset.action;
-          console.log(`[Background] Button clicked: ${action}`);
-          if (container.id === 'notes') {
-            if (action === 'save') rootApplication.branch1.save(container);
-            else if (action === 'load') rootApplication.branch1.load(container);
-            else if (action === 'import') rootApplication.branch1.importMedia(container);
-            else if (action === 'toggle-view') rootApplication.branch1.toggleView(container);
-            else if (action === 'undo') rootApplication.branch1.undo(container);
-            else if (action === 'redo') rootApplication.branch1.redo(container);
-            else if (action === 'back') rootSwitchPage('home');
-          } else if (container.id === 'game') {
-            if (action === 'back') rootSwitchPage('home');
-          }
-        });
-
-        document.querySelector('.root-main').addEventListener('touchstart', (event) => {
-          const button = event.target.closest('.root-button');
-          const container = button?.closest('.root-page');
-          if (!button || !container) return;
-          event.preventDefault();
-          const action = button.dataset.action;
-          console.log(`[Background] Button touched: ${action}`);
-          if (container.id === 'notes') {
-            if (action === 'save') rootApplication.branch1.save(container);
-            else if (action === 'load') rootApplication.branch1.load(container);
-            else if (action === 'import') rootApplication.branch1.importMedia(container);
-            else if (action === 'toggle-view') rootApplication.branch1.toggleView(container);
-            else if (action === 'undo') rootApplication.branch1.undo(container);
-            else if (action === 'redo') rootApplication.branch1.redo(container);
-            else if (action === 'back') rootSwitchPage('home');
-          } else if (container.id === 'game') {
-            if (action === 'back') rootSwitchPage('home');
-          }
-        });
-
-        document.querySelector('.root-main').addEventListener('mouseover', (event) => {
-          const button = event.target.closest('.root-button');
-          if (button && button.dataset.tooltip) {
-            rootTooltipHandler.showTooltip(button.dataset.tooltip);
-          }
-        });
-
-        document.querySelector('.root-main').addEventListener('mouseout', (event) => {
-          const button = event.target.closest('.root-button');
-          if (button) rootTooltipHandler.hideTooltip();
-        });
-
-        document.addEventListener('keydown', (event) => {
-          if (event.key === 'Escape') {
-            document.querySelector('.root-loading-overlay').classList.remove('active');
-          }
-        });
-      };
-
-      window.rootApplication = {
-        branch1: {
-          save(container) {
-            console.log('[Background] Saving note');
-            try {
-              const note = rootState.branch1.text || '';
-              const blob = new Blob([note], { type: 'text/plain' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = 'note.md';
-              a.click();
-              URL.revokeObjectURL(url);
-              console.log('[Background] Note saved');
-            } catch (error) {
-              console.error(`[Error] Save failed: ${error}`);
-              alert('Failed to save note.');
-            }
-          },
-          load(container) {
-            console.log('[Background] Loading note');
-            try {
-              const input = document.createElement('input');
-              input.type = 'file';
-              input.accept = '.md';
-              input.addEventListener('change', (event) => {
-                const file = event.target.files[0];
-                if (file && (file.name.endsWith('.md') || file.type === 'text/plain' || file.type === 'application/octet-stream')) {
-                  const reader = new FileReader();
-                  reader.onload = (e) => {
-                    rootState.branch1.text = e.target.result.trim();
-                    rootState.branch1.history = [rootState.branch1.text];
-                    rootState.branch1.historyIndex = 0;
-                    rootState.branch1.cachedHtml = '';
-                    this.render(container);
-                    console.log('[Background] Note loaded');
-                  };
-                  reader.onerror = () => {
-                    console.error('[Error] Failed to read .md file');
-                    alert('Failed to load note.');
-                  };
-                  reader.readAsText(file);
-                }
-              });
-              input.click();
-            } catch (error) {
-              console.error(`[Error] Load failed: ${error}`);
-              alert('Failed to load note.');
-            }
-          },
-          importMedia(container) {
-            console.log('[Background] Importing media');
-            try {
-              const overlay = document.querySelector('.root-loading-overlay');
-              overlay.classList.add('active');
-              const input = document.createElement('input');
-              input.type = 'file';
-              input.accept = 'image/*,audio/mpeg,video/mp4';
-              input.addEventListener('change', async (event) => {
-                const file = event.target.files[0];
-                if (!file) {
-                  overlay.classList.remove('active');
-                  return;
-                }
-                if (file.size > 10 * 1024 * 1024) {
-                  overlay.classList.remove('active');
-                  alert('File too large. Maximum size is 10MB.');
-                  return;
-                }
-                if (file.type.startsWith('image/') || file.type === 'audio/mpeg' || file.type === 'video/mp4') {
-                  try {
-                    const base64 = await rootMediaHandler.fileToBase64(file);
-                    const type = rootMediaHandler.getFileType(file);
-                    if (type) {
-                      rootMediaHandler.insertMedia(container, base64, type, file.name);
-                      console.log('[Background] Media imported');
-                    }
-                  } catch (error) {
-                    console.error(`[Error] Media import failed: ${error}`);
-                    alert('Failed to import media.');
-                  }
-                } else {
-                  alert('Unsupported file type.');
-                }
-                overlay.classList.remove('active');
-              });
-              input.addEventListener('cancel', () => {
-                overlay.classList.remove('active');
-              });
-              input.click();
-            } catch (error) {
-              console.error(`[Error] Import failed: ${error}`);
-              alert('Failed to import media.');
-              document.querySelector('.root-loading-overlay').classList.remove('active');
-            }
-          },
-          toggleView(container) {
-            console.log('[Background] Toggling view mode');
-            try {
-              rootState.branch1.isViewMode = !rootState.branch1.isViewMode;
-              this.render(container);
-            } catch (error) {
-              console.error(`[Error] Toggle view failed: ${error}`);
-              alert('Failed to toggle view mode.');
-            }
-          },
-          undo(container) {
-            console.log('[Background] Undo action');
-            try {
-              if (rootState.branch1.historyIndex > 0) {
-                rootState.branch1.historyIndex--;
-                rootState.branch1.text = rootState.branch1.history[rootState.branch1.historyIndex];
-                rootState.branch1.cachedHtml = '';
-                this.render(container);
-              }
-            } catch (error) {
-              console.error(`[Error] Undo failed: ${error}`);
-              alert('Failed to undo.');
-            }
-          },
-          redo(container) {
-            console.log('[Background] Redo action');
-            try {
-              if (rootState.branch1.historyIndex < rootState.branch1.history.length - 1) {
-                rootState.branch1.historyIndex++;
-                rootState.branch1.text = rootState.branch1.history[rootState.branch1.historyIndex];
-                rootState.branch1.cachedHtml = '';
-                this.render(container);
-              }
-            } catch (error) {
-              console.error(`[Error] Redo failed: ${error}`);
-              alert('Failed to redo.');
-            }
-          },
-          render(container) {
-            console.log('[Background] Rendering notes');
-            try {
-              const input = container.querySelector('.branch1-note-input');
-              const view = container.querySelector('.branch1-note-view');
-              input.style.display = rootState.branch1.isViewMode ? 'none' : 'block';
-              view.classList.toggle('active', rootState.branch1.isViewMode);
-              input.value = rootState.branch1.text || '';
-              if (rootState.branch1.isViewMode) {
-                if (!rootState.branch1.cachedHtml) {
-                  rootState.branch1.cachedHtml = this.parseMarkdown(rootState.branch1.text || '');
-                }
-                view.innerHTML = rootState.branch1.cachedHtml;
-              } else {
-                view.innerHTML = '';
-                rootState.branch1.cachedHtml = '';
-              }
-              document.querySelector('.root-loading-screen').classList.add('hidden');
-              console.log('[Background] Loading screen hidden (notes)');
-            } catch (error) {
-              console.error(`[Error] Render failed: ${error}`);
-              alert('Failed to render note.');
-              document.querySelector('.root-loading-screen').classList.add('hidden');
-            }
-          },
-          parseMarkdown(text) {
-            const lines = text.split('\n');
-            let html = '';
-            let inList = false;
-            let listType = null;
-            let listDepth = 0;
-            let inCodeBlock = false;
-            let codeBlockContent = '';
-            let inTable = false;
-            let tableRows = [];
-            let tableHeaders = [];
-
-            for (let i = 0; i < lines.length; i++) {
-              let line = lines[i].trim();
-              if (!line) {
-                if (inList) {
-                  html += `</${listType}>`.repeat(listDepth);
-                  inList = false;
-                  listType = null;
-                  listDepth = 0;
-                }
-                if (inCodeBlock) {
-                  codeBlockContent += '\n';
-                } else if (inTable) {
-                  html += this.renderTable(tableHeaders, tableRows);
-                  inTable = false;
-                  tableHeaders = [];
-                  tableRows = [];
-                } else {
-                  html += '<br>';
-                }
-                continue;
-              }
-
-              if (inCodeBlock) {
-                if (line.match(/^```/)) {
-                  html += `<pre><code>${codeBlockContent}</code></pre>`;
-                  inCodeBlock = false;
-                  codeBlockContent = '';
-                } else {
-                  codeBlockContent += line + '\n';
-                }
-                continue;
-              }
-
-              if (line.match(/^```/)) {
-                if (inList) {
-                  html += `</${listType}>`.repeat(listDepth);
-                  inList = false;
-                  listType = null;
-                  listDepth = 0;
-                }
-                if (inTable) {
-                  html += this.renderTable(tableHeaders, tableRows);
-                  inTable = false;
-                  tableHeaders = [];
-                  tableRows = [];
-                }
-                inCodeBlock = true;
-                continue;
-              }
-
-              if (line.match(/^(---|\*\*\*|___)$/)) {
-                if (inList) {
-                  html += `</${listType}>`.repeat(listDepth);
-                  inList = false;
-                  listType = null;
-                  listDepth = 0;
-                }
-                if (inTable) {
-                  html += this.renderTable(tableHeaders, tableRows);
-                  inTable = false;
-                  tableHeaders = [];
-                  tableRows = [];
-                }
-                html += '<hr>';
-                continue;
-              }
-
-              if (line.startsWith('>')) {
-                if (inList) {
-                  html += `</${listType}>`.repeat(listDepth);
-                  inList = false;
-                  listType = null;
-                  listDepth = 0;
-                }
-                if (inTable) {
-                  html += this.renderTable(tableHeaders, tableRows);
-                  inTable = false;
-                  tableHeaders = [];
-                  tableRows = [];
-                }
-                html += `<blockquote>${this.parseInline(line.slice(1).trim())}</blockquote>`;
-                continue;
-              }
-
-              if (line.match(/^\|.*\|$/)) {
-                if (inList) {
-                  html += `</${listType}>`.repeat(listDepth);
-                  inList = false;
-                  listType = null;
-                  listDepth = 0;
-                }
-                try {
-                  const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell);
-                  if (!inTable) {
-                    if (cells.length === 0) continue;
-                    inTable = true;
-                    tableHeaders = cells;
-                    if (lines[i + 1] && lines[i + 1].match(/^\|[-:\s]+\|$/)) {
-                      i++;
-                    }
-                  } else {
-                    tableRows.push(cells);
-                  }
-                } catch (error) {
-                  console.warn(`[Warn] Malformed table row skipped: ${line}`);
-                  inTable = false;
-                  tableHeaders = [];
-                  tableRows = [];
-                }
-                continue;
-              } else if (inTable) {
-                html += this.renderTable(tableHeaders, tableRows);
-                inTable = false;
-                tableHeaders = [];
-                tableRows = [];
-              }
-
-              if (line.match(/^!\[([^\]]*)\]\((data:image\/[^)]+)\)/)) {
-                if (inList) {
-                  html += `</${listType}>`.repeat(listDepth);
-                  inList = false;
-                  listType = null;
-                  listDepth = 0;
-                }
-                const match = line.match(/^!\[([^\]]*)\]\((data:image\/[^)]+)\)/);
-                html += `<img src="${match[2]}" alt="${match[1]}">`;
-                continue;
-              }
-
-              if (line.match(/^\[audio\]\((data:audio\/[^)]+)\)/)) {
-                if (inList) {
-                  html += `</${listType}>`.repeat(listDepth);
-                  inList = false;
-                  listType = null;
-                  listDepth = 0;
-                }
-                const match = line.match(/^\[audio\]\((data:audio\/[^)]+)\)/);
-                html += `<audio controls src="${match[1]}"></audio>`;
-                continue;
-              }
-
-              if (line.match(/^\[video\]\((data:video\/[^)]+)\)/)) {
-                if (inList) {
-                  html += `</${listType}>`.repeat(listDepth);
-                  inList = false;
-                  listType = null;
-                  listDepth = 0;
-                }
-                const match = line.match(/^\[video\]\((data:video\/[^)]+)\)/);
-                html += `<video controls src="${match[1]}"></video>`;
-                continue;
-              }
-
-              if (line.startsWith('###')) {
-                if (inList) {
-                  html += `</${listType}>`.repeat(listDepth);
-                  inList = false;
-                  listType = null;
-                  listDepth = 0;
-                }
-                html += `<h3>${this.parseInline(line.slice(3).trim())}</h3>`;
-                continue;
-              } else if (line.startsWith('##')) {
-                if (inList) {
-                  html += `</${listType}>`.repeat(listDepth);
-                  inList = false;
-                  listType = null;
-                  listDepth = 0;
-                }
-                html += `<h2>${this.parseInline(line.slice(2).trim())}</h2>`;
-                continue;
-              } else if (line.startsWith('#')) {
-                if (inList) {
-                  html += `</${listType}>`.repeat(listDepth);
-                  inList = false;
-                  listType = null;
-                  listDepth = 0;
-                }
-                html += `<h1>${this.parseInline(line.slice(1).trim())}</h1>`;
-                continue;
-              }
-
-              const indentLevel = line.match(/^\s*/)[0].length / 2;
-              if (line.match(/^\s*[-*]\s/) || line.match(/^\s*\d+\.\s/)) {
-                const isOrdered = line.match(/^\s*\d+\.\s/);
-                const currentType = isOrdered ? 'ol' : 'ul';
-                const trimmedLine = line.replace(/^\s*/, '');
-                const content = isOrdered ? trimmedLine.replace(/^\d+\.\s/, '').trim() : trimmedLine.slice(2).trim();
-
-                if (!inList) {
-                  inList = true;
-                  listType = currentType;
-                  listDepth = indentLevel + 1;
-                  html += `<${currentType}>`;
-                } else if (indentLevel > listDepth - 1) {
-                  html += `<${currentType}>`;
-                  listDepth++;
-                  listType = currentType;
-                } else if (indentLevel < listDepth - 1) {
-                  html += `</${listType}>`.repeat(listDepth - indentLevel - 1);
-                  listDepth = indentLevel + 1;
-                  listType = currentType;
-                } else if (listType !== currentType) {
-                  html += `</${listType}><${currentType}>`;
-                  listType = currentType;
-                }
-
-                html += `<li>${this.parseInline(content)}</li>`;
-                continue;
-              } else if (inList) {
-                html += `</${listType}>`.repeat(listDepth);
-                inList = false;
-                listType = null;
-                listDepth = 0;
-              }
-
-              html += `<p>${this.parseInline(line)}</p>`;
-            }
-
-            if (inList) html += `</${listType}>`.repeat(listDepth);
-            if (inCodeBlock) html += `<pre><code>${codeBlockContent}</code></pre>`;
-            if (inTable) html += this.renderTable(tableHeaders, tableRows);
-            return html;
-          },
-          renderTable(headers, rows) {
-            try {
-              if (headers.length === 0) return '';
-              let html = '<table>';
-              html += '<tr>' + headers.map(header => `<th>${this.parseInline(header)}</th>`).join('') + '</tr>';
-              html += rows.map(row => `<tr>${row.map(cell => `<td>${this.parseInline(cell)}</td>`).join('')}</tr>`).join('');
-              html += '</table>';
-              return html;
-            } catch (error) {
-              console.warn(`[Error] Failed to render table: ${error}`);
-              return '';
-            }
-          },
-          parseInline(text) {
-            text = text.replace(/\\([*_\-\[\]\(\)#>|`])/g, '$1');
-            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
-            text = text.replace(/~~(.*?)~~/g, '<del>$1</del>');
-            text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
-            text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-            return text;
-          }
-        },
-        branch2: {
-          render(container) {
-            console.log('[Background] Rendering game');
-            try {
-              const canvas = container.querySelector('.branch2-game-canvas');
-              const ctx = canvas.getContext('2d');
-              ctx.clearRect(0, 0, canvas.width, canvas.height);
-              ctx.fillStyle = 'hsl(0, 0%, 50%)';
-              ctx.fillRect(10, 10, 50, 50);
-              document.querySelector('.root-loading-screen').classList.add('hidden');
-              console.log('[Background] Loading screen hidden (game)');
-            } catch (error) {
-              console.error(`[Error] Game render failed: ${error}`);
-              alert('Failed to render game.');
-            }
-          }
-        }
-      };
-
-      rootInitialize();
+      root.init();
     })();
   </script>
-  <!-- End JS Zone: Root Logic -->
 </body>
-
 </html>

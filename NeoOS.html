@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- DON'T DELETE:
+Features: Static root page, per-page loading screens, async page init, data export/import, save reminder, JSON file for all data, branchX_data validation
+Naming: Use `root-` for core/shared elements, `branchX-` for page-specific, X is number
+Rules: No external libs, no internet, minimal, modular, responsive, self-contained, future-proof, no abbreviations, 5 HSL color variables only
+Guide to Add New App (from separate HTML/CSS/JS files):
+1. HTML: Copy app's main markup (e.g., <div>, <input>, <canvas>) into <template id="branchX-template">, inside .branchX-component-group. Use .root-component-* classes for styling.
+2. CSS: Reuse .root-component-* styles. Add unique styles (e.g., layout, canvas) to .branchX-component-group in CSS. Keep it minimal, move shared styles to :root.
+3. JS: Paste app logic into App.Branch.branchX.init. Update selectors to match .root-component-*. Store data in App.state.data.branchX_data for JSON export via branch5.
+4. Test: Click branchX link, check UI/functionality, ensure data saves via branch5 export. Debug with console.log.
+-->
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life OS</title>
+    <style>
+        :root {
+            --root-color-background: hsl(0, 0%, 90%); /* Light gray */
+            --root-color-text: hsl(0, 0%, 10%); /* Near black */
+            --root-color-accent: hsl(0, 0%, 30%); /* Dark gray */
+            --root-color-card: hsl(0, 0%, 100%); /* White */
+            --root-color-shadow: hsl(0, 0%, 50%); /* Mid gray */
+            --root-padding: 1rem;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: sans-serif, monospace;
+            background: var(--root-color-background);
+            color: var(--root-color-text);
+            min-height: 100vh;
+            width: 100vw;
+        }
+
+        .root-container {
+            width: 100%;
+            padding: var(--root-padding);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            max-height: 100vh;
+        }
+
+        .root-container::-webkit-scrollbar,
+        .root-page::-webkit-scrollbar,
+        .branch1-container::-webkit-scrollbar,
+        .branch2-container::-webkit-scrollbar,
+        .branch3-container::-webkit-scrollbar,
+        .branch4-container::-webkit-scrollbar,
+        .branch5-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .root-container::-webkit-scrollbar-track,
+        .root-page::-webkit-scrollbar-track,
+        .branch1-container::-webkit-scrollbar-track,
+        .branch2-container::-webkit-scrollbar-track,
+        .branch3-container::-webkit-scrollbar-track,
+        .branch4-container::-webkit-scrollbar-track,
+        .branch5-container::-webkit-scrollbar-track {
+            background: var(--root-color-card);
+            border: 1px solid var(--root-color-text);
+        }
+
+        .root-container::-webkit-scrollbar-thumb,
+        .root-page::-webkit-scrollbar-thumb,
+        .branch1-container::-webkit-scrollbar-thumb,
+        .branch2-container::-webkit-scrollbar-thumb,
+        .branch3-container::-webkit-scrollbar-thumb,
+        .branch4-container::-webkit-scrollbar-thumb,
+        .branch5-container::-webkit-scrollbar-thumb {
+            background: var(--root-color-accent);
+            border: 1px solid var(--root-color-text);
+        }
+
+        .root-link {
+            color: var(--root-color-accent);
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .root-paragraph {
+            font-size: 1rem;
+            line-height: 1.5;
+            padding: var(--root-padding);
+        }
+
+        .root-page {
+            background: var(--root-color-card);
+            border: 2px solid var(--root-color-text);
+            width: min(80vw, 80vh);
+            aspect-ratio: 1 / 1;
+            overflow-y: auto;
+            margin: 0 auto;
+            display: none;
+        }
+
+        .root-page.active {
+            display: block;
+        }
+
+        #root-loading-screen,
+        .root-page-loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--root-color-card);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--root-color-text);
+            z-index: 1000;
+        }
+
+        #root-loading-screen.hidden,
+        .root-page-loading.hidden {
+            display: none;
+        }
+
+        #root-error,
+        .branch5-error {
+            display: none;
+            color: var(--root-color-accent);
+            padding: var(--root-padding);
+        }
+
+        .branch1-container,
+        .branch2-container,
+        .branch3-container,
+        .branch4-container,
+        .branch5-container {
+            display: flex;
+            flex-direction: column;
+            gap: var(--root-padding);
+            padding: var(--root-padding);
+            overflow-y: auto;
+            height: 100%;
+        }
+
+        .branch1-component-group,
+        .branch2-component-group,
+        .branch3-component-group,
+        .branch4-component-group,
+        .branch5-component-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        /* Generic form element styles */
+        .root-component-button,
+        .root-component-input-text,
+        .root-component-input-number,
+        .root-component-input-date,
+        .root-component-input-color,
+        .root-component-input-range,
+        .root-component-select,
+        .root-component-textarea {
+            background: var(--root-color-card);
+            border: 2px solid var(--root-color-text);
+            padding: 0.5rem;
+            font-family: inherit;
+            color: var(--root-color-text);
+            width: 100%;
+            max-width: 300px;
+            min-height: 40px;
+            margin: 0 auto;
+        }
+
+        .root-component-button {
+            background: var(--root-color-accent);
+            color: var(--root-color-card);
+            cursor: pointer;
+        }
+
+        .root-component-input-checkbox,
+        .root-component-input-radio {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--root-color-card);
+            border: 2px solid var(--root-color-text);
+            cursor: pointer;
+            margin: 0 auto;
+        }
+
+        .root-component-input-checkbox:checked,
+        .root-component-input-radio:checked {
+            background: var(--root-color-accent);
+        }
+
+        .root-component-input-radio {
+            border-radius: 50%;
+        }
+
+        .root-component-input-range {
+            appearance: none;
+            height: 8px;
+            background: var(--root-color-card);
+            border: 2px solid var(--root-color-text);
+        }
+
+        .root-component-input-range::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--root-color-accent);
+            border: 2px solid var(--root-color-text);
+            cursor: pointer;
+        }
+
+        .root-component-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%23181818'><polygon points='0,0 10,0 5,10'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 10px;
+            padding-right: 1.5rem;
+        }
+
+        .root-component-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* Branch-specific styles */
+        .branch1-component-group {
+            align-items: center; /* Center content for branch1 */
+        }
+
+        .branch2-component-group {
+            justify-content: flex-start; /* Align top for branch2 */
+        }
+
+        .branch3-component-group {
+            padding: 0.5rem; /* Small padding for branch3 */
+        }
+
+        .branch4-component-group {
+            gap: 1rem; /* Larger gap for branch4 */
+        }
+
+        .branch5-component-group {
+            align-items: stretch; /* Stretch items for branch5 */
+        }
+
+        .root-branch-container {
+            display: none;
+        }
+
+        .root-branch-container.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root-loading-screen">Loading...</div>
+    <main class="root-container">
+        <div id="root-error"></div>
+        <p class="root-paragraph">
+            Explore <span class="root-link" data-page="branch1">Branch 1</span>.
+        </p>
+        <div class="root-branch-container" data-page="branch1"></div>
+        <p class="root-paragraph">
+            Check out <span class="root-link" data-page="branch2">Branch 2</span>.
+        </p>
+        <div class="root-branch-container" data-page="branch2"></div>
+        <p class="root-paragraph">
+            Visit <span class="root-link" data-page="branch3">Branch 3</span>.
+        </p>
+        <div class="root-branch-container" data-page="branch3"></div>
+        <p class="root-paragraph">
+            Discover <span class="root-link" data-page="branch4">Branch 4</span>.
+        </p>
+        <div class="root-branch-container" data-page="branch4"></div>
+        <p class="root-paragraph">
+            Manage data in <span class="root-link" data-page="branch5">Branch 5</span>.
+        </p>
+        <div class="root-branch-container" data-page="branch5"></div>
+    </main>
+
+    <template id="branch1-template">
+        <section id="branch1" class="root-page" role="region" aria-label="Branch 1">
+            <div class="root-page-loading">Loading...</div>
+            <div class="branch1-container">
+                <div class="branch1-component-group">
+                    <div class="branch1-placeholder">Branch 1 Placeholder</div>
+                </div>
+            </div>
+        </section>
+    </template>
+    <template id="branch2-template">
+        <section id="branch2" class="root-page" role="region" aria-label="Branch 2">
+            <div class="root-page-loading">Loading...</div>
+            <div class="branch2-container">
+                <div class="branch2-component-group">
+                    <div class="branch2-placeholder">Branch 2 Placeholder</div>
+                </div>
+            </div>
+        </section>
+    </template>
+    <template id="branch3-template">
+        <section id="branch3" class="root-page" role="region" aria-label="Branch 3">
+            <div class="root-page-loading">Loading...</div>
+            <div class="branch3-container">
+                <div class="branch3-component-group">
+                    <div class="branch3-placeholder">Branch 3 Placeholder</div>
+                </div>
+            </div>
+        </section>
+    </template>
+    <template id="branch4-template">
+        <section id="branch4" class="root-page" role="region" aria-label="Branch 4">
+            <div class="root-page-loading">Loading...</div>
+            <div class="branch4-container">
+                <div class="branch4-component-group">
+                    <div class="branch4-placeholder">Branch 4 Placeholder</div>
+                </div>
+            </div>
+        </section>
+    </template>
+    <template id="branch5-template">
+        <section id="branch5" class="root-page" role="region" aria-label="Branch 5">
+            <div class="root-page-loading">Loading...</div>
+            <div class="branch5-container">
+                <div class="branch5-component-group">
+                    <button class="root-component-button" data-action="export-data">Export Data</button>
+                    <div id="branch5-error-export-data" class="branch5-error"></div>
+                </div>
+                <div class="branch5-component-group">
+                    <button class="root-component-button" data-action="import-data">Import Data</button>
+                    <div id="branch5-error-import-data" class="branch5-error"></div>
+                </div>
+                <div class="branch5-component-group">
+                    <button class="root-component-button" data-action="clear-cache">Clear Cache</button>
+                    <div id="branch5-error-clear-cache" class="branch5-error"></div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <script>
+        (function () {
+            const App = {
+                state: {
+                    currentPage: null,
+                    templateCache: new Map(),
+                    data: {},
+                    pages: {
+                        branch1: { template: 'branch1-template', label: 'Branch 1' },
+                        branch2: { template: 'branch2-template', label: 'Branch 2' },
+                        branch3: { template: 'branch3-template', label: 'Branch 3' },
+                        branch4: { template: 'branch4-template', label: 'Branch 4' },
+                        branch5: { template: 'branch5-template', label: 'Branch 5' }
+                    }
+                },
+
+                initialize: function () {
+                    document.addEventListener('DOMContentLoaded', () => {
+                        this.addEventListeners();
+                        document.getElementById('root-loading-screen').classList.add('hidden');
+                        window.addEventListener('beforeunload', (e) => {
+                            if (Object.keys(this.state.data).length) {
+                                e.preventDefault();
+                                e.returnValue = 'Export data before closing!';
+                            }
+                        });
+                    });
+                },
+
+                addEventListeners: function () {
+                    const container = document.querySelector('.root-container');
+                    container.addEventListener('click', (e) => {
+                        if (e.target.classList.contains('root-link')) {
+                            e.preventDefault();
+                            this.togglePage(e.target.getAttribute('data-page'));
+                        }
+                    });
+                    container.addEventListener('keydown', (e) => {
+                        if (e.target.classList.contains('root-link') && (e.key === 'Enter' || e.key === ' ')) {
+                            e.preventDefault();
+                            this.togglePage(e.target.getAttribute('data-page'));
+                        }
+                    });
+                },
+
+                togglePage: async function (pageId) {
+                    if (this.state.currentPage) {
+                        const activePage = document.querySelector('.root-page.active');
+                        const activeContainer = document.querySelector('.root-branch-container.active');
+                        if (activePage) {
+                            activePage.classList.remove('active');
+                            activePage.remove();
+                        }
+                        if (activeContainer) {
+                            activeContainer.classList.remove('active');
+                        }
+                    }
+                    if (!pageId || pageId === this.state.currentPage) {
+                        this.state.currentPage = null;
+                        return;
+                    }
+                    if (!this.state.pages[pageId]) {
+                        this.showError('root-error', 'Page not found.');
+                        return;
+                    }
+
+                    let targetPage;
+                    if (this.state.templateCache.has(pageId)) {
+                        targetPage = this.state.templateCache.get(pageId).cloneNode(true);
+                    } else {
+                        const template = document.getElementById(this.state.pages[pageId].template);
+                        if (template?.content?.firstElementChild) {
+                            const rawTemplate = template.content.firstElementChild.cloneNode(true);
+                            this.state.templateCache.set(pageId, rawTemplate);
+                            targetPage = rawTemplate.cloneNode(true);
+                        } else {
+                            this.showError('root-error', 'Template error.');
+                            return;
+                        }
+                    }
+
+                    const container = document.querySelector(`.root-branch-container[data-page="${pageId}"]`);
+                    if (!container) {
+                        this.showError('root-error', 'Container not found.');
+                        return;
+                    }
+
+                    container.appendChild(targetPage);
+                    container.classList.add('active');
+                    const loadingDiv = targetPage.querySelector('.root-page-loading');
+                    try {
+                        const initResult = this.Branch[pageId].init(targetPage);
+                        if (initResult instanceof Promise) await initResult;
+                        this.state.currentPage = pageId;
+                        targetPage.classList.add('active');
+                        if (loadingDiv) loadingDiv.classList.add('hidden');
+                    } catch (err) {
+                        this.showError('root-error', 'Page failed to load.');
+                        targetPage.remove();
+                        container.classList.remove('active');
+                    }
+                },
+
+                showError: function (id, message) {
+                    const errorDiv = document.getElementById(id);
+                    errorDiv.textContent = message;
+                    errorDiv.style.display = 'block';
+                    setTimeout(() => errorDiv.style.display = 'none', 2000);
+                },
+
+                exportData: function () {
+                    try {
+                        const data = {};
+                        Object.keys(this.state.pages).forEach(pageId => {
+                            const key = `${pageId}_data`;
+                            if (this.state.data[key]) {
+                                data[key] = this.state.data[key];
+                            }
+                        });
+                        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'life-os.json';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        this.showError('branch5-error-export-data', 'Data exported!');
+                    } catch (e) {
+                        this.showError('branch5-error-export-data', 'Export failed. Try again.');
+                    }
+                },
+
+                importData: function () {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.json';
+                    input.onchange = (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            try {
+                                const data = JSON.parse(event.target.result);
+                                this.state.templateCache.clear();
+                                this.state.data = {};
+                                let hasInvalid = false;
+                                Object.entries(data).forEach(([key, value]) => {
+                                    const pageId = key.replace('_data', '');
+                                    if (key.endsWith('_data') && this.state.pages[pageId]) {
+                                        try {
+                                            JSON.parse(value);
+                                            this.state.data[key] = value;
+                                        } catch (e) {
+                                            hasInvalid = true;
+                                        }
+                                    } else {
+                                        hasInvalid = true;
+                                    }
+                                });
+                                if (this.state.currentPage) {
+                                    const pageId = this.state.currentPage;
+                                    this.togglePage();
+                                    this.togglePage(pageId);
+                                }
+                                this.showError('branch5-error-import-data', hasInvalid ? 'Data imported, some invalid data ignored.' : 'Data imported!');
+                            } catch (e) {
+                                this.showError('branch5-error-import-data', 'Invalid file.');
+                            }
+                        };
+                        reader.readAsText(file);
+                    };
+                    input.click();
+                },
+
+                clearCache: function () {
+                    try {
+                        this.state.templateCache.clear();
+                        this.state.data = {};
+                        if (this.state.currentPage) {
+                            const pageId = this.state.currentPage;
+                            this.togglePage();
+                            this.togglePage(pageId);
+                        }
+                        this.showError('branch5-error-clear-cache', 'Cache cleared!');
+                    } catch (e) {
+                        this.showError('branch5-error-clear-cache', 'Clear failed. Try again.');
+                    }
+                }
+            };
+
+            App.Branch = {
+                branch1: { init: function () { } },
+                branch2: { init: function () { } },
+                branch3: { init: function () { } },
+                branch4: { init: function () { } },
+                branch5: {
+                    init: function (page) {
+                        page.querySelectorAll('.root-component-button').forEach(button => {
+                            const handleInteraction = (e) => {
+                                e.preventDefault();
+                                const action = e.target.getAttribute('data-action');
+                                if (action === 'export-data') App.exportData();
+                                if (action === 'import-data') App.importData();
+                                if (action === 'clear-cache') App.clearCache();
+                            };
+                            button.addEventListener('click', handleInteraction);
+                            button.addEventListener('touchend', handleInteraction);
+                        });
+                    }
+                }
+            };
+
+            App.initialize();
+        })();
+    </script>
+</body>
+</html>
