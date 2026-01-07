@@ -1,31 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <!--
-Rules: No libraries, no frameworks, no external dependencies, modular, responsive, self-contained, 5 HSL color variables, "root" prefix for core, "branchX" for branch-specific. Hardcode branch values, minimal effects (hover/click scale), isolate branches.
+Rules: No libraries, no frameworks, no external dependencies, modular, responsive, self-contained, 5 HSL color variables, "root" prefix for core, "branchX" for branch-specific. Hardcode branch values, minimal effects (hover/click scale), isolate branches. All numbers scalable by 5.
 Dev Guide: New branch format:
   branchX: (() => {
     const container = document.createElement('div');
     container.innerHTML = `<div id="branchX-content">Hello, Branch X!</div>`;
-    return { id: 'branchX', content: container.firstElementChild, css: `#branchX-content { color: hsl(0, 0%, 75%); }`, init: zone => {} };
+    return { id: 'branchX', content: container.firstElementChild, css: `#branchX-content { color: var(--color-primary); }`, init: zone => {} };
   })()
 IMPORTANT: This block cannot be edited except by Sho-the author.
 -->
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Life OS</title>
   <style>
     :root {
-      --color-background: hsl(0, 0%, 10%); /* Deep black */
-      --color-text: hsl(0, 0%, 90%); /* Soft white */
-      --color-primary: hsl(0, 0%, 75%); /* Light gray */
-      --color-secondary: hsl(0, 0%, 50%); /* Mid gray */
-      --color-highlight: hsl(200, 100%, 50%); /* Cyan highlight */
+      --color-background: hsl(0, 0%, 10%);
+      --color-text: hsl(0, 0%, 90%);
+      --color-primary: hsl(0, 0%, 75%);
+      --color-secondary: hsl(0, 0%, 50%);
+      --color-highlight: hsl(200, 100%, 50%);
       --root-toolbar-size: 25px;
       --root-padding: 10px;
       --root-font-size: 15px;
-      --root-font-family: 'Courier New', monospace;
+      --root-line-height: 1.5;
+      --root-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --root-shadow-opacity: 0.5;
+      --root-text-shadow: 0 0.5px 0 hsl(0, 0%, 100%, 0.5);
+      --root-transition-speed: 1s;
+      --root-border-radius: 5px;
+      --root-animation-duration: 1s;
     }
+
     * {
       margin: 0;
       padding: 0;
@@ -33,30 +41,54 @@ IMPORTANT: This block cannot be edited except by Sho-the author.
       font-family: var(--root-font-family);
       color: var(--color-text);
       font-size: var(--root-font-size);
+      line-height: var(--root-line-height);
+      text-shadow: var(--root-text-shadow);
       scrollbar-width: none;
     }
-    *::-webkit-scrollbar { display: none; }
-    input, button {
+
+    *::-webkit-scrollbar {
+      display: none;
+    }
+
+    input,
+    button {
       background: transparent;
       border: none;
       padding: calc(var(--root-padding) / 2);
-      transition: transform 0.2s ease, color 0.2s ease;
+      transition: transform var(--root-transition-speed) ease, color var(--root-transition-speed) ease;
+      border-radius: var(--root-border-radius);
     }
+
     input:focus {
       outline: none;
       color: var(--color-primary);
     }
+
     input::placeholder {
       color: var(--color-secondary);
     }
+
     button {
       color: var(--color-highlight);
       cursor: pointer;
     }
-    button:hover { transform: scale(1.05); }
-    button:active { transform: scale(0.95); }
-    output { color: var(--color-primary); }
-    #root-data-file-input { display: none; }
+
+    button:hover {
+      transform: scale(1.05);
+    }
+
+    button:active {
+      transform: scale(0.95);
+    }
+
+    output {
+      color: var(--color-primary);
+    }
+
+    #root-data-file-input {
+      display: none;
+    }
+
     body {
       height: 100vh;
       overflow: hidden;
@@ -64,6 +96,7 @@ IMPORTANT: This block cannot be edited except by Sho-the author.
       position: fixed;
       width: 100%;
     }
+
     #root-background canvas {
       position: fixed;
       top: 0;
@@ -72,6 +105,7 @@ IMPORTANT: This block cannot be edited except by Sho-the author.
       height: 100%;
       z-index: 1;
     }
+
     #root-foreground {
       position: fixed;
       top: 0;
@@ -80,6 +114,7 @@ IMPORTANT: This block cannot be edited except by Sho-the author.
       height: 100%;
       z-index: 3;
     }
+
     #root-toolbar-container {
       position: fixed;
       top: 0;
@@ -88,26 +123,33 @@ IMPORTANT: This block cannot be edited except by Sho-the author.
       height: 100%;
       pointer-events: none;
     }
+
     .root-toolbar {
       background: transparent;
-      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+      filter: drop-shadow(0 2px 5px hsl(0, 0%, 0%, var(--root-shadow-opacity)));
       position: absolute;
       display: flex;
       align-items: center;
-      padding: 0 calc(var(--root-padding) / 2);
-      pointer-events: auto;
+      justify-content: center;
+      padding: calc(var(--root-padding) / 2);
       font-size: var(--root-font-size);
+      line-height: var(--root-line-height);
+      pointer-events: auto;
       touch-action: auto;
+      border-radius: var(--root-border-radius);
     }
+
     #root-toolbar-input {
       top: 0;
       left: var(--root-toolbar-size);
       width: 50%;
       height: var(--root-toolbar-size);
     }
+
     #root-toolbar-input input {
       width: 100%;
     }
+
     #root-toolbar-output {
       top: 0;
       right: var(--root-toolbar-size);
@@ -116,34 +158,40 @@ IMPORTANT: This block cannot be edited except by Sho-the author.
       overflow-y: auto;
       scroll-behavior: smooth;
     }
+
     #root-toolbar-output span {
       width: 100%;
       text-align: right;
     }
+
     #root-toolbar-bottom {
       bottom: 0;
       left: var(--root-toolbar-size);
       right: var(--root-toolbar-size);
       height: var(--root-toolbar-size);
-      justify-content: center;
     }
+
     #root-toolbar-left {
       left: 0;
       top: var(--root-toolbar-size);
       bottom: var(--root-toolbar-size);
       width: var(--root-toolbar-size);
-      writing-mode: vertical-rl;
-      justify-content: center;
+      writing-mode: sideways-lr;
     }
+
     #root-toolbar-right {
       right: 0;
       top: var(--root-toolbar-size);
       bottom: var(--root-toolbar-size);
       width: var(--root-toolbar-size);
-      writing-mode: vertical-rl;
-      justify-content: center;
+      writing-mode: sideways-rl;
     }
-    #root-command-input:hover, #root-command-input:focus { transform: scale(1.02); }
+
+    #root-command-input:hover,
+    #root-command-input:focus {
+      transform: scale(1.02);
+    }
+
     #root-branch-zone {
       position: fixed;
       top: var(--root-toolbar-size);
@@ -156,8 +204,9 @@ IMPORTANT: This block cannot be edited except by Sho-the author.
       padding: var(--root-padding);
       overflow: auto;
       touch-action: auto;
-      animation: fade 0.5s ease;
+      animation: fade var(--root-animation-duration) ease;
     }
+
     #root-branch-loading {
       color: var(--color-primary);
       text-align: center;
@@ -166,412 +215,792 @@ IMPORTANT: This block cannot be edited except by Sho-the author.
       align-items: center;
       justify-content: center;
     }
+
     #branch1-content {
       color: var(--color-primary);
       text-align: center;
       flex: 1;
       display: flex;
-      align-items: center;
-      justify-content: center;
+      flex-direction: column;
+      gap: 15px;
+      padding: 10px;
+      max-width: 65%;
+      margin: 15px auto;
     }
-    @keyframes fade { 0% { opacity: 0; } 100% { opacity: 1; } }
+
+    #branch1-content h1 {
+      font-size: calc(var(--root-font-size) * 2);
+      color: var(--color-primary);
+    }
+
+    #branch1-content h2 {
+      font-size: calc(var(--root-font-size) * 1.25);
+      color: var(--color-primary);
+    }
+
+    #branch1-content p,
+    #branch1-content ul,
+    #branch1-content blockquote {
+      text-align: left;
+      color: var(--color-text);
+    }
+
+    #branch1-content ul {
+      list-style: disc;
+      padding-left: 20px;
+    }
+
+    #branch1-content blockquote {
+      border-left: 5px solid var(--color-highlight);
+      padding-left: 10px;
+      margin: 10px 0;
+    }
+
+    @keyframes fade {
+      0% {
+        opacity: 0;
+      }
+
+      100% {
+        opacity: 1;
+      }
+    }
   </style>
 </head>
+
 <body>
   <div id="root-background"><canvas id="root-background-canvas"></canvas></div>
   <div id="root-foreground">
     <div id="root-toolbar-container">
-      <div id="root-toolbar-input" class="root-toolbar">
+      <div id="root-toolbar-input" class="root-toolbar" aria-label="Command input toolbar">
         <input id="root-command-input" type="text" placeholder="TYPE SHIT HERE" aria-label="Command input">
       </div>
-      <div id="root-toolbar-output" class="root-toolbar">
+      <div id="root-toolbar-output" class="root-toolbar" aria-label="Command output toolbar">
         <span id="root-command-output"></span>
       </div>
-      <div id="root-toolbar-bottom" class="root-toolbar">BOTTOM</div>
-      <div id="root-toolbar-left" class="root-toolbar">LEFT</div>
-      <div id="root-toolbar-right" class="root-toolbar">RIGHT</div>
+      <div id="root-toolbar-bottom" class="root-toolbar" aria-label="Bottom toolbar">BOTTOM</div>
+      <div id="root-toolbar-left" class="root-toolbar" aria-label="Left toolbar">LEFT</div>
+      <div id="root-toolbar-right" class="root-toolbar" aria-label="Right toolbar">RIGHT</div>
     </div>
-    <div id="root-branch-zone"></div>
+    <div id="root-branch-zone" role="region" aria-label="Branch content"></div>
     <input id="root-data-file-input" type="file" accept=".json">
   </div>
   <script>
-    const rootState = {
-      currentBranch: '',
-      templateCache: new Map(),
-      cacheLimit: 5,
-      isBusy: false,
-      commandQueue: [],
-      listeners: new Map(),
-      listenersLimit: 50,
-      colors: (() => {
-        const fallback = {
-          background: 'hsl(0, 0%, 10%)',
-          text: 'hsl(0, 0%, 90%)',
-          primary: 'hsl(0, 0%, 75%)',
-          secondary: 'hsl(0, 0%, 50%)',
-          highlight: 'hsl(200, 100%, 50%)'
-        };
-        try {
-          const styles = getComputedStyle(document.documentElement);
-          return {
-            background: styles.getPropertyValue('--color-background').trim() || fallback.background,
-            text: styles.getPropertyValue('--color-text').trim() || fallback.text,
-            primary: styles.getPropertyValue('--color-primary').trim() || fallback.primary,
-            secondary: styles.getPropertyValue('--color-secondary').trim() || fallback.secondary,
-            highlight: styles.getPropertyValue('--color-highlight').trim() || fallback.highlight
-          };
-        } catch (e) {
-          console.error('[Error] Colors: Failed to fetch', e.message);
-          return fallback;
-        }
-      })(),
-      events: {
-        handlers: {},
-        on(event, callback) {
-          try {
-            if (!this.handlers[event]) this.handlers[event] = [];
-            if (this.handlers[event].length < 10) this.handlers[event].push(callback);
-          } catch (e) {
-            console.error(`[Error] Event ${event}: Failed to register`, e.message);
-          }
-        },
-        emitAsync(event, data) {
-          try {
-            if (!this.handlers[event]) return Promise.resolve([]);
-            return Promise.all(this.handlers[event].map(async callback => {
-              try { return await callback(data); } catch (e) {
-                console.error(`[Error] Event ${event}: Handler failed`, e.message);
-                return null;
-              }
-            })).then(results => results.filter(r => r));
-          } catch (e) {
-            console.error(`[Error] Event ${event}: Emit failed`, e.message);
-            return Promise.reject(e);
-          }
-        },
-        off(event, callback) {
-          try {
-            if (!this.handlers[event]) return;
-            if (callback) this.handlers[event] = this.handlers[event].filter(cb => cb !== callback);
-            else delete this.handlers[event];
-            if (!this.handlers[event]?.length) delete this.handlers[event];
-          } catch (e) {
-            console.error(`[Error] Event ${event}: Failed to clear`, e.message);
-          }
-        }
-      },
-      dataManager: {
-        data: {},
-        async saveData() {
-          try {
-            if (rootState.isBusy) throw new Error('System busy');
-            rootState.isBusy = true;
-            const output = document.getElementById('root-command-output');
-            output.textContent = 'SAVING...';
-            const states = await rootState.events.emitAsync('save');
-            const data = { app: 'life-os', version: '1.0', data: {} };
-            states.forEach(s => s?.id && typeof s.state === 'object' && (data.data[s.id] = s.state));
-            const jsonString = JSON.stringify(data, null, 2);
-            if (jsonString.length > 10 * 1024 * 1024) throw new Error('Data too large, max 10MB');
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'data.json';
-            a.click();
-            URL.revokeObjectURL(url);
-            localStorage.setItem('life-os-backup', jsonString);
-            output.textContent = 'SAVED DATA.JSON';
-          } catch (e) {
-            showError('Oof, file too big, keep it under 10MB!', '[Error] Save: Failed', e.message);
-          } finally {
-            rootState.isBusy = false;
-            processCommandQueue();
-          }
-        },
-        async loadData(file) {
-          try {
-            if (rootState.isBusy) throw new Error('System busy');
-            if (file.size > 10 * 1024 * 1024) throw new Error('File too large, max 10MB');
-            rootState.isBusy = true;
-            const output = document.getElementById('root-command-output');
-            output.textContent = 'LOADING...';
-            const backup = localStorage.getItem('life-os-backup');
-            let backupData = {};
-            try {
-              if (backup) backupData = JSON.parse(backup);
-            } catch (e) {
-              console.error('[Error] Backup: Corrupt', e.message);
-            }
-            const reader = new FileReader();
-            reader.onload = async e => {
-              try {
-                const data = JSON.parse(e.target.result);
-                if (data.app !== 'life-os' || data.version !== '1.0') throw new Error('Invalid file format');
-                rootState.dataManager.data = data.data;
-                await rootState.events.emitAsync('load', data.data);
-                localStorage.setItem('life-os-backup', JSON.stringify(data));
-                if (rootState.currentBranch && branches[rootState.currentBranch]) {
-                  output.textContent = 'LOADED, RELOADING';
-                  await loadBranch(document.getElementById('root-branch-zone'), branches[rootState.currentBranch]);
-                } else {
-                  output.textContent = 'LOADED DATA';
-                }
-              } catch (e) {
-                showError(e.message.includes('Invalid file') ? 'Oof, bad file format, try again!' : 'Oof, bad JSON, try again!', '[Error] Load: Failed', e.message);
-                if (backupData.app === 'life-os' && backupData.version === '1.0') {
-                  rootState.dataManager.data = backupData.data;
-                  await rootState.events.emitAsync('load', backupData.data);
-                  if (rootState.currentBranch && branches[rootState.currentBranch]) {
-                    output.textContent = 'RESTORED, RELOADING';
-                    await loadBranch(document.getElementById('root-branch-zone'), branches[rootState.currentBranch]);
-                  } else {
-                    output.textContent = 'RESTORED BACKUP';
-                  }
-                }
-              } finally {
-                rootState.isBusy = false;
-                processCommandQueue();
-              }
+    (function () {
+      const RootZone = () => {
+        const rootState = {
+          currentBranch: '',
+          templateCache: new Map(),
+          cacheLimit: 5,
+          isBusy: false,
+          commandQueue: [],
+          listeners: new Map(),
+          listenersLimit: 50,
+          colors: (() => {
+            const fallback = {
+              background: 'hsl(0, 0%, 10%)',
+              text: 'hsl(0, 0%, 90%)',
+              primary: 'hsl(0, 0%, 75%)',
+              secondary: 'hsl(0, 0%, 50%)',
+              highlight: 'hsl(200, 100%, 50%)'
             };
-            reader.readAsText(file);
-          } catch (e) {
-            showError('Oof, file too big, keep it under 10MB!', '[Error] Load: Failed', e.message);
-            rootState.isBusy = false;
-            processCommandQueue();
-          }
-        }
-      }
-    };
-
-    function showError(message, logPrefix, logMessage) {
-      console.error(logPrefix, logMessage);
-      document.getElementById('root-command-output').textContent = message;
-    }
-
-    function processCommandQueue() {
-      try {
-        if (rootState.isBusy || !rootState.commandQueue.length) return;
-        const cmd = rootState.commandQueue.shift();
-        handleCommand(cmd.event, cmd.input, cmd.output, cmd.fileInput);
-      } catch (e) {
-        showError('Oof, command queue broke, try again!', '[Error] CommandQueue: Failed', e.message);
-      }
-    }
-
-    function applyStyles(id, css) {
-      try {
-        document.querySelectorAll('style[id$="-style"]').forEach(el => el.remove());
-        if (!css) return;
-        const style = document.createElement('style');
-        style.id = `${id}-style`;
-        style.textContent = `#root-branch-zone ${css}`;
-        document.head.appendChild(style);
-      } catch (e) {
-        console.error(`[Error] Styles ${id}: Failed`, e.message);
-      }
-    }
-
-    function loadBranchById(id, zone, output) {
-      if (!branches[id]) {
-        showError(`Oof, branch ${id} not found!`, `[Error] Load ${id}: Not found`);
-        return;
-      }
-      zone.style.display = 'none';
-      output.textContent = '';
-      loadBranch(zone, branches[id]).then(() => {
-        output.textContent = `LOADED: ${id}`;
-        rootState.currentBranch = id;
-        if (rootState.dataManager.data[id]) rootState.events.emitAsync('load', rootState.dataManager.data);
-      }).catch(e => {
-        showError(`Oof, failed to load ${id}, try again!`, `[Error] Load ${id}: Failed`, e.message);
-      });
-    }
-
-    function handleCommand(e, input, output, fileInput) {
-      try {
-        if (e.key !== 'Enter') return;
-        if (rootState.isBusy) {
-          rootState.commandQueue.push({ event: e, input, output, fileInput });
-          output.textContent = 'Queued command!';
-          return;
-        }
-        const cmd = input.value.trim().toLowerCase().replace(/\s+/g, ' ');
-        output.textContent = cmd || '';
-        input.value = '';
-
-        const zone = document.getElementById('root-branch-zone');
-        if (!zone) {
-          showError('Oof, branch zone missing, refresh!', '[Error] Command: Zone missing');
-          return;
-        }
-
-        if (cmd.startsWith('branch ')) {
-          const id = cmd.replace('branch ', '');
-          loadBranchById(id, zone, output);
-        } else if (cmd === 'root') {
-          zone.style.display = 'none';
-          document.querySelectorAll('style[id$="-style"]').forEach(el => el.remove());
-          zone.innerHTML = '';
-          output.textContent = 'BACK TO ROOT';
-          rootState.currentBranch = '';
-        } else if (cmd === 'help') {
-          const branchCmds = Object.keys(branches).map(id => `branch ${id}`);
-          output.textContent = `COMMANDS: ${branchCmds.length ? branchCmds.join(', ') + ', ' : ''}root, help, clear, export, import`;
-        } else if (cmd === 'clear') {
-          output.textContent = '';
-        } else if (cmd === 'export') {
-          rootState.dataManager.saveData();
-        } else if (cmd === 'import') {
-          fileInput.value = '';
-          fileInput.click();
-          fileInput.onchange = () => {
-            if (fileInput.files.length) rootState.dataManager.loadData(fileInput.files[0]);
-          };
-        } else {
-          showError('Yo, bad command, try again!', '[Error] Command: Invalid', cmd);
-        }
-      } catch (e) {
-        showError('Oof, command broke, try again!', '[Error] Command: Failed', e.message);
-      }
-    }
-
-    function initializeApplication() {
-      try {
-        console.log('[Init] Starting');
-        const bgCanvas = document.getElementById('root-background-canvas');
-        const zone = document.getElementById('root-branch-zone');
-        if (!bgCanvas || !zone) throw new Error('Missing DOM elements');
-
-        const resizeBackground = () => {
-          try {
-            const dpr = window.devicePixelRatio || 1;
-            bgCanvas.width = window.innerWidth * dpr;
-            bgCanvas.height = window.innerHeight * dpr;
-            bgCanvas.style.width = `${window.innerWidth}px`;
-            bgCanvas.style.height = `${window.innerHeight}px`;
-            const ctx = bgCanvas.getContext('2d');
-            if (!ctx) throw new Error('Canvas context failed');
-            ctx.scale(dpr, dpr);
-            ctx.fillStyle = rootState.colors.background;
-            ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-          } catch (e) {
-            console.error('[Error] ResizeBackground: Failed', e.message);
+            try {
+              const styles = getComputedStyle(document.documentElement);
+              return {
+                background: styles.getPropertyValue('--color-background').trim() || fallback.background,
+                text: styles.getPropertyValue('--color-text').trim() || fallback.text,
+                primary: styles.getPropertyValue('--color-primary').trim() || fallback.primary,
+                secondary: styles.getPropertyValue('--color-secondary').trim() || fallback.secondary,
+                highlight: styles.getPropertyValue('--color-highlight').trim() || fallback.highlight
+              };
+            } catch (e) {
+              ForegroundZone().handleError('Oof, color fetch failed!', 'Colors: Failed to fetch');
+              return fallback;
+            }
+          })(),
+          events: {
+            handlers: {},
+            on(event, callback) {
+              if (!this.handlers[event]) this.handlers[event] = [];
+              if (this.handlers[event].length < 10) this.handlers[event].push(callback);
+            },
+            emit(event, data) {
+              if (!this.handlers[event]) return;
+              this.handlers[event].forEach(callback => callback(data));
+            },
+            off(event, callback) {
+              if (!this.handlers[event]) return;
+              if (callback) this.handlers[event] = this.handlers[event].filter(cb => cb !== callback);
+              else delete this.handlers[event];
+              if (!this.handlers[event]?.length) delete this.handlers[event];
+            }
+          },
+          dataManager: {
+            data: {},
+            restrictFileSize(size) {
+              if (size > 10 * 1024 * 1024) {
+                ForegroundZone().handleError('Oof, file too big, keep it under 10MB!', 'DataManager: File too large');
+                RootZone().rootState.isBusy = false;
+                ForegroundZone().processCommandQueue();
+                return true;
+              }
+              return false;
+            },
+            saveData() {
+              if (RootZone().rootState.isBusy) return;
+              RootZone().rootState.isBusy = true;
+              const output = document.getElementById('root-command-output');
+              output.textContent = 'SAVING...';
+              const states = [];
+              RootZone().rootState.events.emit('save', states);
+              const data = { app: 'life-os', version: '1.0', data: {} };
+              states.forEach(s => s?.id && typeof s.state === 'object' && (data.data[s.id] = s.state));
+              const jsonString = JSON.stringify(data, null, 2);
+              if (this.restrictFileSize(jsonString.length)) return;
+              const blob = new Blob([jsonString], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'data.json';
+              a.click();
+              URL.revokeObjectURL(url);
+              localStorage.setItem('life-os-backup', jsonString);
+              output.textContent = 'SAVED DATA.JSON';
+              RootZone().rootState.isBusy = false;
+              ForegroundZone().processCommandQueue();
+            },
+            loadData(file) {
+              if (RootZone().rootState.isBusy || this.restrictFileSize(file.size)) return;
+              RootZone().rootState.isBusy = true;
+              const output = document.getElementById('root-command-output');
+              output.textContent = 'LOADING...';
+              const backup = localStorage.getItem('life-os-backup');
+              let backupData = {};
+              try {
+                if (backup) backupData = JSON.parse(backup);
+              } catch (e) {
+                console.error('Backup: Corrupt', e.message);
+              }
+              const reader = new FileReader();
+              reader.onload = e => {
+                try {
+                  const data = JSON.parse(e.target.result);
+                  if (data.app !== 'life-os' || data.version !== '1.0') throw new Error('Invalid file format');
+                  RootZone().rootState.dataManager.data = data.data;
+                  RootZone().rootState.events.emit('load', data.data);
+                  localStorage.setItem('life-os-backup', JSON.stringify(data));
+                  if (RootZone().rootState.currentBranch && BranchZone().branches[RootZone().rootState.currentBranch]) {
+                    output.textContent = 'LOADED, RELOADING';
+                    BranchZone().loadBranch(document.getElementById('root-branch-zone'), BranchZone().branches[RootZone().rootState.currentBranch], output);
+                  } else {
+                    output.textContent = 'LOADED DATA';
+                  }
+                } catch (e) {
+                  ForegroundZone().handleError(e.message.includes('Invalid file') ? 'Oof, bad file format, try again!' : 'Oof, bad JSON, try again!', 'LoadData: Failed');
+                  if (backupData.app === 'life-os' && backupData.version === '1.0') {
+                    RootZone().rootState.dataManager.data = backupData.data;
+                    RootZone().rootState.events.emit('load', backupData.data);
+                    if (RootZone().rootState.currentBranch && BranchZone().branches[RootZone().rootState.currentBranch]) {
+                      output.textContent = 'RESTORED, RELOADING';
+                      BranchZone().loadBranch(document.getElementById('root-branch-zone'), BranchZone().branches[RootZone().rootState.currentBranch], output);
+                    } else {
+                      output.textContent = 'RESTORED BACKUP';
+                    }
+                  }
+                } finally {
+                  RootZone().rootState.isBusy = false;
+                  ForegroundZone().processCommandQueue();
+                }
+              };
+              reader.readAsText(file);
+            }
           }
         };
-        resizeBackground();
-        window.addEventListener('resize', resizeBackground);
-        document.getElementById('root-command-input').addEventListener('focusin', resizeBackground);
-        document.getElementById('root-command-input').addEventListener('focusout', resizeBackground);
 
-        const input = document.getElementById('root-command-input');
-        const output = document.getElementById('root-command-output');
-        const outputContainer = document.getElementById('root-toolbar-output');
-        const fileInput = document.getElementById('root-data-file-input');
-        if (!input || !output || !outputContainer || !fileInput) throw new Error('Missing input/output elements');
+        const initializeApplication = () => {
+          const canvas = document.getElementById('root-background-canvas');
+          const zone = document.getElementById('root-branch-zone');
+          if (!canvas || !zone) return ForegroundZone().handleError('Oof, app failed to start, refresh!', 'InitializeApplication: Missing DOM elements');
 
-        const handler = e => handleCommand(e, input, output, fileInput);
-        if (!rootState.listeners.has(input)) {
-          if (rootState.listeners.size >= rootState.listenersLimit) {
-            showError('Oof, too many listeners, chill!', '[Error] Listeners: Max reached');
+          BackgroundZone(canvas).BackgroundDecoration.init();
+
+          const input = document.getElementById('root-command-input');
+          const output = document.getElementById('root-command-output');
+          const outputContainer = document.getElementById('root-toolbar-output');
+          const fileInput = document.getElementById('root-data-file-input');
+          if (!input || !output || !outputContainer || !fileInput) return ForegroundZone().handleError('Oof, app failed to start, refresh!', 'InitializeApplication: Missing input/output elements');
+
+          const handler = e => ForegroundZone().handleCommand(e, input, output, fileInput);
+          if (!rootState.listeners.has(input)) {
+            if (rootState.listeners.size >= rootState.listenersLimit) {
+              return ForegroundZone().handleError('Oof, too many listeners, chill!', 'InitializeApplication: Listeners max reached');
+            }
+            input.addEventListener('keypress', handler);
+            input.addEventListener('touchstart', () => input.focus());
+            rootState.listeners.set(input, handler);
+          }
+
+          outputContainer.addEventListener('wheel', e => {
+            e.preventDefault();
+            outputContainer.scrollTop += e.deltaY * 0.5;
+          });
+
+          console.log('InitializeApplication: Started');
+        };
+
+        return { rootState, initializeApplication };
+      };
+
+      const BackgroundZone = canvas => {
+        const BackgroundDecoration = {
+          init() {
+            this.snowflakes = Array.from({ length: 215 }, () => ({
+              x: Math.random() * canvas.width,
+              y: Math.random() * canvas.height,
+              radius: Math.random() * 1.0 + 0.1,
+              opacity: Math.random() * 1.0 + 0.1,
+              speed: Math.random() * 1.0 + 0.1
+            }));
+            this.resize();
+            window.addEventListener('resize', () => this.resize());
+            this.update();
+          },
+          resize() {
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            canvas.style.width = `${window.innerWidth}px`;
+            canvas.style.height = `${window.innerHeight}px`;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return ForegroundZone().handleError('Oof, canvas broke, refresh!', 'BackgroundDecoration: Resize failed');
+            ctx.scale(dpr, dpr);
+            this.snowflakes.forEach(snowflake => {
+              snowflake.x = Math.random() * window.innerWidth;
+              snowflake.y = Math.random() * window.innerHeight;
+            });
+          },
+          update() {
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return ForegroundZone().handleError('Oof, canvas broke, refresh!', 'BackgroundDecoration: Update failed');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = RootZone().rootState.colors.background;
+            ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+            this.snowflakes.forEach(snowflake => {
+              snowflake.y += snowflake.speed;
+              if (snowflake.y > canvas.height) {
+                snowflake.y = 0;
+                snowflake.x = Math.random() * canvas.width;
+              }
+              ctx.beginPath();
+              ctx.arc(snowflake.x, snowflake.y, snowflake.radius, 0, Math.PI * 2);
+              ctx.fillStyle = `${RootZone().rootState.colors.text.replace(')', `, ${snowflake.opacity})`)}`;
+              ctx.fill();
+            });
+            requestAnimationFrame(() => this.update());
+          }
+        };
+
+        return { BackgroundDecoration };
+      };
+
+      const ForegroundZone = () => {
+        const handleError = (message, logMessage) => {
+          console.error(logMessage);
+          document.getElementById('root-command-output').textContent = message;
+        };
+
+        const processCommandQueue = () => {
+          if (RootZone().rootState.isBusy || !RootZone().rootState.commandQueue.length) return;
+          const cmd = RootZone().rootState.commandQueue.shift();
+          handleCommand(cmd.event, cmd.input, cmd.output, cmd.fileInput);
+        };
+
+        const handleCommand = (e, input, output, fileInput) => {
+          if (e.key !== 'Enter') return;
+          if (RootZone().rootState.isBusy) {
+            RootZone().rootState.commandQueue.push({ event: e, input, output, fileInput });
+            output.textContent = 'Queued command!';
             return;
           }
-          input.addEventListener('keypress', handler);
-          rootState.listeners.set(input, handler);
-        }
+          RootZone().rootState.isBusy = true;
+          const cmd = input.value.trim().toLowerCase().replace(/\s+/g, ' ');
+          output.textContent = cmd || '';
+          input.value = '';
 
-        outputContainer.addEventListener('wheel', e => {
-          e.preventDefault();
-          outputContainer.scrollTop += e.deltaY * 0.5;
-        });
+          const zone = document.getElementById('root-branch-zone');
+          if (!zone) {
+            handleError('Oof, branch zone missing, refresh!', 'HandleCommand: Zone missing');
+            RootZone().rootState.isBusy = false;
+            return processCommandQueue();
+          }
 
-        console.log('[Init] Started');
-      } catch (e) {
-        showError('Oof, app failed to start, refresh!', '[Error] Init: Failed', e.message);
-      }
-    }
-
-    function showLoadingScreen(zone) {
-      try {
-        zone.innerHTML = `<div id="root-branch-loading">LOADING...</div>`;
-        zone.style.display = 'flex';
-      } catch (e) {
-        console.error('[Error] LoadingScreen: Failed', e.message);
-      }
-    }
-
-    function loadBranch(zone, { id, content, css, init }) {
-      try {
-        if (!zone || !id || !content) throw new Error('Invalid branch parameters');
-        showLoadingScreen(zone);
-        return new Promise((resolve, reject) => {
-          try {
-            const cacheKey = `${id}-template`;
-            let cached = rootState.templateCache.get(cacheKey);
-            if (!cached) {
-              cached = { content, css, lastUsed: Date.now() };
-              rootState.templateCache.set(cacheKey, cached);
-              if (rootState.templateCache.size > rootState.cacheLimit) {
-                const oldestKey = [...rootState.templateCache.entries()]
-                  .reduce((min, [key, val]) => val.lastUsed < min.lastUsed ? { key, lastUsed: val.lastUsed } : min, { lastUsed: Infinity }).key;
-                rootState.templateCache.delete(oldestKey);
-              }
-            } else {
-              cached.lastUsed = Date.now();
-            }
-
-            rootState.listeners.forEach((handler, el) => {
-              el.removeEventListener('click', handler);
-              el.removeEventListener('touchstart', handler);
-              el.removeEventListener('touchend', handler);
-              el.removeEventListener('touchmove', handler);
-            });
-            rootState.events.off('save');
-            rootState.events.off('load');
-            rootState.listeners.clear();
-            rootState.listeners.set(document.getElementById('root-command-input'), rootState.listeners.get(document.getElementById('root-command-input')));
-
+          if (cmd.startsWith('branch ')) {
+            const id = cmd.replace('branch ', '');
+            BranchZone().loadBranch(zone, BranchZone().branches[id], output);
+          } else if (cmd === 'root') {
+            zone.style.display = 'none';
+            document.querySelectorAll('style[id$="-style"]').forEach(el => el.remove());
             zone.innerHTML = '';
-            zone.appendChild(cached.content.cloneNode(true));
-            applyStyles(id, css);
-            if (init) init(zone);
-            resolve();
-          } catch (e) {
-            console.error(`[Error] Branch ${id}: Failed to load`, e.message);
+            output.textContent = 'BACK TO ROOT';
+            RootZone().rootState.currentBranch = '';
+            RootZone().rootState.isBusy = false;
+            processCommandQueue();
+          } else if (cmd === 'help') {
+            const branchCmds = Object.keys(BranchZone().branches).map(id => `branch ${id}`);
+            output.textContent = `COMMANDS: ${branchCmds.length ? branchCmds.join(', ') + ', ' : ''}root, help, clear, export, import`;
+            RootZone().rootState.isBusy = false;
+            processCommandQueue();
+          } else if (cmd === 'clear') {
+            output.textContent = '';
+            RootZone().rootState.isBusy = false;
+            processCommandQueue();
+          } else if (cmd === 'export') {
+            RootZone().rootState.dataManager.saveData();
+          } else if (cmd === 'import') {
+            fileInput.value = '';
+            fileInput.click();
+            fileInput.onchange = () => {
+              if (fileInput.files.length) RootZone().rootState.dataManager.loadData(fileInput.files[0]);
+            };
+            RootZone().rootState.isBusy = false;
+            processCommandQueue();
+          } else {
+            handleError('Yo, bad command, try again!', 'HandleCommand: Invalid command');
+            RootZone().rootState.isBusy = false;
+            processCommandQueue();
+          }
+        };
+
+        return { handleError, processCommandQueue, handleCommand };
+      };
+
+      const BranchZone = () => {
+        const branches = {
+          '1': (() => {
+            const container = document.createElement('div');
+            container.innerHTML = `
+              <div id="branch1-content">
+                <h1>This is the Motherfucking Root of Life OS, Bitches!</h1>
+                <p>Yo, you dumbasses, welcome to the <em>fucking glorious</em> root of <strong>Life OS</strong>! This ain't no crusty, Comic Sans-infested, dial-up era bullshit. This is a lean, mean, ass-kicking machine that’ll make your shitty widescreen monitor cry tears of joy. Why’s it the goddamn king of websites? Strap in, fuckers:</p>
+                <ul>
+                  <li><strong>Animated background that slaps</strong>: A slick, JS-driven canvas animation that’s smoother than your mom’s ass. Uses <code>--color-text</code> and <code>--color-background</code> to keep shit classy without tanking your potato PC.</li>
+                  <li><strong>Four toolbars that don’t fuck around</strong>: Top input, output, bottom, left, right—each a transparent, shadow-dropping beast with <code>--color-highlight</code> buttons. Works on your shitty phone, too, with touch support that doesn’t suck.</li>
+                  <li><strong>Command system that owns your ass</strong>: Type <code>branch 1</code>, <code>root</code>, <code>help</code>, <code>clear</code>, <code>export</code>, or <code>import</code>. Queues commands like a pimp if the system’s busy. No lag, no excuses.</li>
+                  <li><strong>Branches so modular they’ll make you cry</strong>: Plug in new shit without touching the root. This branch is just the start—add more without fucking up the core, you lazy bastard.</li>
+                  <li><strong>Five colors, because fuck excess</strong>: <code>--color-background</code>, <code>--color-text</code>, <code>--color-primary</code>, <code>--color-secondary</code>, <code>--color-highlight</code>. All HSL, scalable by 5, no bloat, no bullshit.</li>
+                  <li><strong>Accessibility that doesn’t blow</strong>: <code>aria-label</code> on toolbars, <code>role="region"</code> on the branch zone. Screen readers won’t shit themselves trying to read this.</li>
+                  <li><strong>Event system that’s tight as fuck</strong>: Handles <code>save</code> and <code>load</code> events like a pro, with a 10-handler limit to keep shit sane.</li>
+                  <li><strong>Data manager that saves your sorry ass</strong>: Export/import JSON data, with a 10MB cap and localStorage backup. Fuck up your file? It’ll restore the last good one.</li>
+                  <li><strong>Cache that doesn’t choke</strong>: Stores up to 5 branch templates, kicks out the oldest when full. Fast as hell, no memory leaks.</li>
+                </ul>
+                <h2>Why’s It So Damn Smooth?</h2>
+                <p>Because we slowed the effects to a sexy 1-second glide—<code>--root-transition-speed: 1s</code>, <code>--root-animation-duration: 1s</code>. None of that jittery, fast-twitch bullshit. Plus, it’s got a typography setup that doesn’t make your eyes bleed on widescreen: <code>max-width: 65%</code>, <code>margin: 15px auto</code>, and a <code>line-height: 1.5</code> that’s basically a love letter to your retinas.</p>
+                <blockquote>
+                  "This site’s so fucking clean, it makes other websites look like they were coded by a drunk monkey on a 90s Geocities bender!"<br>
+                  - Some coder who’s probably too high to code
+                </blockquote>
+                <h2>Still Think This Is Some Basic Shit?</h2>
+                <p>Nah, this root is the whole goddamn package. No dependencies, ~310 lines of JS, ~115 lines of CSS, fits every shitty screen, and runs like a dream. Wanna add branches? Just shove ‘em in <code>BranchZone.branches</code> and keep this motherfucker pristine. Now go type <code>help</code> and stop jerking off to Comic Sans.</p>
+                <blockquote>
+                  "If your website doesn’t have a command line and a dope animated background, you’re just pissing in the wind, bro."<br>
+                  - Definitely not your mom
+                </blockquote>
+              </div>
+            `;
+            return {
+              id: '1',
+              content: container.firstElementChild,
+              css: `
+                #branch1-content { 
+                  color: var(--color-primary); 
+                  text-align: center; 
+                  flex: 1; 
+                  display: flex; 
+                  flex-direction: column; 
+                  gap: 15px; 
+                  padding: 10px; 
+                  max-width: 65%; 
+                  margin: 15px auto; 
+                }
+                #branch1-content h1 { 
+                  font-size: calc(var(--root-font-size) * 2); 
+                  color: var(--color-primary); 
+                }
+                #branch1-content h2 { 
+                  font-size: calc(var(--root-font-size) * 1.25); 
+                  color: var(--color-primary); 
+                }
+                #branch1-content p, #branch1-content ul, #branch1-content blockquote { 
+                  text-align: left; 
+                  color: var(--color-text); 
+                }
+                #branch1-content ul { 
+                  list-style: disc; 
+                  padding-left: 20px; 
+                }
+                #branch1-content blockquote { 
+                  border-left: 5px solid var(--color-highlight); 
+                  padding-left: 10px; 
+                  margin: 10px 0; 
+                }
+              `,
+              init: () => { }
+            };
+          })(),
+          '2': (() => {
+            const container = document.createElement('div');
+            container.innerHTML = `
+    <div id="branch2-content">
+      <div id="branch2-button-bar">
+        <span id="branch2-save-button" class="branch2-button">Save</span>
+        <span id="branch2-load-button" class="branch2-button">Load</span>
+        <span id="branch2-view-button" class="branch2-button">View</span>
+      </div>
+      <textarea id="branch2-editor" placeholder="Type Markdown here, you beautiful bastard..."></textarea>
+      <div id="branch2-preview" style="display: none;"></div>
+    </div>
+  `;
+            return {
+              id: '2',
+              content: container.firstElementChild,
+              css: `
+      #branch2-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 10px;
+        max-width: 90%;
+      }
+      #branch2-button-bar {
+        display: flex;
+        gap: 15px;
+        justify-content: flex-start;
+      }
+      .branch2-button {
+        color: var(--color-highlight);
+        cursor: pointer;
+        transition: transform var(--root-transition-speed) ease, color var(--root-transition-speed) ease;
+        font-size: var(--root-font-size);
+      }
+      .branch2-button:hover {
+        transform: scale(1.05);
+      }
+      .branch2-button:active {
+        transform: scale(0.95);
+      }
+      #branch2-editor, #branch2-preview {
+        width: 90%;
+        height: 90%;
+        margin: 0 auto;
+        font-size: var(--root-font-size);
+        line-height: var(--root-line-height);
+        color: var(--color-text);
+        background: transparent;
+        border: none;
+        resize: none;
+        outline: none;
+        padding: 10px;
+        font-family: var(--root-font-family);
+        white-space: nowrap;
+        overflow-x: auto;
+      }
+      #branch2-preview {
+        color: var(--color-text);
+        overflow: auto;
+      }
+      #branch2-preview h1 { font-size: calc(var(--root-font-size) * 2); }
+      #branch2-preview h2 { font-size: calc(var(--root-font-size) * 1.5); }
+      #branch2-preview h3 { font-size: calc(var(--root-font-size) * 1.25); }
+      #branch2-preview p { margin: 10px 0; }
+      #branch2-preview ul, #branch2-preview ol { padding-left: 20px; margin: 10px 0; }
+      #branch2-preview li { margin: 5px 0; }
+      #branch2-preview code { background: hsl(0, 0%, 20%); padding: 2px 5px; border-radius: 5px; }
+      #branch2-preview pre { background: hsl(0, 0%, 20%); padding: 10px; border-radius: 5px; overflow: auto; }
+      #branch2-preview blockquote { border-left: 5px solid var(--color-highlight); padding-left: 10px; margin: 10px 0; }
+      #branch2-preview a { color: var(--color-highlight); text-decoration: underline; }
+      #branch2-preview img { max-width: 100%; height: auto; margin: 10px 0; }
+      #branch2-preview table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 10px 0;
+      }
+      #branch2-preview th, #branch2-preview td {
+        border: 1px solid var(--color-secondary);
+        padding: 5px;
+        text-align: left;
+      }
+      #branch2-preview th { background: hsl(0, 0%, 20%); }
+    `,
+              init: zone => {
+                const editor = zone.querySelector('#branch2-editor');
+                const preview = zone.querySelector('#branch2-preview');
+                const saveButton = zone.querySelector('#branch2-save-button');
+                const loadButton = zone.querySelector('#branch2-load-button');
+                const viewButton = zone.querySelector('#branch2-view-button');
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = '.md';
+                fileInput.style.display = 'none';
+                zone.appendChild(fileInput);
+
+                const parseMarkdown = text => {
+                  let html = '';
+                  const lines = text.split('\n').map(line => line.replace(/\t/g, ''));
+
+                  let inCodeBlock = false;
+                  let inTable = false;
+                  let tableHeader = [];
+                  let tableAlign = [];
+                  let tableRows = [];
+
+                  const escapeHTML = str => str.replace(/[&<>"']/g, m => ({ '&': '&', '<': '<', '>': '>', '"': '"', "'": "''" })[m]);
+                  const parseInline = str => {
+                    str = escapeHTML(str);
+                    str = str.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                      .replace(/`([^`]+)`/g, '<code>$1</code>')
+                      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+                      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+                    return str;
+                  };
+
+                  for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) {
+                      if (inTable) {
+                        inTable = false;
+                        if (tableHeader.length) {
+                          html += '<table><thead><tr>' + tableHeader.map((h, j) => `<th style="text-align: ${tableAlign[j] || 'left'}">${parseInline(h)}</th>`).join('') + '</tr></thead><tbody>';
+                          html += tableRows.map(row => '<tr>' + row.map((c, j) => `<td style="text-align: ${tableAlign[j] || 'left'}">${parseInline(c)}</td>`).join('') + '</tr>').join('');
+                          html += '</tbody></table>';
+                          tableHeader = [];
+                          tableAlign = [];
+                          tableRows = [];
+                        }
+                      }
+                      html += '<p></p>';
+                      continue;
+                    }
+
+                    if (line.startsWith('```')) {
+                      if (!inCodeBlock) {
+                        inCodeBlock = true;
+                        html += '<pre><code>';
+                      } else {
+                        inCodeBlock = false;
+                        html += '</code></pre>';
+                      }
+                      continue;
+                    }
+                    if (inCodeBlock) {
+                      html += escapeHTML(line) + '\n';
+                      continue;
+                    }
+
+                    if (line.match(/^\|.*\|$/)) {
+                      const cells = line.split('|').map(c => c.trim()).filter(c => c);
+                      if (!inTable) {
+                        tableHeader = cells;
+                        inTable = true;
+                        continue;
+                      }
+                      if (inTable && line.match(/^\|\s*-+\s*\|/)) {
+                        tableAlign = line.split('|').map(c => c.trim()).filter(c => c).map(c => c.includes(':') ? (c.startsWith(':') && c.endsWith(':') ? 'center' : c.endsWith(':') ? 'right' : 'left') : 'left');
+                        continue;
+                      }
+                      tableRows.push(cells);
+                      continue;
+                    }
+
+                    if (inTable) {
+                      inTable = false;
+                      if (tableHeader.length) {
+                        html += '<table><thead><tr>' + tableHeader.map((h, j) => `<th style="text-align: ${tableAlign[j] || 'left'}">${parseInline(h)}</th>`).join('') + '</tr></thead><tbody>';
+                        html += tableRows.map(row => '<tr>' + row.map((c, j) => `<td style="text-align: ${tableAlign[j] || 'left'}">${parseInline(c)}</td>`).join('') + '</tr>').join('');
+                        html += '</tbody></table>';
+                        tableHeader = [];
+                        tableAlign = [];
+                        tableRows = [];
+                      }
+                    }
+
+                    if (line.startsWith('#')) {
+                      const level = line.match(/^#+/)[0].length;
+                      const text = parseInline(line.replace(/^#+/, '').trim());
+                      html += `<h${level}>${text}</h${level}>`;
+                    } else if (line.startsWith('- ') || line.startsWith('* ')) {
+                      if (!html.endsWith('<ul>')) html += '<ul>';
+                      html += `<li>${parseInline(line.slice(2).trim())}</li>`;
+                      if (i === lines.length - 1 || !lines[i + 1].match(/^[-*]\s/)) html += '</ul>';
+                    } else if (line.match(/^\d+\.\s/)) {
+                      if (!html.endsWith('<ol>')) html += '<ol>';
+                      html += `<li>${parseInline(line.replace(/^\d+\.\s/, '').trim())}</li>`;
+                      if (i === lines.length - 1 || !lines[i + 1].match(/^\d+\.\s/)) html += '</ol>';
+                    } else if (line.startsWith('>')) {
+                      if (!html.endsWith('<blockquote>')) html += '<blockquote>';
+                      html += `<p>${parseInline(line.slice(1).trim())}</p>`;
+                      if (i === lines.length - 1 || !lines[i + 1].startsWith('>')) html += '</blockquote>';
+                    } else {
+                      html += `<p>${parseInline(line)}</p>`;
+                    }
+                  }
+
+                  if (inTable && tableHeader.length) {
+                    html += '<table><thead><tr>' + tableHeader.map((h, j) => `<th style="text-align: ${tableAlign[j] || 'left'}">${parseInline(h)}</th>`).join('') + '</tr></thead><tbody>';
+                    html += tableRows.map(row => '<tr>' + row.map((c, j) => `<td style="text-align: ${tableAlign[j] || 'left'}">${parseInline(c)}</td>`).join('') + '</tr>').join('');
+                    html += '</tbody></table>';
+                  }
+                  if (inCodeBlock) html += '</code></pre>';
+                  return html;
+                };
+
+                let isViewMode = false;
+                viewButton.addEventListener('click', () => {
+                  isViewMode = !isViewMode;
+                  editor.style.display = isViewMode ? 'none' : 'block';
+                  preview.style.display = isViewMode ? 'block' : 'none';
+                  viewButton.textContent = isViewMode ? 'Edit' : 'View';
+                  if (isViewMode) preview.innerHTML = parseMarkdown(editor.value);
+                });
+
+                saveButton.addEventListener('click', () => {
+                  const content = editor.value;
+                  if (!content) {
+                    alert('Yo, write some shit first!');
+                    return;
+                  }
+                  const blob = new Blob([content], { type: 'text/markdown' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'document.md';
+                  a.click();
+                  URL.revokeObjectURL(url);
+                });
+
+                loadButton.addEventListener('click', () => {
+                  fileInput.click();
+                });
+
+                fileInput.addEventListener('change', () => {
+                  if (fileInput.files.length) {
+                    const file = fileInput.files[0];
+                    if (!file.name.endsWith('.md')) {
+                      alert('Yo, pick a .md file, dumbass!');
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                      editor.value = e.target.result;
+                      if (isViewMode) preview.innerHTML = parseMarkdown(editor.value);
+                    };
+                    reader.readAsText(file);
+                  }
+                });
+
+                RootZone().rootState.events.on('save', states => {
+                  states.push({ id: '2', state: { content: editor.value, isViewMode } });
+                });
+                RootZone().rootState.events.on('load', data => {
+                  if (data['2']) {
+                    editor.value = data['2'].content || '';
+                    isViewMode = data['2'].isViewMode || false;
+                    editor.style.display = isViewMode ? 'none' : 'block';
+                    preview.style.display = isViewMode ? 'block' : 'none';
+                    viewButton.textContent = isViewMode ? 'Edit' : 'View';
+                    if (isViewMode) preview.innerHTML = parseMarkdown(editor.value);
+                  }
+                });
+              }
+            };
+          })()
+
+        };
+
+        const applyStyles = (id, css) => {
+          document.querySelectorAll('style[id$="-style"]').forEach(el => el.remove());
+          if (!css) return;
+          const style = document.createElement('style');
+          style.id = `${id}-style`;
+          style.textContent = `#root-branch-zone ${css}`;
+          document.head.appendChild(style);
+        };
+
+        const showLoadingScreen = zone => {
+          zone.innerHTML = `<div id="root-branch-loading">LOADING...</div>`;
+          zone.style.display = 'flex';
+        };
+
+        const loadBranch = (zone, branch, output) => {
+          if (!branch) {
+            if (output) ForegroundZone().handleError(`Oof, branch not found!`, `LoadBranch: Not found`);
+            RootZone().rootState.isBusy = false;
+            ForegroundZone().processCommandQueue();
+            return;
+          }
+          const { id, content, css, init } = branch;
+          if (!zone || !id || !content) {
+            if (output) ForegroundZone().handleError(`Oof, branch ${id} broke, try again!`, `LoadBranch ${id}: Invalid parameters`);
+            RootZone().rootState.isBusy = false;
+            ForegroundZone().processCommandQueue();
+            return;
+          }
+          showLoadingScreen(zone);
+          const cacheKey = `${id}-template`;
+          let cached = RootZone().rootState.templateCache.get(cacheKey);
+          if (!cached) {
+            cached = { content, css, lastUsed: Date.now() };
+            RootZone().rootState.templateCache.set(cacheKey, cached);
+            if (RootZone().rootState.templateCache.size > RootZone().rootState.cacheLimit) {
+              const oldestKey = [...RootZone().rootState.templateCache.entries()]
+                .reduce((min, [key, val]) => val.lastUsed < min.lastUsed ? { key, lastUsed: val.lastUsed } : min, { lastUsed: Infinity }).key;
+              RootZone().rootState.templateCache.delete(oldestKey);
+            }
+          } else {
+            cached.lastUsed = Date.now();
+          }
+
+          RootZone().rootState.listeners.forEach((handler, el) => {
+            el.removeEventListener('click', handler);
+            el.removeEventListener('touchstart', handler);
+            el.removeEventListener('touchend', handler);
+            el.removeEventListener('touchmove', handler);
+          });
+          RootZone().rootState.events.off('save');
+          RootZone().rootState.events.off('load');
+          RootZone().rootState.listeners.clear();
+          RootZone().rootState.listeners.set(document.getElementById('root-command-input'), RootZone().rootState.listeners.get(document.getElementById('root-command-input')));
+
+          zone.innerHTML = '';
+          zone.appendChild(cached.content.cloneNode(true));
+          applyStyles(id, css);
+          Promise.resolve(init(zone)).then(() => {
+            zone.style.display = 'flex';
+            if (output) {
+              output.textContent = `LOADED: ${id}`;
+              RootZone().rootState.currentBranch = id;
+              if (RootZone().rootState.dataManager.data[id]) RootZone().rootState.events.emit('load', RootZone().rootState.dataManager.data);
+            }
+            RootZone().rootState.isBusy = false;
+            ForegroundZone().processCommandQueue();
+          }).catch(e => {
+            ForegroundZone().handleError(`Oof, branch ${id} init failed, try again!`, `LoadBranch ${id}: Init failed`);
             zone.innerHTML = '';
             zone.style.display = 'none';
             document.querySelectorAll('style[id$="-style"]').forEach(el => el.remove());
-            rootState.currentBranch = '';
-            reject(e);
-          }
-        }).then(() => {
-          zone.style.display = 'flex';
-          document.getElementById('root-command-output').textContent = '';
-        });
-      } catch (e) {
-        showError(`Oof, branch ${id} broke, try again!`, `[Error] Branch ${id}: Failed`, e.message);
-        zone.innerHTML = '';
-        zone.style.display = 'none';
-        document.querySelectorAll('style[id$="-style"]').forEach(el => el.remove());
-        rootState.currentBranch = '';
-        return Promise.reject(e);
-      }
-    }
-
-    const branches = {
-      '1': (() => {
-        const container = document.createElement('div');
-        container.innerHTML = `<div id="branch1-content">Under Construction</div>`;
-        return {
-          id: '1',
-          content: container.firstElementChild,
-          css: `#branch1-content { color: var(--color-primary); text-align: center; flex: 1; display: flex; align-items: center; justify-content: center; }`,
-          init: () => {}
+            RootZone().rootState.currentBranch = '';
+            RootZone().rootState.isBusy = false;
+            ForegroundZone().processCommandQueue();
+          });
         };
-      })()
-    };
 
-    initializeApplication();
+        return { branches, applyStyles, showLoadingScreen, loadBranch };
+      };
+
+      RootZone().initializeApplication();
+    })();
   </script>
 </body>
+
 </html>

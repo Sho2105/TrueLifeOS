@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+Rules: No libraries, no frameworks, minimal external dependencies (only font), modular, responsive, self-contained, 5 HSL color variables, "root" prefix for core, "branchX" for branch-specific. Hardcode branch values, minimal effects. Isolate branches.
+Dev Guide: New branch format:
+App.registerBranch({
+  id: '2',
+  content: (function () {
+    const c = document.createElement('div');
+    c.innerHTML = `<div id="branch2-content">Hello, Branch 2!</div>`;
+    return c.firstElementChild;
+  })(),
+  css: `#branch2-content { color: var(--color-primary); }`,
+  init: zone => {
+    // run tiny setup if needed
+  }
+});
+
+IMPORTANT: This block cannot be edited except by Sho-the-author.
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Life OS</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+    
+    :root {
+      --color-background: hsl(0, 0%, 10%);
+      --color-text: hsl(0, 0%, 90%);
+      --color-primary: hsl(0, 0%, 75%);
+      --color-secondary: hsl(0, 0%, 50%);
+      --color-highlight: hsl(200, 45%, 50%);
+      --root-toolbar-size: 25px;
+      --root-padding: 10px;
+      --root-font-size: 16px;
+      --root-font-family: 'JetBrains Mono', 'Courier New', monospace;
+      --root-line-height: 1.6;
+      --root-font-weight: 500;
+      --root-letter-spacing: 0.02em;
+      --root-transition-speed: 0.5s;
+      --root-border-radius: 3px;
+      --root-animation-duration: 1.0s;
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: var(--root-font-family);
+      font-size: var(--root-font-size);
+      font-weight: var(--root-font-weight);
+      line-height: var(--root-line-height);
+      letter-spacing: var(--root-letter-spacing);
+      color: var(--color-text);
+      scrollbar-width: none;
+    }
+    *::-webkit-scrollbar { display: none; }
+    input, button {
+      background: transparent;
+      border: none;
+      padding: calc(var(--root-padding) / 2);
+      transition: transform var(--root-transition-speed) ease, color var(--root-transition-speed) ease;
+      border-radius: var(--root-border-radius);
+    }
+    input:focus {
+      outline: none;
+      color: var(--color-primary);
+    }
+    input::placeholder {
+      color: var(--color-secondary);
+    }
+    button {
+      color: var(--color-highlight);
+      cursor: pointer;
+    }
+    button:hover { transform: scale(1.05); }
+    button:active { transform: scale(0.95); }
+    output { color: var(--color-primary); }
+    body {
+      height: 100vh;
+      overflow: hidden;
+      background: var(--color-background);
+      position: fixed;
+      width: 100%;
+    }
+    #root-background canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+    #root-foreground {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 3;
+    }
+    #root-toolbar-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .root-toolbar {
+      background: transparent;
+      filter: drop-shadow(0 2px 4px hsla(0, 0%, 10%, 0.5));
+      position: absolute;
+      display: flex;
+      align-items: center;
+      padding: 0 calc(var(--root-padding) / 2);
+      pointer-events: auto;
+      border-radius: var(--root-border-radius);
+      touch-action: auto;
+    }
+    #root-toolbar-input {
+      top: 0;
+      left: var(--root-toolbar-size);
+      width: 50%;
+      height: var(--root-toolbar-size);
+    }
+    #root-toolbar-input input {
+      width: 100%;
+    }
+    #root-toolbar-output {
+      top: 0;
+      right: var(--root-toolbar-size);
+      width: 50%;
+      height: var(--root-toolbar-size);
+      overflow-y: auto;
+      scroll-behavior: smooth;
+      text-align: right;
+      display: flex;
+      justify-content: flex-end;
+    }
+    #root-toolbar-bottom {
+      bottom: 0;
+      left: var(--root-toolbar-size);
+      right: var(--root-toolbar-size);
+      height: var(--root-toolbar-size);
+      justify-content: center;
+    }
+    #root-toolbar-left {
+      left: 0;
+      top: var(--root-toolbar-size);
+      bottom: var(--root-toolbar-size);
+      width: var(--root-toolbar-size);
+      writing-mode: vertical-rl;
+      justify-content: center;
+    }
+    #root-toolbar-right {
+      right: 0;
+      top: var(--root-toolbar-size);
+      bottom: var(--root-toolbar-size);
+      width: var(--root-toolbar-size);
+      writing-mode: vertical-rl;
+      justify-content: center;
+    }
+    #root-command-input:hover, #root-command-input:focus { transform: scale(1.02); }
+    #root-branch-zone {
+      position: fixed;
+      top: var(--root-toolbar-size);
+      left: var(--root-toolbar-size);
+      right: var(--root-toolbar-size);
+      bottom: var(--root-toolbar-size);
+      background: var(--color-background);
+      display: none;
+      flex-direction: column;
+      padding: var(--root-padding);
+      overflow: auto;
+      touch-action: auto;
+      animation: fade var(--root-animation-duration) ease;
+    }
+    #root-branch-loading {
+      color: var(--color-primary);
+      text-align: center;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #branch1-content {
+      color: var(--color-primary);
+      text-align: center;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    @keyframes fade { 0% { opacity: 0; } 100% { opacity: 1; } }
+  </style>
+</head>
+<body>
+  <div id="root-background"><canvas id="root-background-canvas"></canvas></div>
+  <div id="root-foreground">
+    <div id="root-toolbar-container">
+      <div id="root-toolbar-input" class="root-toolbar" aria-label="Command input toolbar">
+        <input id="root-command-input" type="text" placeholder="TYPE SHIT HERE" aria-label="Command input">
+      </div>
+      <div id="root-toolbar-output" class="root-toolbar" aria-label="Command output toolbar">
+        <span id="root-command-output"></span>
+      </div>
+      <div id="root-toolbar-bottom" class="root-toolbar" aria-label="Bottom toolbar">BOTTOM</div>
+      <div id="root-toolbar-left" class="root-toolbar" aria-label="Left toolbar">LEFT</div>
+      <div id="root-toolbar-right" class="root-toolbar" aria-label="Right toolbar">RIGHT</div>
+    </div>
+    <div id="root-branch-zone" role="region" aria-live="polite"></div>
+  </div>
+  <script>
+  (function () {
+    // App singleton
+    const App = (function () {
+      // shared state
+      const state = {
+        currentBranch: '',
+        isBusy: false,
+        commandQueue: [],
+        listeners: new Map(),
+        colors: {
+          background: 'hsl(0, 0%, 10%)',
+          text: 'hsl(0, 0%, 90%)',
+          primary: 'hsl(0, 0%, 75%)',
+          secondary: 'hsl(0, 0%, 50%)',
+          highlight: 'hsl(200, 45%, 50%)'
+        }
+      };
+
+      // utilities
+      const parseHSL = hsl => {
+        // expect "hsl(H, S%, L%)" possibly with spaces
+        if (!hsl || typeof hsl !== 'string') return null;
+        const m = hsl.match(/hsl\(\s*([-\d.]+)\s*,\s*([-\d.]+)%\s*,\s*([-\d.]+)%\s*\)/i);
+        if (!m) return null;
+        return { h: +m[1], s: +m[2], l: +m[3] };
+      };
+      const hslToRgbaString = (hslString, alpha = 1) => {
+        const p = parseHSL(hslString);
+        if (!p) return `rgba(255,255,255,${alpha})`;
+        // convert HSL to RGB (0..255)
+        const h = p.h / 360;
+        const s = p.s / 100;
+        const l = p.l / 100;
+        if (s === 0) {
+          const v = Math.round(l * 255);
+          return `rgba(${v},${v},${v},${alpha})`;
+        }
+        const hue2rgb = (p, q, t) => {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1 / 6) return p + (q - p) * 6 * t;
+          if (t < 1 / 2) return q;
+          if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+          return p;
+        };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p_ = 2 * l - q;
+        const r = Math.round(hue2rgb(p_, q, h + 1 / 3) * 255);
+        const g = Math.round(hue2rgb(p_, q, h) * 255);
+        const b = Math.round(hue2rgb(p_, q, h - 1 / 3) * 255);
+        return `rgba(${r},${g},${b},${alpha})`;
+      };
+
+      // Background zone (canvas animation)
+      const BackgroundZone = (function () {
+        let canvas, ctx, dpr = 1, width = 0, height = 0;
+        let snowflakes = [];
+        let raf = null;
+        const init = c => {
+          canvas = c;
+          ctx = canvas.getContext('2d');
+          if (!ctx) {
+            ForegroundZone.handleError('Oof, canvas broke, refresh!', 'Background: no ctx');
+            return;
+          }
+          reset();
+          window.addEventListener('resize', reset);
+          start();
+        };
+        const reset = () => {
+          dpr = window.devicePixelRatio || 1;
+          width = window.innerWidth;
+          height = window.innerHeight;
+          canvas.width = Math.round(width * dpr);
+          canvas.height = Math.round(height * dpr);
+          canvas.style.width = width + 'px';
+          canvas.style.height = height + 'px';
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // scale drawing to CSS pixels
+          // recreate snowflakes positioned in CSS pixels
+          snowflakes = Array.from({ length: 100 }, () => ({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            radius: Math.random() * 1.5 + 0.5,
+            opacity: Math.random() * 0.7 + 0.3,
+            speed: Math.random() * 1.5 + 0.5
+          }));
+        };
+        const update = () => {
+          const bg = state.colors.background || 'hsl(0,0%,10%)';
+          const text = state.colors.text || 'hsl(0,0%,90%)';
+          ctx.clearRect(0, 0, width, height);
+          ctx.fillStyle = hslToRgbaString(bg, 1);
+          ctx.fillRect(0, 0, width, height);
+          const textRgba = text ? (t => t)(hslToRgbaString(text, 1)) : 'rgba(255,255,255,1)';
+          snowflakes.forEach(s => {
+            s.y += s.speed;
+            if (s.y - s.radius > height) {
+              s.y = -s.radius;
+              s.x = Math.random() * width;
+            }
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+            ctx.fillStyle = hslToRgbaString(state.colors.text, s.opacity);
+            ctx.fill();
+          });
+          raf = requestAnimationFrame(update);
+        };
+        const start = () => {
+          if (raf) cancelAnimationFrame(raf);
+          raf = requestAnimationFrame(update);
+        };
+        const stop = () => {
+          if (raf) cancelAnimationFrame(raf);
+          raf = null;
+        };
+        return { init, start, stop };
+      })();
+
+      // Foreground zone (commands, errors)
+      const ForegroundZone = (function () {
+        const handleError = (message, logMessage) => {
+          console.error(logMessage);
+          const out = document.getElementById('root-command-output');
+          if (out) out.textContent = message;
+        };
+
+        const processCommandQueue = () => {
+          if (state.isBusy || !state.commandQueue.length) return;
+          const cmd = state.commandQueue.shift();
+          handleCommand(cmd.event, cmd.input, cmd.output);
+        };
+
+        // main command handler
+        const handleCommand = (e, input, output) => {
+          if (e.type === 'keydown' && e.key !== 'Enter') return;
+          if (state.isBusy) {
+            state.commandQueue.push({ event: e, input, output });
+            if (output) output.textContent = 'Queued command!';
+            return;
+          }
+          state.isBusy = true;
+          const raw = (input.value || '').trim();
+          const cmd = raw.toLowerCase().replace(/\s+/g, ' ');
+          if (output) output.textContent = cmd || '';
+          input.value = '';
+
+          const zone = document.getElementById('root-branch-zone');
+          if (!zone) {
+            handleError('Oof, branch zone missing, refresh!', 'Foreground: Zone missing');
+            state.isBusy = false;
+            return processCommandQueue();
+          }
+
+          if (cmd.startsWith('branch ')) {
+            const id = cmd.slice(7).trim();
+            BranchZone.loadBranch(zone, id, output);
+          } else if (cmd === 'root') {
+            // go back to root
+            zone.style.display = 'none';
+            document.querySelectorAll('style[id$="-style"]').forEach(el => el.remove());
+            zone.innerHTML = '';
+            if (output) output.textContent = 'BACK TO ROOT';
+            state.currentBranch = '';
+            state.isBusy = false;
+            processCommandQueue();
+          } else if (cmd === 'help') {
+            const branchCmds = Object.keys(BranchZone.branches).map(id => `branch ${id}`);
+            if (output) output.textContent = `COMMANDS: ${branchCmds.length ? branchCmds.join(', ') + ', ' : ''}root, help, clear`;
+            state.isBusy = false;
+            processCommandQueue();
+          } else if (cmd === 'clear') {
+            if (output) output.textContent = '';
+            state.isBusy = false;
+            processCommandQueue();
+          } else {
+            handleError('Yo, bad command, try again!', 'Foreground: Invalid command');
+            state.isBusy = false;
+            processCommandQueue();
+          }
+        };
+
+        return { handleError, processCommandQueue, handleCommand };
+      })();
+
+      // Branch zone: registration and loading
+      const BranchZone = (function () {
+        const branches = Object.create(null);
+
+        const applyStyles = (id, css) => {
+          // remove existing branch styles
+          document.querySelectorAll('style[id$="-style"]').forEach(el => el.remove());
+          if (!css) return;
+          const style = document.createElement('style');
+          style.id = `${id}-style`;
+          style.textContent = `#root-branch-zone ${css}`;
+          document.head.appendChild(style);
+        };
+
+        const showLoadingScreen = zone => {
+          zone.innerHTML = `<div id="root-branch-loading">LOADING...</div>`;
+          zone.style.display = 'flex';
+        };
+
+        const loadBranch = (zone, id, output) => {
+          const branch = branches[id];
+          if (!branch) {
+            if (output) ForegroundZone.handleError(`Oof, branch not found!`, `BranchZone: ${id} missing`);
+            state.isBusy = false;
+            ForegroundZone.processCommandQueue();
+            return;
+          }
+          const { id: bid, content, css, init } = branch;
+          if (!zone || !bid || !content) {
+            if (output) ForegroundZone.handleError(`Oof, branch ${bid} broke, try again!`, `BranchZone: Invalid ${bid}`);
+            state.isBusy = false;
+            ForegroundZone.processCommandQueue();
+            return;
+          }
+          showLoadingScreen(zone);
+
+          // safe cleanup of listeners: only remove those we added explicitly (not the command input listener)
+          for (const [el, handler] of Array.from(state.listeners.entries())) {
+            if (el !== document.getElementById('root-command-input')) {
+              try {
+                el.removeEventListener('click', handler);
+                el.removeEventListener('touchstart', handler);
+                el.removeEventListener('touchend', handler);
+                el.removeEventListener('touchmove', handler);
+              } catch (e) { /* ignore */ }
+              state.listeners.delete(el);
+            }
+          }
+
+          zone.innerHTML = '';
+          const node = content.cloneNode(true);
+          // ensure branch content is directly inside zone (IDs in branch may be used by css)
+          zone.appendChild(node);
+          applyStyles(bid, css);
+
+          // run init — safe if it returns promise or not
+          Promise.resolve().then(() => init(zone)).then(() => {
+            zone.style.display = 'flex';
+            if (output) {
+              output.textContent = `LOADED: ${bid}`;
+              state.currentBranch = bid;
+            }
+            state.isBusy = false;
+            ForegroundZone.processCommandQueue();
+          }).catch(e => {
+            ForegroundZone.handleError(`Oof, branch ${bid} init failed, try again!`, `LoadBranch ${bid}: ${e && e.message ? e.message : e}`);
+            zone.innerHTML = '';
+            zone.style.display = 'none';
+            document.querySelectorAll('style[id$="-style"]').forEach(el => el.remove());
+            state.currentBranch = '';
+            state.isBusy = false;
+            ForegroundZone.processCommandQueue();
+          });
+        };
+
+        const registerBranch = branch => {
+          if (!branch || !branch.id) return;
+          branches[String(branch.id)] = branch;
+        };
+
+        return { branches, registerBranch, loadBranch };
+      })();
+
+      // Public init
+      const initializeApplication = () => {
+        // fetch CSS root variables into state.colors (robust)
+        try {
+          const styles = getComputedStyle(document.documentElement);
+          const fields = {
+            background: '--color-background',
+            text: '--color-text',
+            primary: '--color-primary',
+            secondary: '--color-secondary',
+            highlight: '--color-highlight'
+          };
+          for (const k in fields) {
+            const v = (styles.getPropertyValue(fields[k]) || '').trim();
+            if (v) state.colors[k] = v;
+          }
+        } catch (e) {
+          ForegroundZone.handleError('Oof, color fetch failed!', 'Init: Colors failed');
+        }
+
+        const canvas = document.getElementById('root-background-canvas');
+        const zone = document.getElementById('root-branch-zone');
+        if (!canvas || !zone) return ForegroundZone.handleError('Oof, app failed to start, refresh!', 'Init: Missing DOM');
+
+        BackgroundZone.init(canvas);
+
+        const input = document.getElementById('root-command-input');
+        const output = document.getElementById('root-command-output');
+        const outContainer = document.getElementById('root-toolbar-output');
+        if (!input || !output || !outContainer) return ForegroundZone.handleError('Oof, app failed to start, refresh!', 'Init: Missing IO');
+
+        // use keydown (Enter)
+        const inputHandler = e => ForegroundZone.handleCommand(e, input, output);
+        input.addEventListener('keydown', inputHandler);
+        input.addEventListener('touchstart', () => input.focus());
+        state.listeners.set(input, inputHandler);
+
+        // wheel scrolling for output container
+        outContainer.addEventListener('wheel', e => {
+          e.preventDefault();
+          outContainer.scrollTop += e.deltaY * 0.5;
+        }, { passive: false });
+
+        console.info('InitializeApplication: Started (minimal modular runtime)');
+      };
+
+      return {
+        state,
+        initializeApplication,
+        BranchZone,
+        registerBranch: BranchZone.registerBranch
+      };
+    })();
+
+    // Register the default branch (keeps your original structure)
+    // Branch format must match your Dev Guide block.
+    (function registerDefaults() {
+      const container = document.createElement('div');
+      container.innerHTML = `<div id="branch1-content">Under Construction</div>`;
+      App.registerBranch({
+        id: '1',
+        content: container.firstElementChild,
+        css: `#branch1-content { color: var(--color-primary); text-align: center; flex: 1; display: flex; align-items: center; justify-content: center; }`,
+        init: () => { /* no-op */ }
+      });
+      // you can register more branches here following the same pattern
+    })();
+
+    // start app
+    document.addEventListener('DOMContentLoaded', () => App.initializeApplication());
+  })();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,1695 @@
+// TO DO: Visual, Sounds, Tutorial, AI polish
+<!doctype html>
+<html lang="en">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>VELOCITY VECTOR</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+    body { margin: 0; overflow: hidden; background-color: #0b0b0b; color: #eee; font-family: 'VT323', monospace; user-select: none; touch-action: none; }
+    body::after { content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 100; background-size: 100% 3px, 6px 100%; pointer-events: none; opacity: 0.6; }
+    canvas { display: block; cursor: none; image-rendering: pixelated; }
+    #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 20; }
+    #hud-corner { position: absolute; top: 20px; left: 20px; pointer-events: auto; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; }
+    #score-display { font-size: 60px; line-height: 0.8; color: #00d2d3; text-shadow: 4px 4px 0 #000; }
+    #streak-container { display: flex; align-items: baseline; gap: 10px; }
+    #streak-rank { font-size: 40px; color: #555; font-weight: bold; }
+    #streak-multiplier { font-size: 20px; color: #888; }
+    #pause-menu { display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.95); border: 4px solid #fff; padding: 25px; text-align: center; pointer-events: auto; box-shadow: 10px 10px 0 #00d2d3; min-width: 350px; max-height: 90vh; overflow-y: auto; z-index: 60; }
+    .menu-btn { background: #fff; color: #000; border: none; font-family: 'VT323', monospace; font-size: 28px; padding: 10px 20px; cursor: pointer; margin-top: 15px; width: 100%; text-transform: uppercase; }
+    .menu-btn:hover { background: #00d2d3; color: #fff; }
+    .menu-btn.active { background: #00d2d3; color: #fff; border: 2px solid #fff; }
+    .control-row { display: flex; justify-content: space-between; font-size: 20px; color: #aaa; margin-bottom: 5px; border-bottom: 1px solid #333; }
+    b { color: #fff; }
+    .fx-toggle-row { display: flex; justify-content: space-between; align-items: center; font-size: 22px; margin: 8px 0; color: #ccc; }
+    input[type="checkbox"] { width: 20px; height: 20px; accent-color: #00d2d3; cursor: pointer; }
+    #game-over { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: none; pointer-events: auto; z-index: 50; }
+    #game-over h2 { font-size: 100px; margin: 0; color: #ff4757; text-shadow: 5px 5px 0 #000; animation: glitch 0.2s infinite; }
+    @keyframes glitch { 0% { transform: translate(-2px, 2px); } 50% { transform: translate(2px, -2px); } 100% { transform: translate(0, 0); } }
+    
+    /* Touch Controls */
+    .touch-container { display: none; position: absolute; z-index: 30; pointer-events: none; width: 100%; height: 100%; top: 0; left: 0; }
+    .touch-pad { position: absolute; border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; backdrop-filter: blur(2px); pointer-events: auto; }
+    .stick-base { width: 120px; height: 120px; background: rgba(0, 0, 0, 0.2); }
+    .stick-nub { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(0, 210, 211, 0.5); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+    .btn-action { width: 90px; height: 90px; background: rgba(255, 159, 67, 0.3); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.7); font-size: 20px; font-weight: bold;}
+    .btn-action:active, .btn-action.active { background: rgba(255, 255, 255, 0.5); }
+    .btn-sprint { width: 70px; height: 70px; background: rgba(0, 210, 211, 0.3); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.7); font-size: 16px;}
+    .btn-sprint:active, .btn-sprint.active { background: rgba(255, 255, 255, 0.5); }
+
+    /* Touch Layouts */
+    .p1-controls { bottom: 20px; left: 0; width: 100%; height: 200px; position: absolute; }
+    .p2-controls { top: 20px; left: 0; width: 100%; height: 200px; position: absolute; transform: rotate(180deg); }
+
+</style>
+<div id="ui-layer">
+    <div id="hud-corner" onclick="toggleMenu()">
+        <div id="score-display">0</div>
+        <div id="streak-container"><span id="streak-rank">F</span><span id="streak-multiplier">x1.0</span></div>
+    </div>
+    <div id="game-over">
+        <h2 id="go-title">SKILL ISSUE'D</h2>
+        <p style="font-size: 30px; color: #fff;">SCORE: <span id="final-score">0</span></p>
+        <button class="menu-btn" onclick="resetGame()">AGAIN</button>
+    </div>
+</div>
+
+<div id="touch-layer" class="touch-container"></div>
+
+<div id="pause-menu">
+    <h2 style="color: #00d2d3; margin: 0 0 15px 0; border-bottom: 2px solid #fff;">SYSTEM READY</h2>
+    
+    <div style="margin-bottom: 15px;">
+        <div class="control-row" style="border:none; justify-content: center; gap: 10px;">
+            <button id="btn-mode-solo" class="menu-btn active" style="margin:0; width:45%" onclick="setMode('SOLO')">SOLO</button>
+            <button id="btn-mode-vs" class="menu-btn" style="margin:0; width:45%" onclick="setMode('VERSUS')">VERSUS</button>
+        </div>
+        <div class="control-row" style="border:none; justify-content: center; gap: 10px; margin-top: 10px;">
+            <button id="btn-input-mouse" class="menu-btn active" style="margin:0; width:30%; font-size: 20px;" onclick="setInputScheme('MOUSE')">MOUSE</button>
+            <button id="btn-input-key" class="menu-btn" style="margin:0; width:30%; font-size: 20px;" onclick="setInputScheme('KEYBOARD')">KEYS</button>
+            <button id="btn-input-touch" class="menu-btn" style="margin:0; width:30%; font-size: 20px;" onclick="setInputScheme('TOUCH')">TOUCH</button>
+        </div>
+    </div>
+
+    <div id="controls-desc" style="text-align: left; margin-bottom: 20px;"></div>
+
+    <div style="text-align: left; border-top: 2px solid #333; padding-top: 10px;">
+        <h3 style="margin: 0 0 5px 0; color: #888;">PHYSICS</h3>
+        <div class="fx-toggle-row">
+            <label>FRICTION <small style="color:#00d2d3" id="lbl-fric">0.92</small></label>
+            <input type="range" id="rng-friction" min="0.80" max="0.99" step="0.01" value="0.92" style="width:100px; accent-color:#00d2d3;" 
+                   oninput="document.getElementById('lbl-fric').innerText=this.value" onchange="updateConfig()">
+        </div>
+
+        <h3 style="margin: 10px 0 5px 0; color: #888;">VISUALS</h3>
+        <div class="fx-toggle-row"><label>BLOOD & DEBRIS</label><input type="checkbox" id="chk-blood" checked onchange="updateConfig()"></div>
+        <div class="fx-toggle-row"><label>SCREEN SHAKE</label><input type="checkbox" id="chk-shake" checked onchange="updateConfig()"></div>
+        <div class="fx-toggle-row"><label>FLASHES</label><input type="checkbox" id="chk-flash" checked onchange="updateConfig()"></div>
+        <div class="fx-toggle-row"><label>NEON GLOW</label><input type="checkbox" id="chk-glow" checked onchange="updateConfig()"></div>
+        <div class="fx-toggle-row"><label>GRID FLOOR</label><input type="checkbox" id="chk-grid" checked onchange="updateConfig()"></div>
+    </div>
+    <button class="menu-btn" onclick="toggleMenu()">ENGAGE</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+
+
+const CONFIG = {
+    COLORS: { PLAYER: "#00d2d3", PLAYER2: "#ff9f43", ENEMY: "#ff4757", HYPER: "#ffffff", LOOT_HP: "#00ff00", LOOT_GOD: "#ffd700", LOOT_LIFE: "#00ffff" },
+    SPEED: { NORMAL: 1, MOMENTUM: 2.5, BURST: 50, HYPER: 100 },
+    DAMAGE: { NORMAL: 5, MOMENTUM: 15, BURST: 25, HYPER: 999 },
+    STAMINA: { 
+        MAX: 200,
+        DRAIN_RATE: 1,  
+        REGEN_RATE: 1.5,
+        MIN_TO_ENTER: 30,  
+    },
+    TIMING: { 
+        RMB_TAP_THRESHOLD: 12, 
+        CHARGE_BURST_THRESHOLD: 45, 
+        CHARGE_HYPER_THRESHOLD: 120, 
+        PARRY_DURATION: 20,
+        PARRY_COOLDOWN: 60, 
+        BURST_DURATION: 20, 
+        BURST_COOLDOWN: 60, 
+        WAVE_DELAY: 60, 
+        GOD_MODE_DURATION: 600, 
+        STUN_DURATION: 120 
+    },
+    LOOT: { DROP_RATE: 0.2, LIFETIME: 600 },
+    FX: { BLOOD: true, SHAKE: true, FLASH: true, GLOW: true, GRID: true },
+    AI: { 
+        EASY:   { RATE: .3,  ACCURACY: .4, AGGRO: .015, PARRY_CHANCE: 0.01, PREP: 90, SPEED_MOD: .9, COLOR: "#fab1a0" }, 
+        NORMAL: { RATE: .4,  ACCURACY: .5, AGGRO: .025, PARRY_CHANCE: 0.03, PREP: 80, SPEED_MOD: 1, COLOR: "#ff4757" }, 
+        HARD:   { RATE: .2,  ACCURACY: .6, AGGRO: .050, PARRY_CHANCE: 0.05, PREP: 60, SPEED_MOD: 1.2, COLOR: "#a29bfe" }, 
+        JOKER:  { RATE: .1,  ACCURACY: .1, AGGRO: .002, PARRY_CHANCE: 0.08, PREP: 90, SPEED_MOD: 1.5, COLOR: "#ffeaa7" },
+        ELITE:  { RATE: .05, ACCURACY: .9, AGGRO: 0.05, PARRY_CHANCE: 0.60,PREP: 45, SPEED_MOD: 0.5,COLOR: "#2d3436" 
+        } 
+    },
+    RANKS: ["F", "D", "C", "B", "A", "S", "SS", "SSS"],
+    FRICTION: 0.92,
+    BOUNDS: 25 
+};
+
+// Canvas & UI Setup
+const canvas = document.getElementById("gameCanvas");
+const context = canvas.getContext("2d");
+const ui = {
+    score: document.getElementById("score-display"),
+    rank: document.getElementById("streak-rank"),
+    multiplier: document.getElementById("streak-multiplier"),
+    menu: document.getElementById("pause-menu"),
+    gameOver: document.getElementById("game-over"),
+    finalScore: document.getElementById("final-score"),
+    goTitle: document.getElementById("go-title"),
+    controlsDesc: document.getElementById("controls-desc"),
+    touchLayer: document.getElementById("touch-layer")
+};
+
+let screenWidth, screenHeight;
+let mouse = { x: 0, y: 0 };
+let animationFrameId = null;
+let lastTime = 0;
+let accumulator = 0;
+const TIME_STEP = 1000 / 60;
+const MAX_PHYSICS_STEPS = 5;
+
+// Game State
+let gameState = {
+    mode: "PAUSE",      
+    subMode: "SOLO",    
+    inputScheme: "MOUSE", 
+    needsReset: true,   
+    score: 0, streak: 0, combo: 0,
+    shakeIntensity: 0, hitStopTimer: 0, flashOpacity: 0, waveTimer: 0
+};
+
+let entities = { players: [], enemies: [], particles: [], texts: [], blood: [], pickups: [] };
+
+// --- VECTOR MATH ---
+class Vector {
+    constructor(x, y) { this.x = x; this.y = y; }
+    add(v) { this.x += v.x; this.y += v.y; return this; }
+    sub(v) { this.x -= v.x; this.y -= v.y; return this; }
+    multiply(s) { this.x *= s; this.y *= s; return this; }
+    magnitude() { return Math.sqrt(this.x ** 2 + this.y ** 2); }
+    normalize() { let m = this.magnitude(); if (m !== 0) this.multiply(1 / m); return this; }
+    clone() { return new Vector(this.x, this.y); }
+    static distance(v1, v2) { return Math.sqrt((v1.x - v2.x) ** 2 + (v1.y - v2.y) ** 2); }
+    static subtract(v1, v2) { return new Vector(v1.x - v2.x, v1.y - v2.y); }
+}
+
+// --- CONTROLS SYSTEM ---
+class ControlManager {
+    constructor() {
+        this.inputs = {
+            p1: { move: new Vector(0, 0), action: false, momentum: false },
+            p2: { move: new Vector(0, 0), action: false, momentum: false }
+        };
+        this.keys = {};
+        this.touchData = {}; 
+        
+        // Listeners
+        window.addEventListener('keydown', e => this.keys[e.code] = true);
+        window.addEventListener('keyup', e => this.keys[e.code] = false);
+        window.addEventListener('mousemove', e => {
+            if (gameState.inputScheme === 'MOUSE') { mouse.x = e.clientX; mouse.y = e.clientY; }
+        });
+        window.addEventListener('mousedown', e => {
+            if (gameState.inputScheme === 'MOUSE' && gameState.mode === "PLAY") {
+                if (e.button === 0) this.inputs.p1.momentum = true;
+                if (e.button === 2) this.inputs.p1.action = true;
+            }
+        });
+        window.addEventListener('mouseup', e => {
+            if (gameState.inputScheme === 'MOUSE') {
+                if (e.button === 0) this.inputs.p1.momentum = false;
+                if (e.button === 2) this.inputs.p1.action = false;
+            }
+        });
+        window.addEventListener('contextmenu', e => e.preventDefault());
+    }
+
+    reset() {
+        this.inputs.p1 = { move: new Vector(0, 0), action: false, momentum: false };
+        this.inputs.p2 = { move: new Vector(0, 0), action: false, momentum: false };
+        this.touchData = {};
+    }
+
+    setupTouchUI() {
+        ui.touchLayer.innerHTML = '';
+        if (gameState.inputScheme !== 'TOUCH') {
+            ui.touchLayer.style.display = 'none';
+            return;
+        }
+        ui.touchLayer.style.display = 'block';
+
+        const createStick = (pid, sideClass, isRotated) => {
+            let base = document.createElement('div');
+            base.className = `touch-pad stick-base ${sideClass}`;
+            base.style.left = '30px';
+            if(isRotated) base.style.top = '30px'; else base.style.bottom = '30px';
+            
+            let nub = document.createElement('div');
+            nub.className = 'stick-nub';
+            base.appendChild(nub);
+            ui.touchLayer.appendChild(base);
+
+            let origin = null;
+            const handleStart = (e) => {
+                e.preventDefault();
+                let t = e.changedTouches[0];
+                let rect = base.getBoundingClientRect();
+                let cx = rect.left + rect.width/2;
+                let cy = rect.top + rect.height/2;
+                origin = { x: cx, y: cy, id: t.identifier };
+                this.touchData[`stick-${pid}`] = { x: 0, y: 0 };
+            };
+
+            const handleMove = (e) => {
+                e.preventDefault();
+                for (let i=0; i<e.changedTouches.length; i++) {
+                    if (origin && e.changedTouches[i].identifier === origin.id) {
+                        let t = e.changedTouches[i];
+                        let dx = t.clientX - origin.x;
+                        let dy = t.clientY - origin.y;
+                        let dist = Math.min(50, Math.sqrt(dx*dx + dy*dy));
+                        let angle = Math.atan2(dy, dx);
+                        
+                        nub.style.transform = `translate(calc(-50% + ${Math.cos(angle)*dist}px), calc(-50% + ${Math.sin(angle)*dist}px))`;
+                        
+                        let ox = Math.cos(angle) * (dist/50);
+                        let oy = Math.sin(angle) * (dist/50);
+                        if (isRotated) { ox *= -1; oy *= -1; }
+
+                        this.touchData[`stick-${pid}`] = { x: ox, y: oy };
+                    }
+                }
+            };
+            
+            const handleEnd = (e) => {
+                for (let i=0; i<e.changedTouches.length; i++) {
+                    if (origin && e.changedTouches[i].identifier === origin.id) {
+                        origin = null;
+                        nub.style.transform = `translate(-50%, -50%)`;
+                        this.touchData[`stick-${pid}`] = { x: 0, y: 0 };
+                    }
+                }
+            };
+
+            base.addEventListener('touchstart', handleStart, {passive:false});
+            base.addEventListener('touchmove', handleMove, {passive:false});
+            base.addEventListener('touchend', handleEnd);
+            base.addEventListener('touchcancel', handleEnd);
+        };
+
+        const createBtn = (pid, type, sideClass, rightOffset, isRotated) => {
+            let btn = document.createElement('div');
+            btn.className = `touch-pad ${type === 'action' ? 'btn-action' : 'btn-sprint'} ${sideClass}`;
+            btn.style.right = rightOffset + 'px';
+            if(isRotated) btn.style.top = '30px'; else btn.style.bottom = '30px';
+            btn.innerText = type === 'action' ? 'ATK' : 'SPD';
+            
+            const press = (e) => { e.preventDefault(); this.touchData[`${type}-${pid}`] = true; btn.classList.add('active'); };
+            const release = (e) => { e.preventDefault(); this.touchData[`${type}-${pid}`] = false; btn.classList.remove('active'); };
+
+            btn.addEventListener('touchstart', press, {passive: false});
+            btn.addEventListener('touchend', release, {passive: false});
+            ui.touchLayer.appendChild(btn);
+        };
+
+        if (gameState.subMode === 'SOLO') {
+            createStick('p1', '', false);
+            createBtn('p1', 'action', '', 30, false);
+            createBtn('p1', 'momentum', '', 140, false);
+        } else {
+            createStick('p1', '', false);
+            createBtn('p1', 'action', '', 30, false);
+            createBtn('p1', 'momentum', '', 140, false);
+            createStick('p2', '', true);
+            createBtn('p2', 'action', '', 30, true);
+            createBtn('p2', 'momentum', '', 140, true);
+            let nodes = ui.touchLayer.children;
+            for(let n of nodes) { if(parseInt(n.style.top) === 30) n.style.transform = "rotate(180deg)"; }
+        }
+    }
+
+    update() {
+        if (gameState.inputScheme === 'KEYBOARD') {
+            this.inputs.p1.move.x = (this.keys['KeyD'] ? 1 : 0) - (this.keys['KeyA'] ? 1 : 0);
+            this.inputs.p1.move.y = (this.keys['KeyS'] ? 1 : 0) - (this.keys['KeyW'] ? 1 : 0);
+            this.inputs.p1.action = this.keys['KeyZ'] || false; 
+            this.inputs.p1.momentum = this.keys['KeyX'] || false;
+
+            this.inputs.p2.move.x = (this.keys['ArrowRight'] ? 1 : 0) - (this.keys['ArrowLeft'] ? 1 : 0);
+            this.inputs.p2.move.y = (this.keys['ArrowDown'] ? 1 : 0) - (this.keys['ArrowUp'] ? 1 : 0);
+            this.inputs.p2.action = this.keys['KeyK'] || false;
+            this.inputs.p2.momentum = this.keys['KeyL'] || false;
+        } 
+        else if (gameState.inputScheme === 'TOUCH') {
+            ['p1', 'p2'].forEach(id => {
+                let stick = this.touchData[`stick-${id}`];
+                if (stick) {
+                    this.inputs[id].move.x = stick.x;
+                    this.inputs[id].move.y = stick.y;
+                }
+                this.inputs[id].action = this.touchData[`action-${id}`] || false;
+                this.inputs[id].momentum = this.touchData[`momentum-${id}`] || false;
+            });
+        }
+    }
+    getPlayerInput(playerId) { return this.inputs[playerId]; }
+}
+const controls = new ControlManager();
+
+// --- ENTITIES ---
+
+class Entity {
+    constructor(x, y) {
+        this.position = new Vector(x, y);
+        this.velocity = new Vector(0, 0);
+        this.hp = 100;
+        this.maxHp = 100;
+        this.stamina = CONFIG.STAMINA.MAX;
+        this.radius = 16;
+        this.baseColor = "#ffffff";
+        this.currentTier = 0;
+        this.invincibleTimer = 0;
+        this.stunTimer = 0; 
+        this.canEnterMomentum = () => { return this.stamina >= CONFIG.STAMINA.MIN_TO_ENTER; };
+    }
+    updateStamina(isDraining) {
+        if (isDraining && this.stamina > 0) this.stamina -= CONFIG.STAMINA.DRAIN_RATE;
+        else if (!isDraining && this.stamina < CONFIG.STAMINA.MAX) this.stamina += CONFIG.STAMINA.REGEN_RATE;
+        this.stamina = Math.max(0, Math.min(CONFIG.STAMINA.MAX, this.stamina));
+
+    }
+    isDead() { return this.hp <= 0; }
+    draw(shakeOffset, showShield) {
+        let color = modifyColor(this.baseColor, this.currentTier, this.stamina / CONFIG.STAMINA.MAX, this.stunTimer > 0);
+        if (this.invincibleTimer > 60 && this.invincibleTimer % 10 < 5) color = CONFIG.COLORS.LOOT_GOD;
+        
+        context.save();
+        context.translate(this.position.x + shakeOffset, this.position.y + shakeOffset);
+        
+        if (showShield) {
+            context.strokeStyle = "#fff"; context.lineWidth = 3;
+            context.beginPath(); context.arc(0, 0, this.radius + 8, 0, 2 * Math.PI); context.stroke();
+        }
+        if (this.hp < 30 && Math.floor(Date.now() / 50) % 2 == 0) context.globalAlpha = 0.4;
+        
+        let speed = this.velocity.magnitude();
+        context.rotate(Math.atan2(this.velocity.y, this.velocity.x));
+        let stretch = 1 + Math.min(speed / 60, 0.8);
+        context.scale(stretch, 1 / stretch);
+        
+        if (this.currentTier > 0 && CONFIG.FX.GLOW && this.stunTimer <= 0) {
+            context.shadowBlur = this.currentTier === 3 ? 50 : (this.currentTier === 2 ? 20 : 10);
+            context.shadowColor = color;
+        }
+
+        context.fillStyle = color;
+        context.beginPath(); context.arc(0, 0, this.radius, 0, 2 * Math.PI); context.fill();
+        context.fillStyle = "#fff"; context.globalAlpha = 0.4;
+        context.beginPath(); context.arc(0, 0, this.radius * 0.6, 0, 2 * Math.PI); context.fill();
+        context.restore();
+    }
+    handleWallCollision() {
+        let p = CONFIG.BOUNDS;
+        if (this.position.x < p) { this.position.x = p; this.velocity.x *= -0.8; }
+        if (this.position.x > screenWidth - p) { this.position.x = screenWidth - p; this.velocity.x *= -0.8; }
+        if (this.position.y < p) { this.position.y = p; this.velocity.y *= -0.8; }
+        if (this.position.y > screenHeight - p) { this.position.y = screenHeight - p; this.velocity.y *= -0.8; }
+    }
+}
+
+class Player extends Entity {
+    constructor(id) {
+        super(screenWidth / 2, screenHeight / 2);
+        this.id = id;
+        this.burstTimer = 0; this.burstCooldown = 0;
+        this.parryTimer = 0; this.parryCooldown = 0;
+        this.chargeTimer = 0;
+        this.chargingState = "NONE";
+        this.baseColor = id === 'p1' ? CONFIG.COLORS.PLAYER : CONFIG.COLORS.PLAYER2;
+        this.extraLife = 0;
+        this.isSprinting = false;
+        
+        if (gameState.subMode === 'VERSUS') {
+             if(id === 'p1') this.position = new Vector(screenWidth/2, screenHeight - 100);
+             else this.position = new Vector(screenWidth/2, 100);
+        }
+    }
+
+    fixedUpdate() {
+        // Timers
+        if (this.burstTimer > 0) this.burstTimer--;
+        if (this.burstCooldown > 0) this.burstCooldown--;
+        if (this.parryTimer > 0) this.parryTimer--;
+        if (this.parryCooldown > 0) this.parryCooldown--;
+        if (this.invincibleTimer > 0) this.invincibleTimer--;
+        
+        // Stun Logic
+        if (this.stunTimer > 0) {
+            this.stunTimer--;
+            this.velocity.multiply(0.9);
+            this.chargingState = "NONE";
+            this.currentTier = 0;
+            this.position.add(this.velocity);
+            this.handleWallCollision();
+            return; 
+        }
+
+        let inp = controls.getPlayerInput(this.id);
+        
+        // Combat Inputs (Charge/Parry)
+        if (inp.action) {
+            this.chargeTimer++;
+            this.velocity.multiply(0.85); 
+            if (this.chargeTimer > CONFIG.TIMING.RMB_TAP_THRESHOLD) {
+                this.chargingState = "BURST";
+                if (this.chargeTimer % 10 == 0 && this.chargeTimer < CONFIG.TIMING.CHARGE_HYPER_THRESHOLD) 
+                    createParticle(this.position.x, this.position.y, modifyColor(this.baseColor, 2, 1), 2);
+            }
+            if (this.chargeTimer > CONFIG.TIMING.CHARGE_HYPER_THRESHOLD) {
+                this.chargingState = "HYPER";
+                addShake(2);
+                if (CONFIG.FX.BLOOD && this.chargeTimer % 5 == 0) 
+                    createParticle(this.position.x + 150 * (Math.random() - .5), this.position.y + 150 * (Math.random() - .5), "#fff", -8);
+            }
+        } else {
+            if (this.chargeTimer > 0) {
+                if (this.burstCooldown <= 0) {
+                    if (this.chargeTimer > CONFIG.TIMING.CHARGE_HYPER_THRESHOLD) this.triggerDash("HYPER", inp);
+                    else if (this.chargeTimer > CONFIG.TIMING.CHARGE_BURST_THRESHOLD) this.triggerDash("BURST", inp);
+                    else if (this.chargeTimer <= CONFIG.TIMING.RMB_TAP_THRESHOLD && this.parryCooldown <= 0) this.triggerParry();
+                }
+                this.chargeTimer = 0;
+                this.chargingState = "NONE";
+            }
+        }
+
+        // --- STAMINA & TIER LOGIC ---
+        let isExhausted = this.stamina <= 0;
+
+        // If performing a Burst/Hyper dash, we override tier
+        if (this.burstTimer > 0) {
+            this.currentTier = this.velocity.magnitude() > CONFIG.SPEED.BURST + 10 ? 3 : 2;
+            this.isSprinting = false; 
+        } else {
+            // Normal Movement Logic
+            if (isExhausted) {
+                // EXHAUSTED STATE: Force Tier 0, Disable Sprint
+                this.isSprinting = false;
+                this.currentTier = 0;
+            } else if (inp.momentum && this.stamina >= CONFIG.STAMINA.DRAIN_RATE) {
+                // SPRINTING
+                this.currentTier = 1;
+                this.isSprinting = true;
+            } else {
+                // WALKING
+                this.isSprinting = false;
+                this.currentTier = 0;
+            }
+        }
+        
+        this.updateStamina(this.isSprinting);
+
+        // Movement Calculation
+        if (this.parryTimer > 0) { this.velocity.multiply(0.8); this.invincibleTimer = 2; }
+        else if (this.burstTimer > 0) { this.velocity.multiply(0.98); this.invincibleTimer = 2; }
+        else if (!inp.action) {
+            
+            // Calculate Speed
+            let baseSpeed = this.isSprinting ? CONFIG.SPEED.MOMENTUM : CONFIG.SPEED.NORMAL;
+            
+            // APPLY HALF SPEED PENALTY IF EXHAUSTED
+            if (isExhausted) baseSpeed *= 0.5;
+
+            if (gameState.inputScheme === 'MOUSE' && this.id === 'p1') {
+                let angle = Math.atan2(mouse.y - this.position.y, mouse.x - this.position.x);
+                let dir = new Vector(Math.cos(angle), Math.sin(angle));
+                if (Vector.distance(this.position, mouse) > 10) this.velocity.add(dir.multiply(baseSpeed));
+            } else {
+                let rawMove = new Vector(inp.move.x, inp.move.y);
+                if (rawMove.magnitude() > 0.1) this.velocity.add(rawMove.normalize().multiply(baseSpeed));
+            }
+            this.velocity.multiply(CONFIG.FRICTION);
+        }
+
+        this.position.add(this.velocity);
+        this.handleWallCollision();
+    }
+
+    triggerParry() {
+        this.parryTimer = CONFIG.TIMING.PARRY_DURATION;
+        this.parryCooldown = CONFIG.TIMING.PARRY_COOLDOWN;
+        createBurstParticles(this.position.x, this.position.y, "#fff", 10);
+        addShake(5);
+    }
+
+    triggerDash(type, inputState) {
+        let angle = 0;
+        if (gameState.inputScheme === 'MOUSE' && this.id === 'p1') {
+            angle = Math.atan2(mouse.y - this.position.y, mouse.x - this.position.x);
+        } else {
+            if (Math.abs(inputState.move.x) > 0.1 || Math.abs(inputState.move.y) > 0.1) angle = Math.atan2(inputState.move.y, inputState.move.x);
+            else angle = Math.atan2(this.velocity.y, this.velocity.x);
+        }
+        let speed = type === "HYPER" ? CONFIG.SPEED.HYPER : CONFIG.SPEED.BURST;
+        let color = type === "HYPER" ? CONFIG.COLORS.HYPER : CONFIG.COLORS.BURST;
+        
+        this.velocity = new Vector(Math.cos(angle) * speed, Math.sin(angle) * speed);
+        this.burstTimer = CONFIG.TIMING.BURST_DURATION;
+        this.burstCooldown = CONFIG.TIMING.BURST_COOLDOWN;
+        
+        addShake(type === "HYPER" ? 30 : 15);
+        createBurstParticles(this.position.x, this.position.y, color, type === "HYPER" ? 50 : 25);
+        triggerFlash(type === "HYPER" ? 0.5 : 0.2);
+    }
+}
+
+class Enemy extends Entity {
+
+    constructor() {
+
+        super(0, 0);
+
+        let r = Math.floor(Math.random() * 4);
+
+        if (r === 0) this.position = new Vector(Math.random() * screenWidth, -40);
+
+        else if (r === 1) this.position = new Vector(screenWidth + 40, Math.random() * screenHeight);
+
+        else if (r === 2) this.position = new Vector(Math.random() * screenWidth, screenHeight + 40);
+
+        else this.position = new Vector(-40, Math.random() * screenHeight);
+
+
+
+        let rng = Math.random();
+
+        if (rng < CONFIG.AI.EASY.RATE) this.diff = CONFIG.AI.EASY;
+
+        else if (rng < CONFIG.AI.EASY.RATE + CONFIG.AI.NORMAL.RATE) this.diff = CONFIG.AI.NORMAL;
+
+        else if (rng < CONFIG.AI.EASY.RATE + CONFIG.AI.NORMAL.RATE + CONFIG.AI.HARD.RATE) this.diff = CONFIG.AI.HARD;
+
+        else this.diff = CONFIG.AI.JOKER;
+
+
+
+        this.baseColor = this.diff.COLOR;
+
+        this.aiState = "CIRCLE"; 
+
+        this.aiTimer = 0; 
+
+        this.orbitOffset = Math.random() * Math.PI * 2;
+
+        this.burstCooldown = 0; 
+
+        this.targetTier = 2;
+
+        this.parryCooldown = 0;
+
+        this.parryTimer = 0;
+
+        this.lootTarget = null;
+
+        this.fleePoint = null; // New property for smart evasion
+
+    }
+
+
+
+    fixedUpdate() {
+
+        if (this.invincibleTimer > 0) this.invincibleTimer--;
+
+        if (this.burstCooldown > 0) this.burstCooldown--;
+
+        if (this.parryCooldown > 0) this.parryCooldown--;
+
+
+
+        // 1. STUNNED (Top Priority)
+
+        if (this.stunTimer > 0) {
+
+            this.stunTimer--;
+
+            this.velocity.multiply(0.9);
+
+            this.position.add(this.velocity);
+
+            this.handleWallCollision();
+
+            return;
+
+        }
+
+
+
+        // 2. ELITE SPECTATOR CHECK (Skip if I AM the Elite)
+
+        if (!(this instanceof EliteEnemy)) {
+
+            let elite = entities.enemies.find(e => e instanceof EliteEnemy);
+
+            if (elite) {
+
+                let target = entities.players[0]; 
+
+                if (target) {
+
+                    let distToElite = Vector.distance(this.position, elite.position);
+
+                    let distToPlayer = Vector.distance(this.position, target.position);
+
+                    
+
+                    // Logic: If too close to fight, run to a safe spot
+
+                    if (distToElite < 350 || distToPlayer < 350) {
+
+                        // If we don't have a safe spot or reached it, pick a new one
+
+                        if (!this.fleePoint || Vector.distance(this.position, this.fleePoint) < 50) {
+
+                            // Pick a random point on screen, away from the fight center
+
+                            let fightCenter = Vector.subtract(elite.position, target.position).multiply(0.5).add(target.position);
+
+                            let angle = Math.random() * Math.PI * 2;
+
+                            // Pick point on a ring 400-600px away from fight center
+
+                            let dist = 400 + Math.random() * 200;
+
+                            let fx = fightCenter.x + Math.cos(angle) * dist;
+
+                            let fy = fightCenter.y + Math.sin(angle) * dist;
+
+                            
+
+                            // Clamp to screen bounds with padding so they don't hug walls
+
+                            fx = Math.max(50, Math.min(screenWidth - 50, fx));
+
+                            fy = Math.max(50, Math.min(screenHeight - 50, fy));
+
+                            
+
+                            this.fleePoint = new Vector(fx, fy);
+
+                        }
+
+                        
+
+                        // Run to safe spot
+
+                        let fleeDir = Vector.subtract(this.fleePoint, this.position).normalize();
+
+                        this.velocity.add(fleeDir.multiply(0.6 * CONFIG.SPEED.NORMAL)); // Move decently fast to safety
+
+                    } else {
+
+                        // Safe distance: Watch and Cheer
+
+                        this.velocity.multiply(0.9);
+
+                        if(Math.random() < 0.01) createText(this.position.x, this.position.y - 20, ["@#%$", "!!!", "???", "⊙.☉", "(⊙﹏⊙)"][Math.floor(Math.random()*5)], "#aaa", 15);
+
+                    }
+
+                    
+
+                    this.position.add(this.velocity);
+
+                    this.handleWallCollision();
+
+                    return; 
+
+                }
+
+            }
+
+        }
+
+
+
+        // [Rest of standard enemy logic remains exactly the same...]
+
+        // 3. PARRYING (Action Lock)
+
+        if (this.parryTimer > 0) {
+
+            this.parryTimer--;
+
+            this.velocity.multiply(0.8);
+
+            this.position.add(this.velocity);
+
+            return;
+
+        }
+
+
+
+        let target = entities.players[0]; if (!target) return;
+
+
+
+        // 4. LOOT SEEKING
+
+        if (!this.lootTarget && Math.random() < 0.5) {
+
+            for(let p of entities.pickups) {
+
+                if(Vector.distance(this.position, p.position) < 200) { this.lootTarget = p; break; }
+
+            }
+
+        }
+
+        if(this.lootTarget && entities.pickups.indexOf(this.lootTarget) === -1) this.lootTarget = null;
+
+        
+
+        let moveTarget = target.position;
+
+        let isChasingLoot = false;
+
+
+
+        if (this.lootTarget) {
+
+            moveTarget = this.lootTarget.position;
+
+            isChasingLoot = true;
+
+            if(this.aiState === 'CIRCLE') this.aiState = 'CHASE';
+
+        }
+
+
+
+        let vecToTarget = Vector.subtract(moveTarget, this.position);
+
+        let dist = vecToTarget.magnitude();
+
+        vecToTarget.normalize();
+
+
+
+        if (!isChasingLoot) {
+
+            if (target.stunTimer > 0 && this.aiState !== "DASH" && this.aiState !== "PREP") this.aiState = "CHASE";
+
+            if (dist < 120 && target.currentTier > 0 && this.parryCooldown <= 0) {
+
+                if (Math.random() < this.diff.PARRY_CHANCE) {
+
+                    this.parryTimer = CONFIG.TIMING.PARRY_DURATION;
+
+                    this.parryCooldown = 180; 
+
+                    createBurstParticles(this.position.x, this.position.y, "#fff", 10);
+
+                    createText(this.position.x, this.position.y - 30, "PARRY", "#fff", 20);
+
+                    return;
+
+                }
+
+            }
+
+        }
+
+
+
+        // Movement State Machine
+
+        this.currentTier = 0;
+
+        let isExhausted = this.stamina <= 0;
+        if (this.aiState === "DASH") {
+            this.currentTier = this.targetTier;
+        } 
+        else if (this.aiState === "CHASE") {
+            // AI tries to sprint
+            if (this.canEnterMomentum() && !isExhausted) {
+                this.currentTier = 1;
+            } else {
+                this.currentTier = 0; 
+            }
+        }
+
+        // FORCE TIER 0 IF EXHAUSTED
+        if (isExhausted && this.aiState !== "DASH" && this.aiState !== "HYPER_DASH") {
+            this.currentTier = 0;
+        }
+
+        this.updateStamina(this.currentTier === 1);
+        
+        // APPLY HALF SPEED PENALTY
+        let speedMult = isExhausted ? 0.5 : 1.0;
+
+        // Apply movement forces based on state
+        if (this.aiState === "STUNNED") {
+            this.aiState = "CIRCLE"; 
+        } 
+        else if (this.aiState === "CIRCLE") {
+            this.orbitOffset += 0.01 * (this.diff === CONFIG.AI.JOKER ? 3 : 1);
+            let tx = target.position.x + 350 * Math.cos(this.orbitOffset);
+            let ty = target.position.y + 350 * Math.sin(this.orbitOffset);
+            let force = new Vector(tx - this.position.x, ty - this.position.y).normalize().multiply(CONFIG.SPEED.NORMAL * this.diff.SPEED_MOD * speedMult);
+            this.velocity.add(force);
+            if (Math.random() < this.diff.AGGRO && this.burstCooldown <= 0) this.aiState = "CHASE";
+        } 
+        else if (this.aiState === "CHASE") {
+            // Speed depends on if we successfully entered momentum (Tier 1)
+            let s = this.currentTier === 1 ? CONFIG.SPEED.MOMENTUM : CONFIG.SPEED.NORMAL;
+            let force = vecToTarget.clone().multiply(0.9 * s * this.diff.SPEED_MOD * speedMult);
+            
+            this.velocity.add(force);
+
+            if (!isChasingLoot && this.diff === CONFIG.AI.JOKER && dist < 150) this.velocity.sub(force.multiply(2));
+
+            if (!isChasingLoot && dist < 250 && Math.random() < 0.02 && this.burstCooldown <= 0) {
+
+                this.aiState = "PREP"; this.aiTimer = this.diff.PREP; this.targetTier = 2;
+                if (this.diff === CONFIG.AI.HARD && Math.random() < 0.1) {
+                    this.targetTier = 3; this.aiTimer = CONFIG.TIMING.CHARGE_HYPER_THRESHOLD;
+                }
+                createText(this.position.x, this.position.y - 30, this.targetTier === 3 ? "!!!" : "!", "#fff", 30);
+            }
+        } 
+        else if (this.aiState === "PREP") {
+            this.velocity.multiply(0.8); this.aiTimer--;
+            this.position.x += (Math.random() - 0.5) * 2; this.position.y += (Math.random() - 0.5) * 2;
+            if (this.targetTier === 3 && this.aiTimer % 10 == 0) createParticle(this.position.x, this.position.y, CONFIG.COLORS.HYPER, 2);
+            if (this.aiTimer <= 0) {
+                this.aiState = "DASH"; this.aiTimer = CONFIG.TIMING.BURST_DURATION;
+                let lead = Vector.subtract(target.position, this.position);
+                let angle = Math.atan2(lead.y, lead.x) + (1 - this.diff.ACCURACY) * (Math.random() - 0.5) * 2;
+                let speed = (this.targetTier === 3 ? CONFIG.SPEED.HYPER : CONFIG.SPEED.BURST) * 0.85 * this.diff.SPEED_MOD;
+                this.velocity = new Vector(Math.cos(angle) * speed, Math.sin(angle) * speed);
+                createBurstParticles(this.position.x, this.position.y, this.targetTier === 3 ? CONFIG.COLORS.HYPER : this.baseColor, 15);
+            }
+        } 
+        else if (this.aiState === "DASH") {
+            this.aiTimer--;
+            if (this.aiTimer <= 0) {
+                this.aiState = "CIRCLE"; this.velocity.multiply(0.3); this.burstCooldown = CONFIG.TIMING.BURST_COOLDOWN;
+            }
+        }
+        this.velocity.multiply(0.95);
+        this.position.add(this.velocity);
+        this.handleWallCollision();
+    }
+}
+
+class EliteEnemy extends Enemy {
+    constructor() {
+        super();
+        this.diff = CONFIG.AI.ELITE;
+        this.baseColor = this.diff.COLOR;
+        this.radius = 20; 
+        this.hp = 1000; // Tankier
+        this.maxHp = 1000;
+        this.aiState = "MEASURE"; 
+        this.aiSubState = 0; 
+    }
+
+    fixedUpdate() {
+        if (this.invincibleTimer > 0) this.invincibleTimer--;
+        if (this.stunTimer > 0) {
+            this.stunTimer--; 
+            this.velocity.multiply(0.9);
+            this.position.add(this.velocity); 
+            this.handleWallCollision(); 
+            return;
+        }
+        
+        let target = entities.players[0]; if (!target) return;
+        if (this.burstCooldown > 0) this.burstCooldown--;
+        if (this.parryCooldown > 0) this.parryCooldown--;
+        if (this.parryTimer > 0) {
+            this.parryTimer--; this.velocity.multiply(0.8);
+            this.position.add(this.velocity); return;
+        }
+
+        let vecToTarget = Vector.subtract(target.position, this.position);
+        let dist = vecToTarget.magnitude();
+        vecToTarget.normalize();
+
+        // 1. Reactive Parry
+        if (dist < 180 && target.currentTier > 0 && this.parryCooldown <= 0) {
+            if (Math.random() < this.diff.PARRY_CHANCE) {
+                this.parryTimer = CONFIG.TIMING.PARRY_DURATION;
+                this.parryCooldown = 120;
+                createBurstParticles(this.position.x, this.position.y, "#fff", 20);
+                createText(this.position.x, this.position.y - 40, "DENIED", "#fff", 30);
+                return;
+            }
+        }
+
+        // 2. BOSS AI STATE MACHINE
+        this.currentTier = 0;
+
+        if (this.aiState === "STUNNED") {
+            this.stunTimer = this.aiTimer; 
+            this.aiState = "MEASURE"; 
+        } 
+        
+        // --- IDLE / MEASURE ---
+        else if (this.aiState === "MEASURE") {
+            // Keep moderate distance, don't just stand still
+            let idealDist = 250;
+            if(dist > idealDist) this.velocity.add(vecToTarget.multiply(0.4));
+            else this.velocity.sub(vecToTarget.multiply(0.2));
+            this.velocity.multiply(0.85);
+
+            // Logic trigger
+            if (this.burstCooldown <= 0 && Math.random() < 0.03) {
+                let roll = Math.random();
+                if (roll < 0.25) this.startZigZag();
+                else if (roll < 0.55) this.startClashBait(); // Increased chance
+                else if (roll < 0.80) this.startHyperDash();
+                else this.startTeleportShove();
+            }
+        }
+
+        // --- MOVE 1: ZIG ZAG STRIKE (Closer & Faster) ---
+        else if (this.aiState === "ZIGZAG_PREP") {
+            this.aiTimer--;
+            // Move TOWARDS player while prepping to close gap
+            this.velocity.add(vecToTarget.multiply(0.8)); 
+            
+            if (this.aiTimer <= 0) {
+                this.aiState = "ZIGZAG_DASH";
+                this.aiTimer = 10; // Faster dashes
+                this.currentTier = 2; 
+                
+                // ZigZag pattern relative to player direction
+                // If substate is even, go left of player, odd go right
+                let baseAngle = Math.atan2(vecToTarget.y, vecToTarget.x);
+                let offset = (this.aiSubState % 2 === 0 ? 0.7 : -0.7); 
+                let angle = baseAngle + offset;
+
+                // Dash Speed High
+                this.velocity = new Vector(Math.cos(angle) * 55, Math.sin(angle) * 55);
+                createBurstParticles(this.position.x, this.position.y, CONFIG.COLORS.ENEMY, 10);
+            }
+        }
+        else if (this.aiState === "ZIGZAG_DASH") {
+            this.currentTier = 2;
+            this.aiTimer--;
+            if (this.aiTimer <= 0) {
+                this.aiSubState++;
+                if (this.aiSubState < 3) {
+                    this.aiState = "ZIGZAG_PREP"; 
+                    this.aiTimer = 8; // Less pause between dashes
+                } else {
+                    this.aiState = "MEASURE"; 
+                    this.burstCooldown = 100;
+                }
+            }
+        }
+
+        // --- MOVE 2: CLASH BAIT (Mirror Player State) ---
+        else if (this.aiState === "CLASH_BAIT") {
+            this.aiTimer--;
+            
+            // Mirror Player Aggression
+            if (target.currentTier === 1) {
+                // Player sprinting? We sprint directly at them.
+                this.currentTier = 1;
+                this.updateStamina(true);
+                this.velocity.add(vecToTarget.multiply(1.5)); // Accelerate
+            } 
+            else if (target.chargingState !== "NONE" || target.currentTier >= 2) {
+                // Player charging burst? We charge right back.
+                this.currentTier = 2; // Force Burst state
+                this.velocity.add(vecToTarget.multiply(2.0)); // Hard commit
+            } 
+            else {
+                // Player doing nothing? Walk menacingly close.
+                let idealDist = 100; // Uncomfortable close
+                if (dist > idealDist) this.velocity.add(vecToTarget.multiply(0.8));
+                this.currentTier = 0;
+            }
+
+            if (this.aiTimer <= 0) {
+                this.aiState = "MEASURE";
+                this.burstCooldown = 60;
+            }
+        }
+
+        // --- MOVE 3: HYPER OMNI-DASH (Map Wide Bounces) ---
+        else if (this.aiState === "HYPER_PREP") {
+            this.velocity.multiply(0.1);
+            this.aiTimer--;
+            if (this.aiTimer % 20 === 0) createText(this.position.x, this.position.y - 50, "...", "#fff", 30);
+            
+            if (this.aiTimer <= 0) {
+                this.aiState = "HYPER_DASH";
+                this.aiTimer = 8;
+                this.aiSubState = 0;
+            }
+        }
+        else if (this.aiState === "HYPER_DASH") {
+            this.currentTier = 3; 
+            this.aiTimer--;
+            if (this.aiTimer <= 0) {
+                // Dash across screen
+                // Pick random point on screen edge to dash towards? 
+                // Or just random angle with high velocity
+                let angle = Math.random() * Math.PI * 2;
+                // Speed increased to 120 (Super fast)
+                this.velocity = new Vector(Math.cos(angle) * 120, Math.sin(angle) * 120);
+                createBurstParticles(this.position.x, this.position.y, CONFIG.COLORS.HYPER, 20);
+                addShake(15);
+                
+                this.aiSubState++;
+                if (this.aiSubState < 9) {
+                    this.aiTimer = 5; // Almost instant consecutive dashes
+                } else {
+                    this.aiState = "MEASURE";
+                    this.burstCooldown = 240; 
+                }
+            }
+        }
+
+        // --- MOVE 4: TELEPORT SHOVE ---
+        else if (this.aiState === "TELE_PREP") {
+            this.velocity.multiply(0);
+            this.aiTimer--;
+            if (this.aiTimer === 30) createText(this.position.x, this.position.y - 50, "!!!", CONFIG.COLORS.HYPER, 60);
+            
+            if (this.aiTimer <= 0) {
+                // Teleport directly on top/slightly in front
+                let blinkPos = Vector.subtract(target.position, vecToTarget.multiply(40)); 
+                this.position = blinkPos;
+                createBurstParticles(this.position.x, this.position.y, "#000", 20);
+                
+                this.aiState = "TELE_SHOVE";
+                this.aiTimer = 15; // Shorter pause, scarier
+            }
+        }
+        else if (this.aiState === "TELE_SHOVE") {
+            this.velocity.multiply(0);
+            this.aiTimer--;
+            if (this.aiTimer <= 0) {
+                // Shove
+                let angle = Math.atan2(target.position.y - this.position.y, target.position.x - this.position.x);
+                this.velocity = new Vector(Math.cos(angle) * 80, Math.sin(angle) * 80);
+                this.currentTier = 2; 
+                this.aiState = "MEASURE";
+                this.burstCooldown = 120;
+            }
+        }
+
+        this.position.add(this.velocity);
+        this.handleWallCollision();
+    }
+
+    // Helper start methods
+    startZigZag() {
+        this.aiState = "ZIGZAG_PREP";
+        this.aiTimer = 30; // Time to close gap
+        this.aiSubState = 0;
+    }
+    startClashBait() {
+        this.aiState = "CLASH_BAIT";
+        this.aiTimer = 240; // 4 seconds of pressure
+    }
+    startHyperDash() {
+        this.aiState = "HYPER_PREP";
+        this.aiTimer = 60; 
+    }
+    startTeleportShove() {
+        this.aiState = "TELE_PREP";
+        this.aiTimer = 40;
+    }
+}
+
+class Pickup {
+    constructor(x, y, type) {
+        this.position = new Vector(x, y); this.type = type; this.life = CONFIG.LOOT.LIFETIME; this.angle = 0;
+        if (type === "HEAL") this.color = CONFIG.COLORS.LOOT_HP;
+        else if (type === "GOD") this.color = CONFIG.COLORS.LOOT_GOD;
+        else if (type === "LIFE") this.color = CONFIG.COLORS.LOOT_LIFE;
+    }
+    update() { this.life--; this.angle += 0.05; }
+    pickUp() {
+        createBurstParticles(this.position.x, this.position.y, this.color, 30);
+        createText(this.position.x, this.position.y - 20, "LOOT ACQUIRED", this.color, 30);
+    }
+    draw() {
+        context.save(); context.translate(this.position.x, this.position.y); context.rotate(this.angle);
+        context.fillStyle = this.color; context.globalAlpha = Math.min(1, this.life / 60);
+        context.beginPath(); context.moveTo(0, -10); context.lineTo(10, 0); context.lineTo(0, 10); context.lineTo(-10, 0); context.fill();
+        if (CONFIG.FX.GLOW) { context.shadowColor = this.color; context.shadowBlur = 15; context.stroke(); }
+        context.restore();
+    }
+}
+
+// --- VISUALS ---
+function modifyColor(color, tier, staminaPct, isStunned) {
+    let r = parseInt(color.slice(1, 3), 16) / 255;
+    let g = parseInt(color.slice(3, 5), 16) / 255;
+    let b = parseInt(color.slice(5, 7), 16) / 255;
+    
+    let max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+    if (max === min) h = s = 0;
+    else {
+        let d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+    }
+
+    if (tier === 1) h = (h + 0.15) % 1; 
+    if (tier === 2) s = Math.min(1, s * 1.5);
+    if (tier === 3 && !isStunned) return CONFIG.COLORS.HYPER;
+    
+    if (staminaPct < 0.2) {
+        s *= 0.2;
+        l *= 0.8; 
+    } 
+    if (isStunned) { s = 0; l *= 0.7; } // Greyed out if stunned
+
+    const hue2rgb = (p, q, t) => {
+        if (t < 0) t += 1; if (t > 1) t -= 1;
+        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/2) return q;
+        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+    };
+    let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    let p = 2 * l - q;
+    let r2 = Math.round(hue2rgb(p, q, h + 1/3) * 255);
+    let g2 = Math.round(hue2rgb(p, q, h) * 255);
+    let b2 = Math.round(hue2rgb(p, q, h - 1/3) * 255);
+    
+    return `#${r2.toString(16).padStart(2, "0")}${g2.toString(16).padStart(2, "0")}${b2.toString(16).padStart(2, "0")}`;
+}
+
+function drawGrid() {
+    if (!CONFIG.FX.GRID) return;
+    context.strokeStyle = "#1a1a1a"; context.lineWidth = 1;
+    let p1 = entities.players[0];
+    let ox = p1 ? -p1.position.x * 0.1 : 0; 
+    let oy = p1 ? -p1.position.y * 0.1 : 0;
+    context.beginPath();
+    for (let x = ox % 100; x < screenWidth; x += 100) { context.moveTo(x, 0); context.lineTo(x, screenHeight); }
+    for (let y = oy % 100; y < screenHeight; y += 100) { context.moveTo(0, y); context.lineTo(screenWidth, y); }
+    context.stroke();
+}
+
+function createBurstParticles(x, y, color, count) {
+    if (!CONFIG.FX.BLOOD && !CONFIG.FX.FLASH) return;
+    for (let i = 0; i < count; i++) {
+        entities.particles.push({
+            position: new Vector(x, y),
+            velocity: new Vector(Math.cos(Math.random() * 6.28) * (Math.random() * 10 + 5), Math.sin(Math.random() * 6.28) * (Math.random() * 10 + 5)),
+            color: color, life: 1, size: Math.random() * 4 + 2
+        });
+    }
+}
+function createParticle(x, y, color, speed) {
+    let a = Math.random() * Math.PI * 2;
+    entities.particles.push({
+        position: new Vector(x, y), velocity: new Vector(Math.cos(a) * speed, Math.sin(a) * speed),
+        color: color, life: 1, size: Math.random() * 4 + 2
+    });
+}
+function createBlood(x, y, color) {
+    if (!CONFIG.FX.BLOOD) return;
+    for (let i = 0; i < 15; i++) {
+        let s = Math.random() * 10; let a = Math.random() * Math.PI * 2;
+        entities.blood.push({
+            position: new Vector(x, y), velocity: new Vector(Math.cos(a) * s, Math.sin(a) * s),
+            color: color, size: Math.random() * 8 + 4, rotation: Math.random() * 6.28, life: 600
+        });
+    }
+    if (entities.blood.length > 500) entities.blood.splice(0, 15);
+}
+function createText(x, y, str, color, size) {
+    entities.texts.push({ position: new Vector(x, y), velocity: new Vector(Math.random() - 0.5, -2), str: str, color: color, size: size, life: 1 });
+}
+function addShake(amt) { if (CONFIG.FX.SHAKE) gameState.shakeIntensity += amt; }
+function triggerFlash(opacity) { if (CONFIG.FX.FLASH) gameState.flashOpacity = opacity; }
+
+// --- COLLISION & COMBAT ---
+function checkCollisions() {
+    let allEnts = [...entities.players];
+    if (gameState.subMode === 'SOLO') allEnts = allEnts.concat(entities.enemies);
+
+    // 1. Physical Body Push
+    for (let i = 0; i < allEnts.length; i++) {
+        let e1 = allEnts[i];
+        for (let j = i + 1; j < allEnts.length; j++) {
+            let e2 = allEnts[j];
+            if (Vector.distance(e1.position, e2.position) < e1.radius + e2.radius) {
+                let push = Vector.subtract(e1.position, e2.position).normalize().multiply(0.5);
+                e1.velocity.add(push); e2.velocity.sub(push);
+            }
+        }
+    }
+    
+    // 2. Pickups (Updated to allow Enemies)
+    for (let i = entities.pickups.length - 1; i >= 0; i--) {
+        let p = entities.pickups[i];
+        let picked = false;
+        
+        // Check Players AND Enemies
+        allEnts.forEach(ent => {
+            if (!picked && Vector.distance(ent.position, p.position) < ent.radius + 15) {
+                // Effect depends on who picked it up
+                p.pickUp(); // Visuals
+                
+                if (p.type === "HEAL") ent.hp = Math.min(ent.hp + 50, ent.maxHp); // Heal 50
+                else if (p.type === "GOD") ent.invincibleTimer = CONFIG.TIMING.GOD_MODE_DURATION;
+                else if (p.type === "LIFE") {
+                    // Only players get extra lives, enemies just get full heal
+                    if(ent instanceof Player) ent.extraLife = Math.min(1, ent.extraLife + 1);
+                    else ent.hp = ent.maxHp; 
+                }
+                picked = true;
+            }
+        });
+        
+        if(picked) entities.pickups.splice(i, 1);
+    }
+
+    // 3. Combat Hitbox
+    const HIT_BOX = 42; 
+    if (gameState.subMode === 'SOLO') {
+        let p1 = entities.players[0]; if(!p1) return;
+        for (let i = entities.enemies.length - 1; i >= 0; i--) {
+            let e = entities.enemies[i];
+            if (Vector.distance(p1.position, e.position) < HIT_BOX) handleCombatInteraction(p1, e);
+        }
+    } else {
+        let p1 = entities.players[0]; let p2 = entities.players[1];
+        if (p1 && p2 && Vector.distance(p1.position, p2.position) < HIT_BOX) handleCombatInteraction(p1, p2);
+    }
+}
+
+function handleCombatInteraction(e1, e2) {
+    // 1. STUNNED check
+    if (e1.stunTimer > 0) return resolveHit(e2, e1, e2.currentTier);
+    if (e2.stunTimer > 0) return resolveHit(e1, e2, e1.currentTier);
+
+    // 2. EXHAUSTION VULNERABILITY CHECK (New)
+    let e1Exhausted = e1.stamina <= 0;
+    let e2Exhausted = e2.stamina <= 0;
+
+    // If e1 is exhausted but e2 is not -> e2 hits e1 (even if e2 is Tier 0)
+    if (e1Exhausted && !e2Exhausted) {
+        // Treat attacker as at least Tier 1 for damage purposes to punish exhaustion
+        return resolveHit(e2, e1, Math.max(1, e2.currentTier)); 
+    }
+    // If e2 is exhausted but e1 is not -> e1 hits e2
+    if (e2Exhausted && !e1Exhausted) {
+        return resolveHit(e1, e2, Math.max(1, e1.currentTier));
+    }
+    // If BOTH are exhausted, fall through to the BUMP logic at the bottom
+
+    // 3. PARRY check
+    if (e1.parryTimer > 0) return resolveParry(e1, e2);
+    if (e2.parryTimer > 0) return resolveParry(e2, e1);
+
+    let t1 = e1.currentTier;
+    let t2 = e2.currentTier;
+
+    // 4. CLASH check
+    if (t1 === t2 && t1 > 0) return resolveClash(e1, e2);
+
+    // 5. TIER / HIT check
+    if (t1 > t2) { 
+        if (e2.invincibleTimer <= 0) resolveHit(e1, e2, t1); 
+    } 
+    else if (t2 > t1) { 
+        if (e1.invincibleTimer <= 0) resolveHit(e2, e1, t2); 
+    } 
+    else {
+        // 6. BUMP (Both Normal or Both Exhausted)
+        let push = Vector.subtract(e1.position, e2.position).normalize().multiply(4);
+        e1.velocity.add(push); e2.velocity.sub(push);
+    }
+}
+
+function resolveParry(blocker, attacker) {
+    // Attacker gets STUNNED and KNOCKED BACK
+    let recoil = Vector.subtract(attacker.position, blocker.position).normalize().multiply(30); // Huge Impulse
+    attacker.velocity = recoil; 
+    attacker.stunTimer = CONFIG.TIMING.STUN_DURATION; // Apply STUN
+    attacker.invincibleTimer = 0; 
+    attacker.chargingState = "NONE"; 
+    
+    // Reward the Blocker (Slight backward recoil to sell the impact)
+    blocker.velocity = recoil.clone().multiply(-0.2); 
+    blocker.invincibleTimer = 20; 
+    
+    // Game Feel
+    gameState.hitStopTimer = 10;
+    createBurstParticles(attacker.position.x, attacker.position.y, "#ffffff", 30);
+    createText(blocker.position.x, blocker.position.y - 40, "PARRY!", "#fff", 40);
+    
+    if (blocker.currentTier >= 2) {
+        triggerFlash(0.5); 
+        addShake(30);
+        createText(blocker.position.x, blocker.position.y - 60, "PERFECT", CONFIG.COLORS.HYPER, 60);
+        attacker.stunTimer = CONFIG.TIMING.STUN_DURATION * 1.5; 
+        attacker.velocity.multiply(1.5); // Even more knockback
+    }
+    
+    if(attacker instanceof Enemy) attacker.aiState = "STUNNED";
+}
+
+function resolveClash(e1, e2) {
+    gameState.hitStopTimer = 10; addShake(30); triggerFlash(0.3);
+    
+    // EXPLOSIVE SEPARATION
+    let midPoint = Vector.subtract(e2.position, e1.position).multiply(0.5).add(e1.position);
+    let dir = Vector.subtract(e1.position, e2.position).normalize();
+    
+    e1.velocity = dir.clone().multiply(40); // Massive bounce back
+    e2.velocity = dir.clone().multiply(-40);
+    
+    // Brief stun to reset aggression
+    if (e1 instanceof Enemy) { e1.aiState = "STUNNED"; e1.aiTimer = 20; }
+    if (e2 instanceof Enemy) { e2.aiState = "STUNNED"; e2.aiTimer = 20; }
+    
+    e1.invincibleTimer = 10; e2.invincibleTimer = 10;
+    createBurstParticles(midPoint.x, midPoint.y, "#fff", 40);
+    createText(midPoint.x, midPoint.y - 20, "CLASH", "#fff", 60);
+}
+
+function resolveHit(attacker, victim, tier) {
+    if (victim.stunTimer <= 0 && victim.invincibleTimer > 0) return;
+    
+    let dmg = CONFIG.DAMAGE.NORMAL;
+    if (tier === 1) dmg = CONFIG.DAMAGE.MOMENTUM;
+    if (tier === 2) dmg = CONFIG.DAMAGE.BURST;
+    if (tier === 3) dmg = CONFIG.DAMAGE.HYPER;
+    
+    victim.hp -= dmg;
+    victim.stunTimer = 0; // Wake up
+    
+    // KNOCKBACK BASED ON DAMAGE TIER
+    let force = 10;
+    if (tier === 1) force = 20;
+    if (tier === 2) force = 40;
+    if (tier === 3) force = 80;
+
+    let knockback = Vector.subtract(victim.position, attacker.position).normalize().multiply(force);
+    victim.velocity = knockback;
+    
+    // Attacker follows through slightly
+    attacker.velocity.add(knockback.clone().multiply(0.2));
+
+    gameState.hitStopTimer = 5; addShake(force / 2);
+    let bloodColor = victim.baseColor;
+    createBurstParticles(victim.position.x, victim.position.y, bloodColor, 10 + force/2);
+    createText(victim.position.x, victim.position.y, dmg, "#fff", 20 + tier*10);
+
+    // ... (Rest of Death Logic remains the same) ...
+    if (gameState.subMode === 'VERSUS' && tier >= 2) {
+        let r = Math.random();
+        let type = r > 0.6 ? "HEAL" : (r > 0.3 ? "GOD" : "LIFE");
+        entities.pickups.push(new Pickup(victim.position.x, victim.position.y, type));
+    }
+
+    if (victim.isDead()) {
+        if (victim instanceof Player) {
+            if (victim.extraLife > 0) {
+                victim.extraLife--; victim.hp = victim.maxHp; victim.invincibleTimer = 180;
+                gameState.hitStopTimer = 30; addShake(50); triggerFlash(1);
+                createBurstParticles(victim.position.x, victim.position.y, CONFIG.COLORS.LOOT_LIFE, 50);
+                createText(victim.position.x, victim.position.y - 50, "REVIVED!", CONFIG.COLORS.LOOT_LIFE, 50);
+                return;
+            }
+            gameState.mode = "OVER";
+            ui.gameOver.style.display = "block";
+            if (gameState.subMode === 'SOLO') {
+                ui.finalScore.innerText = gameState.score;
+                ui.goTitle.innerText = "SKILL ISSUE'D";
+            } else {
+                ui.finalScore.innerText = "N/A";
+                let winner = victim.id === 'p1' ? "PLAYER 2" : "PLAYER 1";
+                ui.goTitle.innerText = winner + " WINS";
+                ui.goTitle.style.color = victim.id === 'p1' ? CONFIG.COLORS.PLAYER2 : CONFIG.COLORS.PLAYER;
+            }
+        } else {
+            let idx = entities.enemies.indexOf(victim);
+            if (idx > -1) entities.enemies.splice(idx, 1);
+            
+            if (victim instanceof EliteEnemy) {
+                gameState.hitStopTimer = 60; 
+                addShake(100);
+                triggerFlash(0.8);
+                createBurstParticles(victim.position.x, victim.position.y, CONFIG.COLORS.HYPER, 100); 
+                createBlood(victim.position.x, victim.position.y, victim.baseColor); 
+                createBlood(victim.position.x, victim.position.y, victim.baseColor);
+                
+                gameState.score += 1000;
+                gameState.streak += 2; 
+                createText(victim.position.x, victim.position.y, "BOSS SLAIN", "#ffd700", 60);
+            } else {
+                if (Math.random() < CONFIG.LOOT.DROP_RATE) {
+                    let r = Math.random(); let type = r > 0.8 ? "LIFE" : (r > 0.5 ? "GOD" : "HEAL");
+                    entities.pickups.push(new Pickup(victim.position.x, victim.position.y, type));
+                }
+                gameState.hitStopTimer = 8; addShake(20);
+                createBurstParticles(victim.position.x, victim.position.y, victim.baseColor, 30);
+                createBlood(victim.position.x, victim.position.y, victim.baseColor);
+                
+                gameState.streak++; gameState.combo++;
+                let ridx = Math.min(gameState.streak, CONFIG.RANKS.length - 1);
+                ui.rank.innerText = CONFIG.RANKS[ridx];
+                let mul = 1 + Math.floor(gameState.combo / 5) * 2;
+                ui.multiplier.innerText = "x" + mul;
+                gameState.score += 100 * mul;
+                ui.score.innerText = gameState.score;
+                createText(victim.position.x, victim.position.y, "KILL", CONFIG.COLORS.PLAYER, 40);
+            }
+        }
+    } else {
+        if (victim instanceof Player && gameState.subMode === 'SOLO') {
+            gameState.combo = 0; ui.multiplier.innerText = "x1";
+        }
+    }
+}
+
+// --- LOOP ---
+function gameLoop(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    let deltaTime = timestamp - lastTime;
+    lastTime = timestamp;
+    if (deltaTime > 1000) deltaTime = TIME_STEP;
+
+    if (gameState.mode === "PLAY") {
+        controls.update();
+        accumulator += deltaTime;
+        let steps = 0;
+        while (accumulator >= TIME_STEP) { 
+            fixedUpdate(); 
+            accumulator -= TIME_STEP; 
+            steps++;
+            if(steps > MAX_PHYSICS_STEPS) { accumulator = 0; break; } 
+        }
+        draw();
+    }
+    animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+function fixedUpdate() {
+    if (gameState.hitStopTimer > 0) { gameState.hitStopTimer--; return; }
+    // Waves
+    if (gameState.subMode === 'SOLO') {
+        // Only spawn if NO enemies are left (Wave Clear)
+        if (entities.enemies.length === 0) {
+            gameState.waveTimer--;
+            if (gameState.waveTimer <= 0) {
+                let count = 1 + Math.ceil(Math.min(gameState.streak, CONFIG.RANKS.length - 1) / 2);
+                
+                // 1. Spawn Normal Wave
+                for (let i = 0; i < count; i++) entities.enemies.push(new Enemy());
+                
+                // 2. Chance to ADD an Elite 
+                // This adds the elite ON TOP of the normal enemies
+                if (Math.random() < CONFIG.AI.ELITE.RATE) {
+                    entities.enemies.push(new EliteEnemy());
+                    // Visual flair
+                    gameState.shakeIntensity = 50;
+                }
+                gameState.waveTimer = CONFIG.TIMING.WAVE_DELAY;
+            }
+        }
+    }
+
+    entities.players.forEach(p => p.fixedUpdate());
+    if (gameState.subMode === 'SOLO') entities.enemies.forEach(e => e.fixedUpdate());
+    
+    for (let i = entities.pickups.length - 1; i >= 0; i--) { 
+        let p = entities.pickups[i]; p.update(); 
+        if (p.life <= 0) entities.pickups.splice(i, 1); 
+    }
+    for (let i = entities.particles.length - 1; i >= 0; i--) { 
+        let p = entities.particles[i]; p.position.add(p.velocity); p.velocity.multiply(0.9); p.life -= 0.05; 
+        if (p.life <= 0) entities.particles.splice(i, 1); 
+    }
+    for (let i = entities.texts.length - 1; i >= 0; i--) { 
+        let t = entities.texts[i]; t.position.add(t.velocity); t.life -= 0.02; 
+        if (t.life <= 0) entities.texts.splice(i, 1); 
+    }
+    for (let i = entities.blood.length - 1; i >= 0; i--) { 
+        let b = entities.blood[i]; b.position.add(b.velocity); b.velocity.multiply(0.8); b.life--; 
+        if (b.life <= 0) entities.blood.splice(i, 1); 
+    }
+
+    checkCollisions();
+    gameState.shakeIntensity *= 0.9;
+    if (gameState.shakeIntensity < 0.5) gameState.shakeIntensity = 0;
+    gameState.flashOpacity = Math.max(0, gameState.flashOpacity - 0.05);
+}
+
+function draw() {
+    context.fillStyle = "#0b0b0b"; context.fillRect(0, 0, screenWidth, screenHeight);
+    drawGrid();
+    entities.blood.forEach(b => {
+        context.save(); context.translate(b.position.x, b.position.y); context.rotate(b.rotation);
+        context.fillStyle = b.color; context.globalAlpha = Math.min(1, b.life / 60);
+        context.fillRect(-b.size / 2, -b.size / 2, b.size, b.size); context.restore();
+    });
+    if (gameState.flashOpacity > 0 && CONFIG.FX.FLASH) {
+        context.fillStyle = `rgba(255, 255, 255, ${gameState.flashOpacity})`;
+        context.fillRect(0, 0, screenWidth, screenHeight);
+    }
+    context.save();
+    if (gameState.shakeIntensity > 0 && CONFIG.FX.SHAKE) {
+        context.translate((Math.random() - 0.5) * gameState.shakeIntensity, (Math.random() - 0.5) * gameState.shakeIntensity);
+    }
+    entities.pickups.forEach(p => p.draw());
+    entities.particles.forEach(p => {
+        context.globalAlpha = p.life; context.fillStyle = p.color; context.fillRect(p.position.x, p.position.y, p.size, p.size);
+    });
+    entities.enemies.forEach(e => e.draw(0, false));
+    entities.players.forEach(p => p.draw(Math.random() * (p.chargingState !== "NONE" ? 2 : 0), p.parryTimer > 0));
+    entities.texts.forEach(t => {
+        context.globalAlpha = Math.max(0, t.life); context.fillStyle = t.color;
+        context.font = `bold ${t.size}px VT323`; context.strokeStyle = "#000"; context.lineWidth = 3;
+        context.strokeText(t.str, t.position.x, t.position.y); context.fillText(t.str, t.position.x, t.position.y);
+    });
+    
+    if (gameState.subMode === 'SOLO' && gameState.inputScheme === 'MOUSE' && entities.players[0]) {
+        let p1 = entities.players[0];
+        context.strokeStyle = "rgba(255, 255, 255, 0.1)"; context.setLineDash([4, 4]);
+        context.beginPath(); context.moveTo(p1.position.x, p1.position.y); context.lineTo(mouse.x, mouse.y); context.stroke();
+        context.setLineDash([]);
+        context.strokeStyle = CONFIG.COLORS.PLAYER; context.strokeRect(mouse.x - 6, mouse.y - 6, 12, 12);
+        if (p1.chargeTimer > 0) {
+            let t = p1.chargeTimer; let w = 0; let c = "#fff";
+            if (t < CONFIG.TIMING.RMB_TAP_THRESHOLD) w = (t / CONFIG.TIMING.RMB_TAP_THRESHOLD) * 10;
+            else if (t < CONFIG.TIMING.CHARGE_BURST_THRESHOLD) { w = 10 + (t - CONFIG.TIMING.RMB_TAP_THRESHOLD) / CONFIG.TIMING.CHARGE_BURST_THRESHOLD * 20; c = CONFIG.COLORS.BURST; }
+            else { w = 30 + (t - CONFIG.TIMING.CHARGE_BURST_THRESHOLD) / CONFIG.TIMING.CHARGE_HYPER_THRESHOLD * 20; c = CONFIG.COLORS.HYPER; if (t > CONFIG.TIMING.CHARGE_HYPER_THRESHOLD) w = 50; }
+            context.fillStyle = c; context.fillRect(mouse.x - 25, mouse.y + 20, w, 4);
+        }
+    }
+    context.restore();
+}
+
+function updateConfig() {
+    CONFIG.FX.BLOOD = document.getElementById("chk-blood").checked;
+    CONFIG.FX.SHAKE = document.getElementById("chk-shake").checked;
+    CONFIG.FX.FLASH = document.getElementById("chk-flash").checked;
+    CONFIG.FX.GLOW = document.getElementById("chk-glow").checked;
+    CONFIG.FX.GRID = document.getElementById("chk-grid").checked;
+    CONFIG.FRICTION = parseFloat(document.getElementById("rng-friction").value);
+}
+function resize() { screenWidth = canvas.width = window.innerWidth; screenHeight = canvas.height = window.innerHeight; }
+window.addEventListener("resize", resize);
+
+function setMode(m) {
+    if(gameState.subMode !== m) gameState.needsReset = true;
+    gameState.subMode = m;
+    document.getElementById("btn-mode-solo").classList.toggle('active', m === 'SOLO');
+    document.getElementById("btn-mode-vs").classList.toggle('active', m === 'VERSUS');
+    updateControlsDesc();
+}
+
+function setInputScheme(s) {
+    gameState.inputScheme = s;
+    document.getElementById("btn-input-mouse").classList.toggle('active', s === 'MOUSE');
+    document.getElementById("btn-input-key").classList.toggle('active', s === 'KEYBOARD');
+    document.getElementById("btn-input-touch").classList.toggle('active', s === 'TOUCH');
+    updateControlsDesc();
+}
+
+function updateControlsDesc() {
+    let h = '';
+    if (gameState.inputScheme === 'MOUSE') {
+        h = `<div class="control-row"><span>MOVE</span><b>MOUSE (FOLLOW)</b></div>
+             <div class="control-row"><span>MOMENTUM</span><b>HOLD LMB</b></div>
+             <div class="control-row"><span>ACTION</span><b>RMB (TAP/HOLD)</b></div>`;
+    } else if (gameState.inputScheme === 'KEYBOARD') {
+        if (gameState.subMode === 'SOLO') {
+             h = `<div class="control-row"><span>MOVE</span><b>W A S D</b></div>
+                  <div class="control-row"><span>SPRINT</span><b>X / SHIFT</b></div>
+                  <div class="control-row"><span>ACTION</span><b>Z / SPACE</b></div>`;
+        } else {
+             h = `<div class="control-row"><span>P1 MOVE</span><b>W A S D</b></div>
+                  <div class="control-row"><span>P1 ACT/RUN</span><b>Z / X</b></div>
+                  <div class="control-row" style="margin-top:5px; border-top:1px solid #333"><span>P2 MOVE</span><b>ARROWS</b></div>
+                  <div class="control-row"><span>P2 ACT/RUN</span><b>K / L</b></div>`;
+        }
+    } else {
+        if (gameState.subMode === 'SOLO') {
+            h = `<div class="control-row"><span>MOVE</span><b>L-STICK</b></div>
+                 <div class="control-row"><span>ACT/RUN</span><b>R-BUTTONS</b></div>`;
+        } else {
+             h = `<div class="control-row"><span>P1</span><b>BOTTOM</b></div>
+                  <div class="control-row"><span>P2</span><b>TOP (ROTATED)</b></div>`;
+        }
+    }
+    ui.controlsDesc.innerHTML = h;
+}
+
+function toggleMenu() {
+    gameState.mode = gameState.mode === "PLAY" ? "PAUSE" : "PLAY";
+    ui.menu.style.display = gameState.mode === "PAUSE" ? "block" : "none";
+    if (gameState.mode === "PLAY") {
+        updateConfig();
+        if(gameState.needsReset) resetGame();
+        else {
+            controls.setupTouchUI();
+            lastTime = 0;
+            if (!animationFrameId) requestAnimationFrame(gameLoop);
+        }
+    }
+}
+
+function resetGame() {
+    resize();
+    controls.reset();
+    entities = { players: [], enemies: [], particles: [], texts: [], blood: [], pickups: [] };
+    
+    entities.players.push(new Player('p1'));
+    if (gameState.subMode === 'VERSUS') {
+        entities.players.push(new Player('p2'));
+    }
+
+    gameState.score = 0; gameState.streak = 0; gameState.combo = 0;
+    gameState.shakeIntensity = 0; gameState.hitStopTimer = 0; gameState.waveTimer = 0;
+    gameState.needsReset = false;
+    
+    ui.score.innerText = "0";
+    ui.gameOver.style.display = "none";
+    ui.rank.innerText = "F"; ui.multiplier.innerText = "x1";
+    
+    gameState.mode = "PLAY";
+    controls.setupTouchUI();
+    lastTime = 0;
+    if (!animationFrameId) requestAnimationFrame(gameLoop);
+}
+
+// Init
+resize();
+updateControlsDesc();
+entities.players.push(new Player('p1'));
+requestAnimationFrame(gameLoop);
+</script>
+</html>

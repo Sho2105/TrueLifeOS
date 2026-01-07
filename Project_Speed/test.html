@@ -1,0 +1,830 @@
+<!doctype html>
+<html lang="en">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>VELOCITY VECTOR [NOIR]</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+    :root { --c-cyan: #dcdcdc; --c-pink: #ff0000; --c-yell: #fff; --c-bg: #000000; --c-dim: #333; }
+    body { margin: 0; overflow: hidden; background-color: var(--c-bg); color: #eee; font-family: 'VT323', monospace; user-select: none; touch-action: none; }
+    body::after { content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(0,0,0,0) 50%, rgba(0,0,0,0.2) 50%), linear-gradient(90deg, rgba(255,0,0,0.03), rgba(0,255,0,0.01), rgba(0,0,255,0.03)); z-index: 100; background-size: 100% 2px, 3px 100%; pointer-events: none; opacity: 0.8; mix-blend-mode: overlay; }
+    canvas { display: block; cursor: none; image-rendering: pixelated; filter: contrast(1.2) saturate(1.1) grayscale(0.1); }
+    #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 20; }
+    #hud-corner { position: absolute; top: 20px; left: 20px; width: 60px; height: 60px; pointer-events: auto; cursor: pointer; z-index: 50; display: flex; align-items: center; justify-content: center; border: 2px solid #333; background: #000; transition: 0.2s; } 
+    #hud-corner::after { content: "||"; font-size: 30px; color: #555; }
+    #hud-corner:hover { border-color: #fff; } #hud-corner:hover::after { color: #fff; }
+    #pause-menu { display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #000; border: 4px solid #fff; padding: 25px; text-align: center; pointer-events: auto; box-shadow: 10px 10px 0 #333; min-width: 350px; max-height: 90vh; overflow-y: auto; z-index: 60; }
+    .menu-btn { background: #000; color: #888; border: 2px solid #333; font-family: 'VT323', monospace; font-size: 28px; padding: 10px 20px; cursor: pointer; margin-top: 15px; width: 100%; text-transform: uppercase; transition: 0.1s; }
+    .menu-btn:hover, .menu-btn.focused { background: #fff; color: #000; border-color: #fff; }
+    .menu-btn.active { background: #333; color: #fff; border: 2px solid #fff; }
+    .control-row { display: flex; justify-content: space-between; font-size: 20px; color: #666; margin-bottom: 5px; border-bottom: 1px solid #222; }
+    b { color: #ccc; }
+    .fx-toggle-row { display: flex; justify-content: space-between; align-items: center; font-size: 22px; margin: 8px 0; color: #888; padding: 0 5px; }
+    .fx-toggle-row.focused { background: #fff; color: #000; }
+    input[type="checkbox"] { width: 20px; height: 20px; accent-color: #fff; cursor: pointer; }
+    #game-over { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: none; pointer-events: auto; z-index: 50; }
+    #game-over h2 { font-size: 120px; margin: 0; color: #fff; text-shadow: 4px 4px 0 #ff0000; animation: glitch 0.2s infinite; line-height: 0.8; letter-spacing: -5px;}
+    @keyframes glitch { 0% { transform: translate(-2px, 2px); } 50% { transform: translate(2px, -2px); } 100% { transform: translate(0, 0); } }
+    .touch-container { display: none; position: absolute; z-index: 30; pointer-events: none; width: 100%; height: 100%; top: 0; left: 0; }
+    .touch-pad { position: absolute; border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 50%; backdrop-filter: grayscale(1); pointer-events: auto; }
+    .stick-base { width: 120px; height: 120px; background: rgba(0, 0, 0, 0.5); }
+    .stick-nub { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+    .btn-action { width: 90px; height: 90px; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; font-weight: bold; border-color: #fff;}
+    .btn-action:active, .btn-action.active { background: #fff; color: #000; }
+    .btn-sprint { width: 70px; height: 70px; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 16px; border-color: #888;}
+    .btn-sprint:active, .btn-sprint.active { background: #888; color: #000; }
+    #p2-status { position: absolute; top: 20px; right: 20px; text-align: right; pointer-events: none; display: none; }
+</style>
+
+<div id="ui-layer">
+    <div id="hud-corner" onclick="Game.ui.toggleMenu()"></div>
+    <div id="p2-status"><span style="color: #fff; font-size: 40px; font-weight: bold; background: #000; padding: 2px 8px;">P2 ACTIVE</span></div>
+    <div id="game-over">
+        <h2 id="go-title">WASTED</h2>
+        <p style="font-size: 40px; color: #000; background: #fff; display:inline-block; padding: 0 15px; font-weight: bold;">SCORE: <span id="final-score">0</span></p>
+        <button class="menu-btn" style="background: #000; color: #fff; border-color: #fff; margin-top: 20px;" onclick="Game.events.emit('reset_request')">RESTART</button>
+    </div>
+</div>
+<div id="touch-layer" class="touch-container"></div>
+<div id="pause-menu">
+    <h2 style="color: #fff; margin: 0 0 15px 0; border-bottom: 4px solid #fff; letter-spacing: 2px;">SYSTEM PAUSED</h2>
+    <div style="margin-bottom: 15px;">
+        <div class="control-row" style="border:none; justify-content: center; gap: 10px;">
+            <button id="btn-mode-solo" class="menu-btn active" style="margin:0; width:45%" onclick="Game.director.setMode('SOLO')">SOLO</button>
+            <button id="btn-mode-vs" class="menu-btn" style="margin:0; width:45%" onclick="Game.director.setMode('COOP')">CO-OP</button>
+        </div>
+        <div class="control-row" style="border:none; justify-content: center; gap: 5px; margin-top: 10px;">
+            <button id="btn-input-mouse" class="menu-btn active" style="margin:0; width:22%; font-size: 20px;" onclick="Game.input.setScheme('MOUSE')">MSE</button>
+            <button id="btn-input-key" class="menu-btn" style="margin:0; width:22%; font-size: 20px;" onclick="Game.input.setScheme('KEYBOARD')">KEY</button>
+            <button id="btn-input-touch" class="menu-btn" style="margin:0; width:22%; font-size: 20px;" onclick="Game.input.setScheme('TOUCH')">TCH</button>
+            <button id="btn-input-pad" class="menu-btn" style="margin:0; width:22%; font-size: 20px;" onclick="Game.input.setScheme('GAMEPAD')">PAD</button>
+        </div>
+    </div>
+    <div id="controls-desc" style="text-align: left; margin-bottom: 20px;"></div>
+    <div style="text-align: left; border-top: 2px solid #333; padding-top: 10px;">
+        <h3 style="margin: 0 0 5px 0; color: #666;">PHYSICS</h3>
+        <div class="fx-toggle-row"><label>FRICTION <small style="color:#fff" id="lbl-fric">0.92</small></label><input type="range" id="rng-friction" min="0.80" max="0.99" step="0.01" value="0.92" oninput="document.getElementById('lbl-fric').innerText=this.value" onchange="Game.config.update()"></div>
+        <h3 style="margin: 10px 0 5px 0; color: #666;">VISUALS</h3>
+        <div class="fx-toggle-row"><label>GORE</label><input type="checkbox" id="chk-blood" checked onchange="Game.config.update()"></div>
+        <div class="fx-toggle-row"><label>SCREEN SHAKE</label><input type="checkbox" id="chk-shake" checked onchange="Game.config.update()"></div>
+        <div class="fx-toggle-row"><label>IMPACT FRAMES</label><input type="checkbox" id="chk-flash" checked onchange="Game.config.update()"></div>
+        <div class="fx-toggle-row"><label>NEON BLOOM</label><input type="checkbox" id="chk-glow" checked onchange="Game.config.update()"></div>
+        <div class="fx-toggle-row"><label>RETRO GRID</label><input type="checkbox" id="chk-grid" checked onchange="Game.config.update()"></div>
+    </div>
+    <button class="menu-btn" onclick="Game.ui.toggleMenu()">RESUME</button>
+</div>
+<canvas id="gameCanvas"></canvas>
+
+<script>
+// --- CORE CONSTANTS & UNIFORM COLORS ---
+const STATE = { IDLE: 0, MOVE: 1, SPRINT: 2, CHARGE: 3, READY_BURST: 4, READY_HYPER: 5, PARRY: 6, DASH_BURST: 7, DASH_HYPER: 8, STUN: 9, DEAD: 10 };
+
+const PALETTE = {
+    CYAN: "#00f3ff", PINK: "#ff0055", YELLOW: "#ffe600", WHITE: "#ffffff",
+    DARK: "#050505", GREY: "#444444", GREEN: "#00ff00", RED: "#ff4757",
+    ORANGE: "#ffa502", LIME: "#2ed573", BLUE: "#1e90ff", INDIGO: "#3742fa",
+    SLATE: "#747d8c", IRON: "#57606f", SHADOW: "#2f3542", STEEL: "#535c68",
+    PLATINUM: "#a4b0be", PURPLE: "#8e44ad", CRIMSON: "#c0392b",
+    RUST: "#d35400", JADE: "#16a085", MIDNIGHT: "#2c3e50"
+};
+
+const CONSTANTS = {
+    SPEED: { NORMAL: 1, MOMENTUM: 2.5, BURST: 50, HYPER: 100 },
+    DAMAGE: { NORMAL: 0, MOMENTUM: 15, BURST: 25, HYPER: 999 },
+    COLORS: { P1: PALETTE.CYAN, P2: PALETTE.ORANGE, HYPER: PALETTE.WHITE, TEXT: PALETTE.WHITE },
+    RANKS: ["F", "D", "C", "B", "A", "S", "SS", "SSS", "GOD", "???"],
+    TIMING: { CHARGE_BURST: 45, CHARGE_HYPER: 120, PARRY_DUR: 20, PARRY_CD: 60, BURST_DUR: 20, BURST_CD: 60, GOD: 600, STUN: 120 },
+    MAX_PARTICLES: 200, // Hard Cap
+    MAX_PARTICLES_PER_FRAME: 20 // Soft Cap
+};
+
+// --- DATA: BEHAVIORS & LOOT ---
+const BEHAVIORS = {
+    AGGRESSIVE: [
+        { type: 'GET_LOOT', weight: 3.0, range: [0, 400] }, 
+        { type: 'PARRY', weight: 0.1, cd: 'parry', range: [0, 100] },
+        { type: 'SPRINT_ATK', weight: 1.0, cd: 'burst', range: [50, 400] },
+        { type: 'APPROACH', weight: 0.5, range: [200, 2000] }
+    ],
+    DEFENSIVE: [
+        { type: 'GET_LOOT', weight: 2.0, range: [0, 300] },
+        { type: 'PARRY', weight: 0.8, cd: 'parry', range: [0, 150] },
+        { type: 'RUN', weight: 0.6, range: [0, 200] },
+        { type: 'BURST_ATK', weight: 0.4, cd: 'burst', range: [150, 400] },
+        { type: 'APPROACH', weight: 0.2, range: [400, 2000] }
+    ],
+    BOSS: [
+        { type: 'GET_LOOT', weight: 5.0, range: [0, 600] },
+        { type: 'HYPER_ATK', weight: 0.2, cd: 'burst', range: [0, 800] },
+        { type: 'PARRY', weight: 0.6, cd: 'parry', range: [0, 120] },
+        { type: 'BURST_ATK', weight: 0.8, cd: 'burst', range: [120, 500] },
+        { type: 'APPROACH', weight: 0.3, range: [100, 2000] }
+    ]
+};
+
+const ENEMY_DATABASE = {
+    NORMAL: [ 
+        { color: PALETTE.RED, behavior: "AGGRESSIVE", rate: 10 }, 
+        { color: PALETTE.ORANGE, behavior: "AGGRESSIVE", rate: 10 }, 
+        { color: PALETTE.LIME, behavior: "AGGRESSIVE", rate: 5 }, 
+        { color: PALETTE.BLUE, behavior: "AGGRESSIVE", rate: 5 }, 
+        { color: PALETTE.INDIGO, behavior: "AGGRESSIVE", rate: 1 } 
+    ],
+    ELITE: [ 
+        { color: PALETTE.SLATE, behavior: "DEFENSIVE", rate: 5 }, 
+        { color: PALETTE.IRON, behavior: "DEFENSIVE", rate: 5 }, 
+        { color: PALETTE.SHADOW, behavior: "DEFENSIVE", rate: 3 }, 
+        { color: PALETTE.STEEL, behavior: "DEFENSIVE", rate: 2 }, 
+        { color: PALETTE.PLATINUM, behavior: "DEFENSIVE", rate: 1 } 
+    ],
+    BOSS: [ 
+        { color: PALETTE.PURPLE, behavior: "BOSS", rate: 1 }, 
+        { color: PALETTE.CRIMSON, behavior: "BOSS", rate: 1 }, 
+        { color: PALETTE.RUST, behavior: "BOSS", rate: 1 }, 
+        { color: PALETTE.JADE, behavior: "BOSS", rate: 1 }, 
+        { color: PALETTE.MIDNIGHT, behavior: "BOSS", rate: 1 } 
+    ]
+};
+
+const LOOT_TYPES = {
+    HEAL: { color: PALETTE.GREEN, text: "HP UP", effect: (e) => e.hp = Math.min(e.hp + 50, e.maxHp) },
+    GOD:  { color: PALETTE.YELLOW, text: "GOD MODE", effect: (e) => e.invincibleTimer = CONSTANTS.TIMING.GOD },
+    LIFE: { color: PALETTE.CYAN, text: "LIFE-UP", effect: (e) => Game.director.handleLifeUp(e) }
+};
+
+// --- CORE UTILS ---
+class Vector {
+    constructor(x, y) { this.x = x; this.y = y; }
+    add(v) { this.x += v.x; this.y += v.y; return this; }
+    sub(v) { this.x -= v.x; this.y -= v.y; return this; }
+    multiply(s) { this.x *= s; this.y *= s; return this; }
+    magnitude() { return Math.sqrt(this.x ** 2 + this.y ** 2); }
+    normalize() { const m = this.magnitude(); if (m !== 0) this.multiply(1 / m); return this; }
+    clone() { return new Vector(this.x, this.y); }
+    static distance(v1, v2) { return Math.sqrt((v1.x - v2.x) ** 2 + (v1.y - v2.y) ** 2); }
+    static subtract(v1, v2) { return new Vector(v1.x - v2.x, v1.y - v2.y); }
+}
+
+const ColorUtils = {
+    hexToHSL: (H) => {
+        let r=0,g=0,b=0; if(H.length==4){r="0x"+H[1]+H[1];g="0x"+H[2]+H[2];b="0x"+H[3]+H[3];}else if(H.length==7){r="0x"+H[1]+H[2];g="0x"+H[3]+H[4];b="0x"+H[5]+H[6];}
+        r/=255;g/=255;b/=255; let cmin=Math.min(r,g,b), cmax=Math.max(r,g,b), delta=cmax-cmin, h=0, s=0, l=0;
+        if(delta==0)h=0;else if(cmax==r)h=((g-b)/delta)%6;else if(cmax==g)h=(b-r)/delta+2;else h=(r-g)/delta+4;
+        h=Math.round(h*60);if(h<0)h+=360;l=(cmax+cmin)/2;s=delta==0?0:delta/(1-Math.abs(2*l-1)); return {h:h,s:s*100,l:l*100};
+    },
+    HSLToHex: (h,s,l) => {
+        s/=100;l/=100; let c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2,r=0,g=0,b=0;
+        if(0<=h&&h<60){r=c;g=x;b=0;}else if(60<=h&&h<120){r=x;g=c;b=0;}else if(120<=h&&h<180){r=0;g=c;b=x;}else if(180<=h&&h<240){r=0;g=x;b=c;}else if(240<=h&&h<300){r=x;g=0;b=c;}else if(300<=h&&h<360){r=c;g=0;b=x;}
+        r=Math.round((r+m)*255).toString(16).padStart(2,'0');g=Math.round((g+m)*255).toString(16).padStart(2,'0');b=Math.round((b+m)*255).toString(16).padStart(2,'0'); return "#"+r+g+b;
+    },
+    getStateColor: (baseHex, state) => {
+        const hsl = ColorUtils.hexToHSL(baseHex);
+        switch (state) {
+            case STATE.STUN: return PALETTE.GREY;
+            case STATE.SPRINT: return ColorUtils.HSLToHex(hsl.h, 100, 60);
+            case STATE.CHARGE: return ColorUtils.HSLToHex(hsl.h, 100, 20);
+            case STATE.READY_BURST: return ColorUtils.HSLToHex(hsl.h, 90, 80);
+            case STATE.READY_HYPER: const p = 80 + Math.sin(Date.now() / 40) * 20; return ColorUtils.HSLToHex(hsl.h, 30, p);
+            case STATE.DASH_BURST: return PALETTE.WHITE;
+            case STATE.DASH_HYPER: return PALETTE.WHITE;
+            case STATE.PARRY: return PALETTE.WHITE;
+            default: return baseHex;
+        }
+    }
+};
+
+class EventBus { constructor() { this.l = {}; } on(e, c) { (this.l[e] = this.l[e] || []).push(c); } emit(e, d) { if (this.l[e]) this.l[e].forEach(c => c(d)); } }
+
+// --- ENTITIES ---
+class Entity {
+    constructor(x, y) {
+        this.position = new Vector(x, y); this.velocity = new Vector(0, 0);
+        this.hp = 100; this.maxHp = 100; this.radius = 16; this.baseColor = PALETTE.WHITE;
+        this.state = STATE.IDLE; this.stateTimer = 0; 
+        this.cooldowns = { parry: 0, burst: 0 }; 
+        this.invincibleTimer = 0; this.trail = [];
+        this.extraLife = 0;
+    }
+    get tier() { if (this.state === STATE.DASH_HYPER) return 3; if (this.state === STATE.DASH_BURST) return 2; if (this.state === STATE.SPRINT) return 1; return 0; }
+    get isStunned() { return this.state === STATE.STUN; }
+    get isParrying() { return this.state === STATE.PARRY; }
+    get isDashing() { return this.state === STATE.DASH_BURST || this.state === STATE.DASH_HYPER; }
+    isDead() { return this.hp <= 0; }
+}
+
+class Player extends Entity {
+    constructor(id) {
+        super(0,0); 
+        this.id = id; this.baseColor = id === 'p1' ? CONSTANTS.COLORS.P1 : CONSTANTS.COLORS.P2;
+        this.chargeTime = 0;
+    }
+}
+
+class Enemy extends Entity {
+    constructor(category) {
+        super(0, 0); 
+        const variants = ENEMY_DATABASE[category]; 
+        const totalWeight = variants.reduce((acc, v) => acc + (v.rate || 1), 0);
+        let r = Math.random() * totalWeight;
+        const variant = variants.find(v => { r -= (v.rate || 1); return r <= 0; }) || variants[0];
+
+        this.baseColor = variant.color; this.category = category;
+        this.behavior = BEHAVIORS[variant.behavior]; 
+        
+        if (category === "NORMAL") { this.hp = this.maxHp = 100; this.radius = 16; this.speed = 1; } 
+        else if (category === "ELITE") { this.hp = this.maxHp = 800; this.radius = 20; this.speed = 0.8; } 
+        else if (category === "BOSS") { this.hp = this.maxHp = 5000; this.radius = 40; this.speed = 0.6; }
+    }
+}
+
+class Pickup { constructor(x, y, key) { this.position = new Vector(x, y); this.type = key; this.life = 1200; this.angle = 0; this.data = LOOT_TYPES[key]; this.color = this.data.color; } }
+
+// --- SYSTEMS ---
+
+const ActionExecutor = {
+    execute: (entity, actionType, target) => {
+        switch(actionType) {
+            case 'GET_LOOT':
+                entity.state = STATE.MOVE;
+                entity.velocity.add(Vector.subtract(target.position, entity.position).normalize().multiply(CONSTANTS.SPEED.NORMAL * entity.speed * 1.2));
+                break;
+            case 'APPROACH':
+                entity.state = STATE.MOVE;
+                entity.velocity.add(Vector.subtract(target.position, entity.position).normalize().multiply(CONSTANTS.SPEED.NORMAL * entity.speed));
+                break;
+            case 'RUN':
+                entity.state = STATE.MOVE;
+                entity.velocity.sub(Vector.subtract(target.position, entity.position).normalize().multiply(CONSTANTS.SPEED.NORMAL * entity.speed));
+                break;
+            case 'SPRINT_ATK':
+                entity.state = STATE.SPRINT;
+                entity.velocity.add(Vector.subtract(target.position, entity.position).normalize().multiply(CONSTANTS.SPEED.MOMENTUM * entity.speed));
+                break;
+            case 'BURST_ATK':
+                if(entity.cooldowns.burst > 0) return;
+                Game.events.emit('text', {x:entity.position.x, y:entity.position.y-30, txt:"!", col:CONSTANTS.COLORS.TEXT});
+                entity.state = STATE.DASH_BURST; entity.stateTimer = CONSTANTS.TIMING.BURST_DUR; entity.cooldowns.burst = 200;
+                const bAngle = Math.atan2(target.position.y - entity.position.y, target.position.x - entity.position.x);
+                entity.velocity = new Vector(Math.cos(bAngle)*CONSTANTS.SPEED.BURST*0.8, Math.sin(bAngle)*CONSTANTS.SPEED.BURST*0.8);
+                break;
+            case 'HYPER_ATK':
+                if(entity.cooldowns.burst > 0) return;
+                Game.events.emit('shake', 15); Game.events.emit('text', {x:entity.position.x, y:entity.position.y-50, txt:"!!!", col:CONSTANTS.COLORS.TEXT});
+                entity.state = STATE.DASH_HYPER; entity.stateTimer = CONSTANTS.TIMING.BURST_DUR; entity.cooldowns.burst = 400;
+                const hAngle = Math.atan2(target.position.y - entity.position.y, target.position.x - entity.position.x);
+                entity.velocity = new Vector(Math.cos(hAngle)*CONSTANTS.SPEED.HYPER*0.8, Math.sin(hAngle)*CONSTANTS.SPEED.HYPER*0.8);
+                break;
+            case 'PARRY':
+                if(entity.cooldowns.parry > 0) return;
+                entity.state = STATE.PARRY; entity.stateTimer = CONSTANTS.TIMING.PARRY_DUR; entity.cooldowns.parry = 180;
+                break;
+        }
+    }
+};
+
+class AISystem {
+    update() {
+        const livingPlayers = Game.entities.players.filter(p => !p.isDead());
+        const pickups = Game.entities.pickups;
+        if (livingPlayers.length === 0) return;
+
+        Game.entities.enemies.forEach(me => {
+            if (me.isDead() || me.isStunned || me.isDashing || me.isParrying) return;
+            
+            const playerTarget = livingPlayers.reduce((p, c) => Vector.distance(me.position, p.position) < Vector.distance(me.position, c.position) ? p : c);
+            let lootTarget = null;
+            if (pickups.length > 0) {
+                lootTarget = pickups.reduce((p, c) => Vector.distance(me.position, p.position) < Vector.distance(me.position, c.position) ? p : c);
+            }
+
+            const validMoves = me.behavior.filter(b => {
+                const target = (b.type === 'GET_LOOT') ? lootTarget : playerTarget;
+                if (!target) return false;
+                
+                const dist = Vector.distance(me.position, target.position);
+                if (b.range && (dist < b.range[0] || dist > b.range[1])) return false;
+                if (b.cd && me.cooldowns[b.cd] > 0) return false;
+                return true;
+            });
+
+            const totalWeight = validMoves.reduce((sum, b) => sum + b.weight, 0);
+            let r = Math.random() * totalWeight;
+            let selected = null;
+            for(const move of validMoves) {
+                r -= move.weight;
+                if (r <= 0) { selected = move; break; }
+            }
+            
+            if (selected) {
+                const finalTarget = (selected.type === 'GET_LOOT') ? lootTarget : playerTarget;
+                ActionExecutor.execute(me, selected.type, finalTarget);
+            } else {
+                ActionExecutor.execute(me, 'APPROACH', playerTarget);
+            }
+        });
+    }
+}
+
+class InputManager {
+    constructor() {
+        this.scheme = "MOUSE"; this.inputs = { p1: { move: new Vector(0,0), action: false, momentum: false }, p2: { move: new Vector(0,0), action: false, momentum: false } };
+        this.keys = {}; this.touchData = {}; this.mouse = { x: 0, y: 0 }; this.menuTimer = 0;
+        window.addEventListener('keydown', e => {
+            if (e.code === 'Escape') { Game.ui.toggleMenu(); return; }
+            if (Game.state.mode === 'PAUSE' || Game.state.mode === 'OVER') {
+                const ui = Game.ui; e.preventDefault();
+                if(['ArrowUp','KeyW'].includes(e.code)) ui.navFocus(-1);
+                if(['ArrowDown','KeyS'].includes(e.code)) ui.navFocus(1);
+                if(['ArrowLeft','KeyA'].includes(e.code)) ui.modFocus(-1);
+                if(['ArrowRight','KeyD'].includes(e.code)) ui.modFocus(1);
+                if(['Enter','Space'].includes(e.code)) ui.triggerFocus();
+            } else this.keys[e.code] = true;
+        });
+        window.addEventListener('keyup', e => this.keys[e.code] = false);
+        window.addEventListener('mousemove', e => { if (this.scheme === 'MOUSE') { this.mouse.x = e.clientX; this.mouse.y = e.clientY; } });
+        window.addEventListener('mousedown', e => { if (this.scheme === 'MOUSE' && Game.state.mode === "PLAY") { if (e.button === 0) this.inputs.p1.momentum = true; if (e.button === 2) this.inputs.p1.action = true; } });
+        window.addEventListener('mouseup', e => { if (this.scheme === 'MOUSE') { if (e.button === 0) this.inputs.p1.momentum = false; if (e.button === 2) this.inputs.p1.action = false; } });
+        window.addEventListener('contextmenu', e => e.preventDefault());
+    }
+    update() {
+        const gps = navigator.getGamepads ? navigator.getGamepads() : [];
+        const gp1 = gps[0];
+        if (gp1) {
+            if (this.menuTimer > 0) this.menuTimer--;
+            else {
+                if (gp1.buttons[9].pressed) { Game.ui.toggleMenu(); this.menuTimer = 20; }
+                if (Game.state.mode === 'PAUSE' || Game.state.mode === 'OVER') {
+                    if (Math.abs(gp1.axes[1]) > 0.5) { Game.ui.navFocus(Math.sign(gp1.axes[1])); this.menuTimer = 10; }
+                    else if (gp1.buttons[12].pressed) { Game.ui.navFocus(-1); this.menuTimer = 10; }
+                    else if (gp1.buttons[13].pressed) { Game.ui.navFocus(1); this.menuTimer = 10; }
+                    else if (Math.abs(gp1.axes[0]) > 0.5) { Game.ui.modFocus(Math.sign(gp1.axes[0])); this.menuTimer = 10; }
+                    else if (gp1.buttons[14].pressed) { Game.ui.modFocus(-1); this.menuTimer = 10; }
+                    else if (gp1.buttons[15].pressed) { Game.ui.modFocus(1); this.menuTimer = 10; }
+                    else if (gp1.buttons[0].pressed) { Game.ui.triggerFocus(); this.menuTimer = 20; }
+                    else if (gp1.buttons[1].pressed && Game.state.mode === 'PAUSE') { Game.ui.toggleMenu(); this.menuTimer = 20; }
+                }
+            }
+        }
+        
+        if (Game.state.mode !== 'PLAY') return;
+
+        if (this.scheme === 'KEYBOARD') {
+            const map = (id,u,d,l,r,a,m) => { this.inputs[id].move.x=(this.keys[r]?1:0)-(this.keys[l]?1:0); this.inputs[id].move.y=(this.keys[d]?1:0)-(this.keys[u]?1:0); this.inputs[id].action=this.keys[a]; this.inputs[id].momentum=this.keys[m]; }
+            map('p1','KeyW','KeyS','KeyA','KeyD','KeyZ','KeyX'); map('p2','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyK','KeyL');
+        } else if (this.scheme === 'TOUCH') {
+            ['p1','p2'].forEach(id=>{let s=this.touchData[`stick-${id}`];if(s){this.inputs[id].move.x=s.x;this.inputs[id].move.y=s.y;} this.inputs[id].action=this.touchData[`action-${id}`]; this.inputs[id].momentum=this.touchData[`momentum-${id}`];});
+        } else if (this.scheme === 'GAMEPAD') {
+            const mapPad = (pid, idx) => {
+                const gp = gps[idx];
+                if(gp) {
+                    this.inputs[pid].move.x = Math.abs(gp.axes[0]) > 0.1 ? gp.axes[0] : 0;
+                    this.inputs[pid].move.y = Math.abs(gp.axes[1]) > 0.1 ? gp.axes[1] : 0;
+                    this.inputs[pid].action = gp.buttons[0].pressed || gp.buttons[2].pressed; 
+                    this.inputs[pid].momentum = gp.buttons[1].pressed || gp.buttons[3].pressed || gp.buttons[5].pressed || gp.buttons[7].pressed;
+                } else { this.inputs[pid].move = new Vector(0,0); this.inputs[pid].action=false; this.inputs[pid].momentum=false; }
+            };
+            mapPad('p1', 0);
+            if (Game.state.subMode === 'COOP') mapPad('p2', 1);
+            else if (gps[1] && !gps[0]) mapPad('p1', 1);
+        }
+    }
+    getInput(id) { return this.inputs[id]; }
+    setScheme(s) {
+        this.scheme = s;
+        document.getElementById("btn-input-mouse").classList.toggle('active', s === 'MOUSE');
+        document.getElementById("btn-input-key").classList.toggle('active', s === 'KEYBOARD');
+        document.getElementById("btn-input-touch").classList.toggle('active', s === 'TOUCH');
+        document.getElementById("btn-input-pad").classList.toggle('active', s === 'GAMEPAD');
+        Game.ui.updateControlsDesc(); this.setupTouchUI();
+    }
+    setupTouchUI() {
+        const ui = document.getElementById("touch-layer"); ui.innerHTML = ''; ui.style.display = this.scheme === 'TOUCH' ? 'block' : 'none';
+        if (this.scheme !== 'TOUCH') return;
+        const add = (id, type, r, rot) => {
+            const b = document.createElement('div'); b.className = `touch-pad ${type==='s'?'stick-base':(type==='a'?'btn-action':'btn-sprint')}`;
+            if(type==='s') { b.style.left='30px'; const n=document.createElement('div'); n.className='stick-nub'; b.appendChild(n); 
+                let o=null; b.addEventListener('touchmove',e=>{e.preventDefault();for(let t of e.changedTouches){if(o&&t.identifier===o.id){let dx=t.clientX-o.x,dy=t.clientY-o.y,d=Math.min(50,Math.sqrt(dx*dx+dy*dy)),a=Math.atan2(dy,dx); n.style.transform=`translate(calc(-50% + ${Math.cos(a)*d}px), calc(-50% + ${Math.sin(a)*d}px))`; let ox=Math.cos(a)*(d/50),oy=Math.sin(a)*(d/50); if(rot){ox*=-1;oy*=-1;} this.touchData[`stick-${id}`]={x:ox,y:oy};}}});
+                b.addEventListener('touchstart',e=>{e.preventDefault();let r=b.getBoundingClientRect();o={x:r.left+r.width/2,y:r.top+r.height/2,id:e.changedTouches[0].identifier};this.touchData[`stick-${id}`]={x:0,y:0};});
+                b.addEventListener('touchend',e=>{o=null;n.style.transform=`translate(-50%,-50%)`;this.touchData[`stick-${id}`]={x:0,y:0};});
+            } else { b.innerText=type==='a'?'ATK':'SPD'; b.style.right=r+'px'; b.addEventListener('touchstart',e=>{e.preventDefault();this.touchData[`${type==='a'?'action':'momentum'}-${id}`]=true;b.classList.add('active')}); b.addEventListener('touchend',e=>{e.preventDefault();this.touchData[`${type==='a'?'action':'momentum'}-${id}`]=false;b.classList.remove('active')}); }
+            b.style[rot?'top':'bottom']='30px'; if(rot) b.style.transform="rotate(180deg)"; ui.appendChild(b);
+        };
+        add('p1','s',0,false); add('p1','a',30,false); add('p1','m',140,false);
+        if(Game.state.subMode==='COOP') { add('p2','s',0,true); add('p2','a',30,true); add('p2','m',140,true); }
+    }
+}
+
+class PhysicsSystem {
+    update(dt) {
+        Game.entities.pickups.forEach((p,i)=> { p.life--; p.angle += 0.05; if(p.life<=0) Game.entities.pickups.splice(i,1) });
+        Game.entities.particles.forEach((p,i)=>{p.position.add(p.velocity); p.velocity.multiply(0.9); p.life-=0.05; if(p.life<=0)Game.entities.particles.splice(i,1)});
+        Game.entities.texts.forEach((t,i)=>{t.position.add(t.velocity); t.life-=0.02; if(t.life<=0)Game.entities.texts.splice(i,1)});
+        Game.entities.blood.forEach((b,i)=>{ b.position.add(b.velocity); b.velocity.multiply(0.85); if(b.velocity.magnitude() < 0.1) b.velocity.multiply(0); });
+        
+        [...Game.entities.players, ...Game.entities.enemies].forEach(e => {
+            if (e.isDead()) return;
+            // FIXED: Clamp timers to 0
+            e.cooldowns.burst = Math.max(0, e.cooldowns.burst - 1);
+            e.cooldowns.parry = Math.max(0, e.cooldowns.parry - 1);
+            e.invincibleTimer = Math.max(0, e.invincibleTimer - 1);
+            e.stateTimer = Math.max(0, e.stateTimer - 1);
+
+            if (e.tier >= 2 || (e.tier >= 1 && Game.config.FX.GLOW)) { e.trail.push({x:e.position.x, y:e.position.y, state:e.state}); if(e.trail.length > 5) e.trail.shift(); } else { e.trail = []; }
+            if (e.isStunned) { e.velocity.multiply(0.9); if (e.stateTimer <= 0) e.state = STATE.IDLE; } 
+            else if (e.isDashing) { e.velocity.multiply(0.98); e.invincibleTimer = 2; if (e.stateTimer <= 0) { e.state = STATE.IDLE; e.velocity.multiply(0.5); } } 
+            else if (e.isParrying) { e.velocity.multiply(0.8); e.invincibleTimer = 2; if (e.stateTimer <= 0) e.state = STATE.IDLE; } 
+            else { e.velocity.multiply(Game.config.FRICTION); }
+            e.position.add(e.velocity); this.handleWallCollision(e);
+        });
+
+        if(Game.state.subMode === 'COOP') { 
+            const allP = Game.entities.players.filter(p=>!p.isDead());
+            for(let i=0; i<allP.length; i++) for(let j=i+1; j<allP.length; j++) if(Vector.distance(allP[i].position, allP[j].position)<42) { const p=Vector.subtract(allP[i].position, allP[j].position).normalize().multiply(3); allP[i].velocity.add(p); allP[j].velocity.sub(p); } 
+        }
+    }
+    handleWallCollision(e) {
+        const p = Game.config.BOUNDS;
+        if (e.position.x < p) { e.position.x = p; e.velocity.x *= -0.8; } if (e.position.x > Game.width - p) { e.position.x = Game.width - p; e.velocity.x *= -0.8; }
+        if (e.position.y < p) { e.position.y = p; e.velocity.y *= -0.8; } if (e.position.y > Game.height - p) { e.position.y = Game.height - p; e.velocity.y *= -0.8; }
+    }
+}
+
+class PlayerSystem {
+    update() {
+        Game.entities.players.forEach(p => {
+            if (p.isDead() || p.isStunned || p.isParrying || p.isDashing) return;
+            const inp = Game.input.getInput(p.id);
+            if (inp.action) {
+                p.chargeTime++; p.velocity.multiply(0.85);
+                if (p.chargeTime > CONSTANTS.TIMING.CHARGE_HYPER) { p.state = STATE.READY_HYPER; if (p.chargeTime % 5 == 0) Game.events.emit('particle', {x:p.position.x, y:p.position.y, col:PALETTE.WHITE, spd:-8}); } else if (p.chargeTime > CONSTANTS.TIMING.CHARGE_BURST) { p.state = STATE.READY_BURST; } else { p.state = STATE.CHARGE; }
+            } else {
+                if (p.state === STATE.READY_HYPER || p.state === STATE.READY_BURST || p.state === STATE.CHARGE) {
+                    if (p.cooldowns.burst <= 0 && p.chargeTime > CONSTANTS.TIMING.CHARGE_BURST) {
+                        const isHyper = p.chargeTime > CONSTANTS.TIMING.CHARGE_HYPER;
+                        const angle = (Game.input.scheme === 'MOUSE' && p.id === 'p1') ? Math.atan2(Game.input.mouse.y - p.position.y, Game.input.mouse.x - p.position.x) : (inp.move.magnitude()>0.1 ? Math.atan2(inp.move.y, inp.move.x) : Math.atan2(p.velocity.y, p.velocity.x));
+                        p.state = isHyper ? STATE.DASH_HYPER : STATE.DASH_BURST; p.stateTimer = CONSTANTS.TIMING.BURST_DUR; p.cooldowns.burst = CONSTANTS.TIMING.BURST_CD;
+                        const spd = isHyper ? CONSTANTS.SPEED.HYPER : CONSTANTS.SPEED.BURST;
+                        p.velocity = new Vector(Math.cos(angle)*spd, Math.sin(angle)*spd);
+                        Game.events.emit('shake', isHyper?30:15); Game.events.emit('flash', isHyper?0.5:0.2); 
+                        Game.events.emit('particle_burst', {x:p.position.x, y:p.position.y, col:ColorUtils.getStateColor(p.baseColor, p.state), n:isHyper?50:25});
+                    } else if (p.cooldowns.parry <= 0 && p.chargeTime <= CONSTANTS.TIMING.CHARGE_BURST) {
+                        p.state = STATE.PARRY; p.stateTimer = CONSTANTS.TIMING.PARRY_DUR; p.cooldowns.parry = CONSTANTS.TIMING.PARRY_CD;
+                        Game.events.emit('particle_burst', {x:p.position.x, y:p.position.y, col:PALETTE.WHITE, n:10}); Game.events.emit('shake', 5);
+                    } else p.state = STATE.IDLE;
+                    p.chargeTime = 0;
+                } else {
+                    const speed = inp.momentum ? CONSTANTS.SPEED.MOMENTUM : CONSTANTS.SPEED.NORMAL;
+                    p.state = inp.momentum ? STATE.SPRINT : STATE.MOVE;
+                    let moveVec = new Vector(0,0);
+                    if (Game.input.scheme === 'MOUSE' && p.id === 'p1') { if (Vector.distance(p.position, Game.input.mouse) > 10) moveVec = Vector.subtract(Game.input.mouse, p.position); } else { if (inp.move.magnitude() > 0.1) moveVec = inp.move; }
+                    if (moveVec.magnitude() > 0) p.velocity.add(moveVec.normalize().multiply(speed)); else p.state=STATE.IDLE;
+                }
+            }
+        });
+    }
+}
+
+class CombatSystem {
+    update() {
+        const allLiving = [...Game.entities.players, ...Game.entities.enemies].filter(e => !e.isDead());
+        
+        allLiving.forEach(e => {
+            Game.entities.enemies.forEach(enemy => { 
+                if(e !== enemy && Vector.distance(e.position, enemy.position) < 42) this.resolve(e, enemy); 
+            });
+            for(let i=Game.entities.pickups.length-1; i>=0; i--) 
+                if(Vector.distance(e.position, Game.entities.pickups[i].position)<30) { 
+                    const pickup = Game.entities.pickups[i];
+                    Game.events.emit('particle_burst', {x:pickup.position.x, y:pickup.position.y, col:pickup.color, n:30});
+                    Game.events.emit('text', {x:pickup.position.x, y:pickup.position.y-20, txt:pickup.data.text, col:pickup.color});
+                    pickup.data.effect(e);
+                    Game.entities.pickups.splice(i,1); 
+                }
+        });
+    }
+    
+    resolve(e1, e2) {
+        if (e1.isStunned) return this.applyHit(e2, e1);
+        if (e2.isStunned) return this.applyHit(e1, e2);
+        if (e1.isParrying) return this.applyParry(e1, e2);
+        if (e2.isParrying) return this.applyParry(e2, e1);
+        
+        if (e1.tier > 0 && e2.tier > 0) {
+            if (e1.tier === e2.tier) {
+                Game.state.hitStopTimer=4; Game.events.emit('shake',30); Game.events.emit('flash',0.3);
+                const d = Vector.subtract(e1.position, e2.position).normalize();
+                e1.velocity=d.clone().multiply(40); e2.velocity=d.clone().multiply(-40);
+                e1.state=e2.state=STATE.IDLE; e1.invincibleTimer=e2.invincibleTimer=10;
+                const mid = Vector.subtract(e2.position, e1.position).multiply(0.5).add(e1.position);
+                Game.events.emit('particle_burst',{x:mid.x, y:mid.y, col:PALETTE.WHITE, n:40}); Game.events.emit('text',{x:mid.x, y:mid.y-20, txt:"CLASH", col:CONSTANTS.COLORS.TEXT});
+            } else if (e1.tier > e2.tier) this.applyHit(e1, e2); else this.applyHit(e2, e1);
+            return;
+        }
+        if (e1.tier > 0) this.applyHit(e1, e2); else if (e2.tier > 0) this.applyHit(e2, e1); else { const push=Vector.subtract(e1.position, e2.position).normalize().multiply(4); e1.velocity.add(push); e2.velocity.sub(push); }
+    }
+
+    applyParry(blocker, attacker) {
+        const recoil = Vector.subtract(attacker.position, blocker.position).normalize().multiply(30);
+        attacker.velocity=recoil; attacker.state=STATE.STUN; attacker.stateTimer=CONSTANTS.TIMING.STUN; attacker.invincibleTimer=0;
+        blocker.velocity=recoil.clone().multiply(-0.2); blocker.invincibleTimer=20; Game.state.hitStopTimer=5;
+        Game.events.emit('particle_burst',{x:attacker.position.x, y:attacker.position.y, col:PALETTE.WHITE, n:30}); Game.events.emit('text',{x:blocker.position.x, y:blocker.position.y-40, txt:"PARRY!", col:CONSTANTS.COLORS.TEXT});
+        if(blocker.tier >= 2) { Game.events.emit('flash',0.5); Game.events.emit('shake',30); Game.events.emit('text',{x:blocker.position.x, y:blocker.position.y-60, txt:"PERFECT", col:CONSTANTS.COLORS.HYPER}); attacker.stateTimer*=1.5; }
+    }
+
+    applyHit(atk, vic) {
+        if (!vic.isStunned && vic.invincibleTimer > 0) return;
+        const tier = atk.tier, dmg = tier===3 ? CONSTANTS.DAMAGE.HYPER : (tier===2 ? CONSTANTS.DAMAGE.BURST : (tier===1 ? CONSTANTS.DAMAGE.MOMENTUM : CONSTANTS.DAMAGE.NORMAL));
+        vic.hp -= dmg; vic.state = STATE.IDLE; vic.chargeTime = 0; 
+        const force = tier===3?80:(tier===2?40:(tier===1?20:10));
+        const k = Vector.subtract(vic.position, atk.position).normalize().multiply(force);
+        vic.velocity = k; atk.velocity.add(k.clone().multiply(0.2));
+        Game.state.hitStopTimer = (tier >= 2) ? 4 : 0; 
+        Game.events.emit('shake', force/2); 
+        if(tier >= 2) { Game.state.chromaticAberration = 10; if(Game.config.FX.FLASH) Game.state.invertedFrame = true; } 
+        Game.events.emit('particle_burst',{x:vic.position.x, y:vic.position.y, col:vic.baseColor, n:10+force/2});
+        Game.events.emit('text',{x:vic.position.x, y:vic.position.y, txt:dmg, col:CONSTANTS.COLORS.TEXT});
+        if (vic.isDead()) {
+            if (vic.extraLife > 0) {
+                Game.director.handleRevive(vic);
+            } else {
+                if (vic instanceof Player) {
+                    if (Game.entities.players.every(p => p.isDead())) Game.director.gameOver();
+                    else { Game.events.emit('particle_burst',{x:vic.position.x, y:vic.position.y, col:vic.baseColor, n:50}); Game.events.emit('text',{x:vic.position.x, y:vic.position.y, txt:"DOWN!", col:PALETTE.RED}); }
+                } else Game.director.handleEnemyKill(vic);
+            }
+        } else if (vic instanceof Player) { Game.state.combo=0; }
+    }
+}
+
+class RenderSystem {
+    constructor() { this.ctx = document.getElementById("gameCanvas").getContext("2d"); }
+    draw() {
+        if (Game.state.invertedFrame) { this.ctx.fillStyle = PALETTE.WHITE; this.ctx.fillRect(0,0,Game.width,Game.height); return; }
+        this.ctx.fillStyle = "#000"; this.ctx.fillRect(0, 0, Game.width, Game.height);
+        this.ctx.save();
+        const shakeX = (Math.random() - 0.5) * Game.state.shakeIntensity, shakeY = (Math.random() - 0.5) * Game.state.shakeIntensity;
+        this.ctx.translate(shakeX, shakeY);
+        this.drawUI(); if(Game.config.FX.GRID) this.drawGrid();
+        Game.entities.blood.forEach(b => { 
+            this.ctx.save(); this.ctx.translate(b.position.x, b.position.y); this.ctx.rotate(b.rotation); 
+            this.ctx.fillStyle = b.color; this.ctx.globalAlpha = 0.6; this.ctx.fillRect(-b.size/2, -b.size/2, b.size, b.size); this.ctx.restore(); 
+        });
+        if (Game.state.chromaticAberration > 1) {
+            this.ctx.save(); this.ctx.globalCompositeOperation = "screen"; this.ctx.translate(Game.state.chromaticAberration, 0); 
+            this.drawEntities(0); this.ctx.translate(-Game.state.chromaticAberration*2, 0); this.drawEntities(0); this.ctx.restore();
+        }
+        this.drawEntities(0);
+        if (Game.state.flashOpacity > 0 && Game.config.FX.FLASH) { this.ctx.fillStyle = `rgba(255, 255, 255, ${Game.state.flashOpacity})`; this.ctx.fillRect(-shakeX, -shakeY, Game.width, Game.height); }
+        Game.entities.texts.forEach(t => { 
+            this.ctx.globalAlpha = Math.max(0, t.life); this.ctx.fillStyle = t.color; this.ctx.font = "30px VT323"; 
+            this.ctx.shadowColor = t.color; this.ctx.shadowBlur = 10; this.ctx.fillText(t.str, t.position.x, t.position.y); this.ctx.shadowBlur=0; 
+        });
+        if (Game.state.subMode === 'SOLO' && Game.input.scheme === 'MOUSE' && Game.entities.players[0]) {
+            const p1 = Game.entities.players[0];
+            this.ctx.strokeStyle = "rgba(255, 255, 255, 0.1)"; this.ctx.setLineDash([4, 4]); this.ctx.beginPath(); this.ctx.moveTo(p1.position.x, p1.position.y); this.ctx.lineTo(Game.input.mouse.x, Game.input.mouse.y); this.ctx.stroke(); this.ctx.setLineDash([]);
+            this.ctx.fillStyle = PALETTE.CYAN; this.ctx.fillRect(Game.input.mouse.x - 4, Game.input.mouse.y - 4, 8, 8);
+        }
+        this.ctx.restore();
+        const grad = this.ctx.createRadialGradient(Game.width/2, Game.height/2, Game.height/2, Game.width/2, Game.height/2, Game.height);
+        grad.addColorStop(0, "transparent"); grad.addColorStop(1, "rgba(0,0,0,0.8)"); this.ctx.fillStyle = grad; this.ctx.fillRect(0,0,Game.width,Game.height);
+    }
+    drawUI() {
+        this.ctx.textAlign = "center"; this.ctx.textBaseline = "middle"; this.ctx.font = "bold 400px VT323"; this.ctx.fillStyle = "#111"; 
+        this.ctx.fillText(Game.state.score, Game.width/2, Game.height/2 + 50);
+        if (Game.state.streak > 0) {
+            const rankIdx = Math.min(Game.state.streak, 7), rankTxt = CONSTANTS.RANKS[rankIdx], pulse = 1 + Math.sin(Date.now() / 100) * 0.1 * rankIdx;
+            this.ctx.font = `bold ${200 * pulse}px VT323`; this.ctx.fillStyle = `rgba(255, 255, 255, 0.05)`; 
+            if(rankIdx > 4) { this.ctx.shadowBlur = 20; this.ctx.shadowColor = "#fff"; this.ctx.fillStyle = "rgba(255,255,255,0.1)"; }
+            this.ctx.fillText(rankTxt, Game.width/2, Game.height/2 - 100);
+            this.ctx.font = "60px VT323"; this.ctx.fillStyle = "#333"; this.ctx.fillText(`x${1 + Math.floor(Game.state.combo/5)*2} MULTIPLIER`, Game.width/2, Game.height/2 + 200);
+        }
+    }
+    drawGrid() {
+        this.ctx.strokeStyle = "#222"; this.ctx.lineWidth = 1; 
+        const p1=Game.entities.players[0], ox=p1?-p1.position.x*0.1:0, oy=p1?-p1.position.y*0.1:0; 
+        this.ctx.beginPath(); 
+        for(let x=ox%100;x<Game.width;x+=100){this.ctx.moveTo(x,0);this.ctx.lineTo(x,Game.height);} 
+        for(let y=oy%100;y<Game.height;y+=100){this.ctx.moveTo(0,y);this.ctx.lineTo(Game.width,y);} 
+        this.ctx.stroke(); 
+    }
+    drawEntities(offset) {
+        Game.entities.pickups.forEach(p => {
+             this.ctx.save(); this.ctx.translate(p.position.x, p.position.y); this.ctx.rotate(p.angle);
+             this.ctx.fillStyle = p.color; this.ctx.globalAlpha = Math.min(1, p.life / 60);
+             this.ctx.beginPath(); this.ctx.moveTo(0, -10); this.ctx.lineTo(10, 0); this.ctx.lineTo(0, 10); this.ctx.lineTo(-10, 0); this.ctx.fill();
+             if (Game.config.FX.GLOW) { this.ctx.shadowColor = p.color; this.ctx.shadowBlur = 15; this.ctx.stroke(); }
+             this.ctx.restore();
+        });
+        Game.entities.particles.forEach(p => { this.ctx.globalAlpha = p.life; this.ctx.fillStyle = p.color; this.ctx.fillRect(p.position.x, p.position.y, p.size, p.size); });
+        Game.entities.enemies.forEach(e => this.drawSingleEntity(e, offset));
+        Game.entities.players.forEach(p => this.drawSingleEntity(p, offset + Math.random() * (p.state >= STATE.CHARGE && p.state <= STATE.READY_HYPER ? 2 : 0), p.state === STATE.PARRY));
+    }
+    drawSingleEntity(e, shakeOffset, showShield) {
+        if (e.isDead()) return;
+        let color = ColorUtils.getStateColor(e.baseColor, e.state);
+        if (e.invincibleTimer > 60 && e.invincibleTimer % 10 < 5) color = LOOT_TYPES.GOD.color;
+        this.ctx.save(); this.ctx.translate(e.position.x + shakeOffset, e.position.y + shakeOffset);
+        if (Game.config.FX.GLOW && e.trail.length > 0) {
+            e.trail.forEach((t, i) => { this.ctx.globalAlpha = i / 10; this.ctx.fillStyle = color; this.ctx.beginPath(); this.ctx.arc(t.x - e.position.x, t.y - e.position.y, e.radius, 0, 2*Math.PI); this.ctx.fill(); });
+            this.ctx.globalAlpha = 1;
+        }
+        if (showShield) { this.ctx.strokeStyle = PALETTE.WHITE; this.ctx.lineWidth = 3; this.ctx.beginPath(); this.ctx.arc(0, 0, e.radius + 8, 0, 2 * Math.PI); this.ctx.stroke(); }
+        if (e.hp < 30 && Math.floor(Date.now() / 50) % 2 == 0) this.ctx.globalAlpha = 0.4;
+        this.ctx.rotate(Math.atan2(e.velocity.y, e.velocity.x));
+        const stretch = 1 + Math.min(e.velocity.magnitude() / 60, 0.8); this.ctx.scale(stretch, 1 / stretch);
+        if (e.tier > 0 && Game.config.FX.GLOW && !e.isStunned) { this.ctx.shadowBlur = 20; this.ctx.shadowColor = color; }
+        this.ctx.fillStyle = color; this.ctx.beginPath(); this.ctx.arc(0, 0, e.radius, 0, 2 * Math.PI); this.ctx.fill();
+        this.ctx.fillStyle = PALETTE.WHITE; this.ctx.globalAlpha = 0.4; this.ctx.beginPath(); this.ctx.arc(0, 0, e.radius * 0.6, 0, 2 * Math.PI); this.ctx.fill();
+        this.ctx.restore();
+    }
+}
+
+// --- GAME ---
+class Game {
+    static entities = { players: [], enemies: [], particles: [], texts: [], blood: [], pickups: [] };
+    static state = { mode: "PAUSE", subMode: "SOLO", score: 0, streak: 0, combo: 0, shakeIntensity: 0, hitStopTimer: 0, flashOpacity: 0, waveTimer: 0, lootTimer: 1800, chromaticAberration: 0, invertedFrame: false, needsReset: true, particleSpawnCount: 0 };
+    static config = { 
+        FX: { BLOOD: true, SHAKE: true, FLASH: true, GLOW: true, GRID: true }, FRICTION: 0.92, BOUNDS: 25,
+        update: () => { const c = Game.config.FX; c.BLOOD = document.getElementById("chk-blood").checked; c.SHAKE = document.getElementById("chk-shake").checked; c.FLASH = document.getElementById("chk-flash").checked; c.GLOW = document.getElementById("chk-glow").checked; c.GRID = document.getElementById("chk-grid").checked; Game.config.FRICTION = parseFloat(document.getElementById("rng-friction").value); }
+    };
+    static events = new EventBus();
+    static width = window.innerWidth; static height = window.innerHeight;
+    static ui = { 
+        menu: document.getElementById("pause-menu"), gameOver: document.getElementById("game-over"), finalScore: document.getElementById("final-score"), controlsDesc: document.getElementById("controls-desc"), p2Status: document.getElementById("p2-status"),
+        menuFocusIdx: 0, menuElements: [],
+        toggleMenu: () => { 
+            Game.state.mode = Game.state.mode === "PLAY" ? "PAUSE" : "PLAY"; 
+            Game.ui.menu.style.display = Game.state.mode === "PAUSE" ? "block" : "none"; 
+            if (Game.state.mode === "PLAY") { 
+                Game.config.update(); 
+                if(Game.state.needsReset) Game.director.reset(); 
+                else { Game.input.setupTouchUI(); Game.loop.lastTime = 0; if (!Game.loop.id) requestAnimationFrame(Game.loop.run); } 
+            } else {
+                Game.ui.setupFocus();
+            }
+        },
+        setupFocus: () => {
+            const container = Game.state.mode === 'OVER' ? Game.ui.gameOver : Game.ui.menu;
+            Game.ui.menuElements = Array.from(container.querySelectorAll('button:not([style*="display: none"]), input'));
+            Game.ui.menuFocusIdx = 0; Game.ui.updateFocus();
+        },
+        updateFocus: () => {
+            Game.ui.menuElements.forEach((e, i) => {
+                const active = i === Game.ui.menuFocusIdx;
+                e.classList.toggle('focused', active);
+                if(e.parentElement.classList.contains('fx-toggle-row')) e.parentElement.classList.toggle('focused', active);
+                if(active) e.scrollIntoView({block: 'nearest'});
+            });
+        },
+        navFocus: (dir) => {
+            if(!Game.ui.menuElements.length) Game.ui.setupFocus();
+            Game.ui.menuFocusIdx = (Game.ui.menuFocusIdx + dir + Game.ui.menuElements.length) % Game.ui.menuElements.length;
+            Game.ui.updateFocus();
+        },
+        modFocus: (dir) => {
+            if(!Game.ui.menuElements.length) return;
+            const el = Game.ui.menuElements[Game.ui.menuFocusIdx];
+            if(el.type === 'range') { el.value = parseFloat(el.value) + (dir * parseFloat(el.step)); el.oninput(); el.onchange(); }
+            else Game.ui.navFocus(dir); 
+        },
+        triggerFocus: () => {
+            if(!Game.ui.menuElements.length) return;
+            const el = Game.ui.menuElements[Game.ui.menuFocusIdx];
+            if(el.tagName === 'BUTTON') el.click();
+            else if(el.type === 'checkbox') { el.checked = !el.checked; el.onchange(); }
+        },
+        updateControlsDesc: () => {
+             let h = '', scheme = Game.input.scheme, mode = Game.state.subMode;
+             if (scheme === 'MOUSE') h = `<div class="control-row"><span>MOVE</span><b>MOUSE (FOLLOW)</b></div><div class="control-row"><span>MOMENTUM</span><b>HOLD LMB</b></div><div class="control-row"><span>ACTION</span><b>RMB (TAP/HOLD)</b></div>`;
+             else if (scheme === 'KEYBOARD') h = mode === 'SOLO' ? `<div class="control-row"><span>MOVE</span><b>W A S D</b></div><div class="control-row"><span>SPRINT</span><b>X / SHIFT</b></div><div class="control-row"><span>ACTION</span><b>Z / SPACE</b></div>` : `<div class="control-row"><span>P1 MOVE</span><b>W A S D</b></div><div class="control-row"><span>P1 ACT/RUN</span><b>Z / X</b></div><div class="control-row" style="margin-top:5px; border-top:1px solid #333"><span>P2 MOVE</span><b>ARROWS</b></div><div class="control-row"><span>P2 ACT/RUN</span><b>K / L</b></div>`;
+             else if (scheme === 'TOUCH') h = mode === 'SOLO' ? `<div class="control-row"><span>MOVE</span><b>L-STICK</b></div><div class="control-row"><span>ACT/RUN</span><b>R-BUTTONS</b></div>` : `<div class="control-row"><span>P1</span><b>BOTTOM</b></div><div class="control-row"><span>P2</span><b>TOP (ROTATED)</b></div>`;
+             else if (scheme === 'GAMEPAD') h = mode === 'SOLO' ? `<div class="control-row"><span>MOVE</span><b>L-STICK</b></div><div class="control-row"><span>SPRINT</span><b>B / Y / TRIGGERS</b></div><div class="control-row"><span>ACTION</span><b>A / X</b></div>` : `<div class="control-row"><span>P1</span><b>CONTROLLER 1</b></div><div class="control-row"><span>P2</span><b>CONTROLLER 2</b></div>`;
+             Game.ui.controlsDesc.innerHTML = h; Game.ui.p2Status.style.display = mode === 'COOP' ? 'block' : 'none';
+        }
+    };
+    static director = {
+        setMode: (m) => { if(Game.state.subMode !== m) Game.state.needsReset = true; Game.state.subMode = m; document.getElementById("btn-mode-solo").classList.toggle('active', m === 'SOLO'); document.getElementById("btn-mode-vs").classList.toggle('active', m === 'COOP'); Game.ui.updateControlsDesc(); },
+        reset: () => {
+            Game.loop.resize(); Game.input.inputs.p1.move = new Vector(0,0); Game.input.inputs.p2.move = new Vector(0,0);
+            Game.entities = { players: [], enemies: [], particles: [], texts: [], blood: [], pickups: [] };
+            let p1 = new Player('p1'); p1.position = new Vector(Game.width/2, Game.height/2);
+            if (Game.state.subMode === 'COOP') { p1.position.x -= 100; let p2 = new Player('p2'); p2.position = new Vector(Game.width/2 + 100, Game.height/2); Game.entities.players.push(p2); }
+            Game.entities.players.unshift(p1);
+            Game.state.score = 0; Game.state.streak = 0; Game.state.combo = 0; Game.state.shakeIntensity = 0; Game.state.hitStopTimer = 0; Game.state.waveTimer = 0; Game.state.lootTimer = 1800; Game.state.needsReset = false;
+            Game.ui.gameOver.style.display = "none"; Game.state.mode = "PLAY"; Game.input.setupTouchUI(); Game.loop.lastTime = 0; if (!Game.loop.id) requestAnimationFrame(Game.loop.run);
+        },
+        spawnWave: () => {
+             Game.state.waveTimer--;
+             if (Game.entities.enemies.length === 0 && Game.state.waveTimer <= 0) {
+                 let c = 1 + Math.ceil(Math.min(Game.state.streak, 10)); if(Game.state.subMode==='COOP') c=Math.ceil(c*1.5);
+                 for (let i=0; i<c; i++) {
+                     const rng = Math.random(), type = rng < 0.01 ? "BOSS" : (rng < 0.10 ? "ELITE" : "NORMAL")
+                     const e = new Enemy(type); const r = Math.floor(Math.random() * 4);
+                     e.position = [new Vector(Math.random()*Game.width, -40), new Vector(Game.width+40, Math.random()*Game.height), new Vector(Math.random()*Game.width, Game.height+40), new Vector(-40, Math.random()*Game.height)][r];
+                     Game.entities.enemies.push(e);
+                 }
+                 Game.state.waveTimer = 250;
+             }
+             Game.state.lootTimer--;
+             if (Game.state.lootTimer <= 0) {
+                 const x = Math.random() * (Game.width - 100) + 50;
+                 const y = Math.random() * (Game.height - 100) + 50;
+                 const type = Math.random() > 0.8 ? "LIFE" : (Math.random() > 0.5 ? "GOD" : "HEAL");
+                 Game.entities.pickups.push(new Pickup(x, y, type));
+                 Game.state.lootTimer = 1800 + Math.random() * 1800;
+             }
+        },
+        handleEnemyKill: (vic) => {
+            Game.entities.enemies.splice(Game.entities.enemies.indexOf(vic), 1);
+            Game.state.hitStopTimer = 2; Game.state.streak++; Game.state.combo++; 
+            const scoreVal = (vic.category === "BOSS" ? 5000 : (vic.category === "ELITE" ? 1000 : 100));
+            Game.state.score += scoreVal * (1 + Math.floor(Game.state.combo/5)*2);
+            if(vic.category !== "NORMAL") { Game.state.hitStopTimer = 15; Game.events.emit('shake', 100); Game.events.emit('flash', 0.8); Game.events.emit('text',{x:vic.position.x, y:vic.position.y, txt:vic.category + " SLAIN", col:PALETTE.YELLOW}); }
+            if(Game.config.FX.BLOOD) { for(let i=0;i<15;i++) Game.entities.blood.push({position:new Vector(vic.position.x, vic.position.y), velocity:new Vector(Math.cos(Math.random()*6.28)*Math.random()*10, Math.sin(Math.random()*6.28)*Math.random()*10), color:vic.baseColor, size:Math.random()*12+6, rotation:Math.random()*6, life:1000}); }
+        },
+        handleRevive: (p) => {
+            p.extraLife--; p.hp = p.maxHp; p.invincibleTimer = 180;
+            Game.state.hitStopTimer=30; Game.events.emit('shake',50); Game.events.emit('flash',1); 
+            Game.events.emit('particle_burst',{x:p.position.x, y:p.position.y, col:LOOT_TYPES.LIFE.color, n:50}); 
+            Game.events.emit('text',{x:p.position.x, y:p.position.y-50, txt:"REVIVED!", col:LOOT_TYPES.LIFE.color});
+        },
+        handleLifeUp: (e) => {
+            if (e instanceof Player) {
+                const deadMate = Game.entities.players.find(m => m.isDead());
+                if (deadMate) Game.director.handleRevive(deadMate);
+                else { if (e.extraLife < 1) { e.extraLife++; Game.events.emit('text', {x:e.position.x, y:e.position.y-40, txt:"1-UP", col:PALETTE.CYAN}); } else Game.events.emit('text', {x:e.position.x, y:e.position.y-40, txt:"MAX LIFE", col:PALETTE.GREY}); }
+            } else {
+                if (e.extraLife < 1) { e.extraLife++; Game.events.emit('text', {x:e.position.x, y:e.position.y-40, txt:"1-UP", col:PALETTE.CYAN}); }
+                else { e.hp = e.maxHp; Game.events.emit('text', {x:e.position.x, y:e.position.y-40, txt:"HEALED", col:PALETTE.GREEN}); }
+            }
+        },
+        gameOver: () => { Game.state.mode = "OVER"; Game.ui.gameOver.style.display = "block"; Game.ui.finalScore.innerText = Game.state.score; Game.ui.setupFocus(); }
+    };
+    static init() {
+        this.input = new InputManager(); this.physics = new PhysicsSystem(); this.ai = new AISystem(); this.playerSys = new PlayerSystem(); this.combat = new CombatSystem(); this.renderer = new RenderSystem();
+        this.loop = {
+            id: null, lastTime: 0, accumulator: 0, step: 1000/60,
+            resize: () => { Game.width = document.getElementById("gameCanvas").width = window.innerWidth; Game.height = document.getElementById("gameCanvas").height = window.innerHeight; },
+            run: (timestamp) => {
+                if (!Game.loop.lastTime) Game.loop.lastTime = timestamp;
+                let dt = timestamp - Game.loop.lastTime; Game.loop.lastTime = timestamp; if (dt > 1000) dt = Game.loop.step;
+                if (Game.state.mode !== "PLAY") Game.input.update(); 
+                
+                if (Game.state.mode === "PLAY") {
+                    Game.input.update(); Game.loop.accumulator += dt; let steps = 0;
+                    // FIXED: While loop is correct for fixed timestep, but added safety break
+                    while (Game.loop.accumulator >= Game.loop.step) {
+                        if (Game.state.hitStopTimer > 0) Game.state.hitStopTimer--;
+                        else { Game.director.spawnWave(); Game.ai.update(); Game.playerSys.update(); Game.physics.update(Game.loop.step); Game.combat.update(); }
+                        Game.loop.accumulator -= Game.loop.step; steps++; 
+                        if (steps > 240) { Game.loop.accumulator = 0; break; } // Safety break
+                    }
+                    Game.state.shakeIntensity = Math.max(0, Game.state.shakeIntensity * 0.9 - 0.1); Game.state.flashOpacity = Math.max(0, Game.state.flashOpacity - 0.05); Game.state.chromaticAberration = Math.max(0, Game.state.chromaticAberration - 0.5);
+                    Game.state.particleSpawnCount = 0; // Reset particle limit per frame
+                    Game.renderer.draw(); Game.state.invertedFrame = false;
+                }
+                Game.loop.id = requestAnimationFrame(Game.loop.run);
+            }
+        };
+        window.addEventListener("resize", this.loop.resize);
+        this.events.on('shake', amt => { if(this.config.FX.SHAKE) this.state.shakeIntensity += amt; });
+        this.events.on('flash', o => { if(this.config.FX.FLASH) this.state.flashOpacity = o; });
+        this.events.on('particle', d => {
+            // FIXED: Rate Limiter implemented
+            if (Game.state.particleSpawnCount > CONSTANTS.MAX_PARTICLES_PER_FRAME) return;
+            if (Game.entities.particles.length > CONSTANTS.MAX_PARTICLES) Game.entities.particles.shift();
+            Game.state.particleSpawnCount++;
+            this.entities.particles.push({ position: new Vector(d.x, d.y), velocity: new Vector(Math.cos(Math.random()*6.28)*(d.spd||(Math.random()*4+2)), Math.sin(Math.random()*6.28)*(d.spd||(Math.random()*4+2))), color: d.col, life: 1, size: Math.random()*4+2 });
+        });
+        this.events.on('particle_burst', d => { if(!this.config.FX.BLOOD && !this.config.FX.FLASH) return; for(let i=0;i<d.n;i++) this.events.emit('particle', {x:d.x, y:d.y, col:d.col, spd:Math.random()*10+5}); });
+        this.events.on('text', d => this.entities.texts.push({ position: new Vector(d.x, d.y), velocity: new Vector(Math.random()-0.5, -2), str: d.txt, color: d.col, life: 1 }));
+        this.events.on('reset_request', this.director.reset);
+        this.loop.resize(); this.ui.updateControlsDesc(); this.entities.players.push(new Player('p1')); this.loop.id = requestAnimationFrame(this.loop.run);
+    }
+}
+Game.init();
+</script>
+</html>
+Rules:
+
+Entities are data only. Zero logic.
+
+All behavior happens in systems.
+
+Input and AI emit intents only, never state or movement.
+
+IntentSystem only validates + converts intents to state transitions.
+
+StateSystem is the sole authority over state, locks, invulnerability.
+
+Movement, Combat, Effects never touch AI or Input.
+
+Combat math is centralized and pure.
+
+Bosses use abilities and behavior tables, never special cases.
+
+No system mutates what it doesn’t own.
+
+Adding a new enemy or boss must require data/config only.
+
+If adding content requires editing core systems, the design is wrong.

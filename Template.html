@@ -1,0 +1,49 @@
+<!-- MEMORY NOTE: "How this thing actually works" -->
+
+// 1. COLOR SYSTEM — only 5 HSL vars in :root
+--color-bg / --color-text / --color-pri / --color-sec / --color-hl
+
+// 2. LAYOUT — everything fixed, 4 thin toolbars around edges
+#root-branch-zone → sits in the middle, hidden until a branch loads
+
+// 3. BRANCH FORMAT — the ONE way to add new pages
+App.registerBranch({
+  id:      "2",                     // string, hardcoded
+  content: <div id="branch2-stuff">…</div>,   // real DOM node (cloneNode later)
+  css:     "#branch2-stuff { color: var(--color-pri); … }",  // scoped inside #root-branch-zone
+  init:    zone => {                // optional setup, can return Promise
+    // do tiny shit here
+  }
+});
+
+// 4. COMMAND INPUT → type + Enter
+"branch 2"  → loads branch id "2"
+"root"      → back to empty center
+"help"      → list branches
+"clear"     → wipe output
+
+// 5. LOADING FLOW (what actually happens)
+- show "LOADING..."
+- kill old branch styles + listeners
+- inject new content
+- inject <style id="x-style"> with your css
+- run init(zone)
+- done → show zone, set currentBranch
+
+// 6. BACKGROUND CANVAS — optional snow or whatever, just init once
+BackgroundZone.init(canvas)
+
+// 7. STATE — tiny singleton
+state.currentBranch / state.isBusy / state.commandQueue
+
+// 8. COMMAND QUEUE — if busy, next command waits (no lost enters)
+
+// 9. NAMING RULES (keep it clean)
+root-    → core stuff (never touch from branch)
+branchX- → only inside your own branch content/css
+
+// 10. GOLDEN RULE
+No frameworks. No external js. One file. Branches are isolated.
+If it needs more than this → you're over-engineering it.
+
+-- end of note, go make something cool --
