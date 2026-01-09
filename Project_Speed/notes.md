@@ -28,38 +28,47 @@
 5. **Sequential stuff** → probably skip in a game requiring split-second reactions; your brain can’t reliably hold “hold A then tap B” under stress.
 6. **Double-tap + button combos** → skip, too precise, too stressful.
 
-**Comfortable set** 
-Speed tier are count dynamically based on current speed (From tier 0 to 5) 0 stop, 1 = base speed, same speed tier clash, higher speed tier damages lower ones
-* Tap A = flick short distance, cd 1s (dynamic from 1-4) does not reset speed after use
-* Tap B = parry (base parry duration=0.2s, cd 1.0s) stun parried enemy for 1 sec base, higher the enemy's speed tier parried, +0.5 sec stun,
-* Hold A = accelerate slowly to x4 base speed (increase speed tier from 1-4 slowly the faster the harder it takes to turn/aim)
-* Hold B = decelerate fast to x0.5 base speed (reduce parry cd to 0.5s)
-* Double Tap A = item drop use 
-* Double Tap B = skill drop use
-* Tap A + Tap B = aoe push, 5s cd ()
-* Tap A + Hold B = dash foward based on momentum stored and release shocktrail behind (dynamic from 1-4) reset speed to 1 after use
-* Hold A + Tap B = sudden stop and release shocktrail foward based on current speed (dynamic from 1-4) reset speed to 1 after use
-* Hold A + Hold B = charge infinitely nuke, unparry-able (tier 5) speed drop to 0 during charge.
+**Comfortable set**: 
+Tier 0 = stop, 1 = base speed, can't clash, only recieves damage, same speed tier clash, higher speed tier damages lower ones.
+Tier 0= completely still, tier 0.5 = 0.5 base speed, Tier 1 (base)=1.0 speed, tier 2= 3.0, tier 3=6.0, tier 4=100.0 (for tier 4 unbreakable dash only).
+Require smooth transition logic when transition from a button to a combo and vice versa
+Clash requires both ≥ Tier 2
+Tier 1 never clashes, only takes damage
+* Tap A = short dash, 1s cd, tier 2
+* Tap B = parry, stun parried enemy for 1 sec base, tier 2 parried=1s stun, tier 3=2s, stun (parry window 0,2s, cd 1s)
+* Hold A = sprint mode (tier 2)
+* Hold B =  x0,5 base speed, walk mode (tier 0.5) reduce 50% damage.
+* Tap A + Tap B = (reserved for elite/boss skill copy later)
+* Tap A + Hold B = dodge (iframe, completely untouchable for the same window and cd as parry, cannot dodge tier 4)
+* Hold A + Tap B = reduce intertia immediately for sharp turn (1s cooldown) does not affect speed
+* Hold A + Hold B = charge infinitely, speed drop to 0 during charge, (tier 3-4, tier 3-2s, tier 4=3s,tier 4 is unparryable but clashable) cannot be staggered if charging.
 
-| Input           | Function                           | Tier Interaction | Window / Duration | CD                      | Notes                                                    |
-| --------------- | ---------------------------------- | ---------------- | ----------------- | ----------------------- | -------------------------------------------------------- |
-| Base            | —                                  | Every tier       | —                 | —                       | Tier 1 speed(base 1.0 move speed), no clash power        |
-| Tap A           | Flick dash                         | (1–4 reach)      | 0.1s              | 1.0s (down per +1 tier) | No speed reset                                           |
-| Tap B           | Parry                              | ≤ Tier 4         | 0.2s              | 1.0s (0.5s if < tier 1) | Stun 1s +0.5s/tier                                       |
-| Hold A          | Accelerate                         | Tier 1→4         | Ramp slowly       | —                       | Turn rate ↓ per tier                                     |
-| Hold B          | Decelerate                         | +1 momentum/2s   | Reduce rapidly    | —                       | Parry CD ↓                                               |
-| Double Tap A    | Item use                           | —                | —                 | Item                    | No other button are being pressed                        |
-| Double Tap B    | Skill use                          | —                | —                 | Skill                   | No other button are being pressed                        |
-| Tap A + Tap B   | Dodge                              | Tier 1–4         | 0.2s              | 5s                      | Loses to higher tier                                     |
-| Tap A + Hold B  | Momentum dash + back shocktrail    | Tier 1–4         | Dash 0.2s         | 2s                      | **Reset speed → Tier 1**                                 |
-| Hold A + Tap B  | Hard stop + front shocktrail       | Tier 1–4         | Burst             | 2s                      | **Reset speed → Tier 1**                                 |
-| Hold A + Hold B | Nuke charge dash + big shock trail | Tier 5 at 5 sec  | Charge infinite   | —                       | Unparry-able, **reset → Tier 0**, speed 0 while charging |
+Speed tier will now changes dynamically based on current speed (From tier 0 to 5) 0 stop, 1 = base speed, can't clash, only recieves damage, same speed tier clash, higher speed tier damages lower ones. Make the physics more "realistic" now.
+Tier 0= completely still, tier 0.5 = slowed down, Tier 1 (base)=1.0 speed, tier 2= 2.0, tier 3=3.0, tier 4=4.0, tier 5=5.0.
+Clash requires both ≥ Tier 2
+Tier 1 never clashes, only takes damage
+Damage = relative speed delta, not flat tier
+| Input           | Function                                      | Tier Interaction      | Window / Duration | CD                      | Notes                                                    |
+| --------------- | --------------------------------------------- | --------------------- | ----------------- | ----------------------- | -------------------------------------------------------- |
+| Base            | —                                             | Every tier            | —                 | —                       | Tier 1 speed(base 1.0 move speed), recive damages        |
+| Tap A           | Flick dash                                    | (1–4 reach)           | 0.1s              | 1.0s (down per +1 tier) | No speed reset                                           |
+| Tap B           | Parry                                         | ≤ Tier 4              | 0.2s              | 1.0s (0.5s if < tier 1) | Stun 1s +0.5s/tier                                       |
+| Hold A          | Accelerate                                    | Tier 1→4              | Ramp slowly       | —                       | Turn rate ↓ per tier                                     |
+| Hold B          | Decelerate                                    | +1 momentum/2s(cap 4) | Reduce rapidly    | —                       | Parry CD ↓                                               |
+| Double Tap A    | Item use                                      | —                     | —                 | Item                    | No other button are being pressed                        |
+| Double Tap B    | Skill use                                     | —                     | —                 | Skill                   | No other button are being pressed                        |
+| Tap A + Tap B   | Dodge                                         | Tier 1–4              | 0.2s              | 5s                      | Loses to higher tier                                     |
+| Tap A + Hold B  | Use stored momentum to dash + back shocktrail | Tier 1–4              | Dash 0.2s         | 2s                      | **Reset speed → Tier 1**                                 |
+| Hold A + Tap B  | Hard stop + front shocktrail                  | Tier 1–4              | Burst             | 2s                      | **Reset speed → Tier 1**                                 |
+| Hold A + Hold B | Nuke charge dash + big shock trail            | Tier 5 at 5 sec       | Charge infinite   | —                       | Unparry-able, **reset → Tier 0**, speed 0 while charging |
 
 TO-DO:
-Add zoom level to menu, tweak every thing to be diegetic.
+Add zoom level to menu, tweak every thing to be diegetic, tweak visual FX
 Overhaul gameplay.(heat, scores)
-
+Enemies have "trait" and "memory"
 Check core code structure again
 Add contents (base)
 Add sounds
 Continue...
+
+Finally, condense/minify up the codebase WITHOUT REMOVING ANYTHING. you can clean up the comments, put functions on the same line, etc..but do not remove any code. or at least you can check unused/legacy codes, but i doubt there's any, if you remove anything, report back to me.
