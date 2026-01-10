@@ -65,6 +65,7 @@ Damage = relative speed delta, not flat tier
 TO-DO:
 Add zoom level to menu, tweak every thing to be diegetic, tweak visual FX
 Overhaul gameplay.(heat, scores)
+Touch control redo
 Enemies have "trait" and "memory"
 Check core code structure again
 Add contents (base)
