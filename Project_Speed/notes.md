@@ -65,11 +65,17 @@ Damage = relative speed delta, not flat tier
 TO-DO:
 Add zoom level to menu, tweak every thing to be diegetic, tweak visual FX
 Overhaul gameplay.(heat, scores)
-Touch control redo
-Enemies have "trait" and "memory"
+Better AI and enemy variants
 Check core code structure again
 Add contents (base)
 Add sounds
 Continue...
 
 Finally, condense/minify up the codebase WITHOUT REMOVING ANYTHING. you can clean up the comments, put functions on the same line, etc..but do not remove any code. or at least you can check unused/legacy codes, but i doubt there's any, if you remove anything, report back to me.
+ need you to implement these normal enemies, auto put in corresponding traits and tags  and expand the memory system for them.
+
+Warrior: He is our typical "player" he knows when to commit and when to back out, but generally he will fight til his last breath to protect his teammates. He often hold A to sprint, release when charged enough to dash, and repeat. he can dodges, he can parry, although not often, he's a competent AI.
+Tanker:He braces a lot, close in with the player, also parry from time to time although he's not too precise with it. When he recognizes his team have an archer, he will try to protect the archer by standing between the player and the archer.
+Archer:stays far away, and will do charges a lot, sometimes charges to tier 4 too. after done charge and dash, he will return back to a safe position.
+Thief:This mf is a troll, he circles around the player, feint in and out, to "steal" player's precious time and focus, he won't directly commit to a kill unless he's low HP and is the only guy left on the field. He also will focus on getting the loots more than others.
+Berserker:pure respect, he won't back down no matter what, he mainly charges even from dangrous close distances, when he's low (<50% hp) he changes to constanty try to sprint nonstop at the player, never back out til he dies.

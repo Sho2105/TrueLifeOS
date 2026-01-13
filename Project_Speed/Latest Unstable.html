@@ -53,61 +53,34 @@
 <div id="touch-layer" class="touch-container"></div>
 <canvas id="gameCanvas"></canvas>
 <script>
-/**
- * DEVELOPER_GUIDE
- * * STRUCTURE: ECS-Lite (Entity-Component-System).
- * - Entities: ID containers holding Components.
- * - Components: Pure data (e.g., Transform, Velocity, CombatState).
- * - Systems: Logic processors (e.g., PhysicsSystem, CombatSystem) that iterate over Entities.
- * - GameEngine: Manages the Loop, EventBus, and System instantiation.
- * * ARCHITECTURE:
- * - Data-Driven: Entity definitions are in `EntityDatabase`. Loot in `LootDatabase`.
- * - Event-Based: Decoupled logic using `GameEngine.eventBus`. Systems emit events; RulesSystem/RenderSystem listen.
- * - Fixed Timestep: Physics/Logic runs at 60Hz via `accumulator` to ensure consistency across refresh rates.
- * * GAME FLOW:
- * 1. `GameEngine.init()` sets up systems.
- * 2. `GameEngine.director` manages states (Attract Mode vs Gameplay).
- * 3. Loop: Input -> AI -> Physics -> Combat -> Rules -> Render.
- * * HOW TO ADD CONTENT:
- * - New Enemy: Add entry to `EntityDatabase` (define stats, color, AI behavior).
- * - New Behavior: Add logic array to `AiBehaviorDatabase` and action function to `ActionDatabase`.
- * - New Loot: Add entry to `LootDatabase` (modifier type: STAT, STATUS, or SPECIAL).
- */
+const VisualPalette = { CYAN:"#00e5ff", LIME:"#76ff03", PINK:"#f50057", WHITE:"#ffffff", DARK:"#050505", GREY:"#444", RED:"#ff2a2a", ORANGE:"#ff9100", INDIGO:"#651fff", SLATE:"#546e7a", PURPLE:"#d500f9", GOLD:"#ffd700" };
 
-// ================= 1. CONFIGURATION =================
-const VisualPalette = { CYAN:"#00e5ff", LIME:"#76ff03", PINK:"#f50057", WHITE:"#ffffff", DARK:"#050505", GREY:"#444", RED:"#d50000", ORANGE:"#ff3d00", INDIGO:"#3d5afe", SLATE:"#607d8b", PURPLE:"#d500f9" };
 const GameConfiguration = {
-    PHYSICS: { FRICTION: 0.94, BASE_ACCELERATION: 1.2, FORCE_DASH: 60, FORCE_HIGH: 90, FORCE_MAXIMUM: 130, RECOIL_MULTIPLIER: 1.0 },
-    SPEED_SCALARS: { STOP: 0, BRACE: 0.5, WALK: 0.4, BASE: 1.0, SPRINT: 2.2 },
-    IMPACT_LEVELS: { NONE:0, LOW:0.5, MEDIUM:1, HIGH:2, EXTREME:3, MAXIMUM:4 },
+    PHYSICS: { FRICTION: 0.92, BASE_ACCELERATION: 1.5, FORCE_DASH: 30, FORCE_HIGH: 60, FORCE_MAXIMUM: 100, RECOIL_MULTIPLIER: 1.2 },
+    SPEED_SCALARS: { STOP: 0, BRACE: 0.5, BASE: 1.0, SPRINT: 2.2 },
+    TIERS: { IDLE:0, MOVE: 1, SPRINT:2, DASH:2, CHARGE_3:3, CHARGE_4:4 },
     DAMAGE_VALUES: { LEVEL_1:10, LEVEL_2:25, LEVEL_3:50, LEVEL_4:999, WALL_COLLISION: 25, AREA_BLAST: 50 },
     ENTITY_COLORS: { P1:VisualPalette.CYAN, P2:VisualPalette.LIME, MAX_CHARGE:VisualPalette.WHITE, TEXT:VisualPalette.WHITE },
-    TIMINGS: { TAP_WINDOW:12, CHARGE_THRESHOLD: 180, CHARGE_LEVEL_3:60, CHARGE_LEVEL_4:120, CD_DASH:180, CD_PARRY:30, INVULNERABILITY_HIT:20, AI_MIN_THINK:15, AI_MAX_THINK:45 },
-    ACTION_STATE: { IDLE:0, MOVE:1, WALK:2, SPRINT:3, DASH:4, PARRY:5, DODGE:6, CHARGING:7, LEVEL_3_READY:8, LEVEL_4_READY:9, STUNNED:10, BRACING: 11 },
+    TIMINGS: { TAP_WINDOW:12, CHARGE_THRESHOLD: 180, CHARGE_LEVEL_3:60, CHARGE_LEVEL_4:120, CD_DASH:180, CD_PARRY:30, PARRY_DURATION: 25, INVULNERABILITY_HIT:20, AI_MIN_THINK:10, AI_MAX_THINK:30 },
+    ACTION_STATE: { IDLE:0, MOVE:1, SPRINT:3, DASH:4, PARRY:5, DODGE:6, CHARGING:7, LEVEL_3_READY:8, LEVEL_4_READY:9, STUNNED:10, BRACING: 11 },
     HEAT_SYSTEM: { DECAY_RATE:0.04, SCORE_KILL:10, SCORE_PARRY:15, SCORE_CLASH:5, PENALTY_HIT:20 },
-    RENDERING: { MAX_PARTICLES:250, MAX_SHOCKWAVES:10 }
+    RENDERING: { MAX_PARTICLES:250, MAX_SHOCKWAVES:10 },
+    AIM_ASSIST: { ANGLE_THRESHOLD: 0.90, DIST_THRESHOLD: 500, STRENGTH: 0.35 } 
 };
 
 const AudioDatabase = {
-    UI_HOVER: { data: "data:audio/wav;base64,PLACEHOLDER", volume: 0.2, loop: false, variance: false },
-    UI_CLICK: { data: "data:audio/wav;base64,PLACEHOLDER", volume: 0.5, loop: false, variance: false },
-    COMBAT_DASH: { data: "data:audio/wav;base64,PLACEHOLDER", volume: 0.4, loop: false, variance: true },
-    COMBAT_CHARGE: { data: "data:audio/wav;base64,PLACEHOLDER", volume: 0.3, loop: true, variance: false },
-    COMBAT_PARRY: { data: "data:audio/wav;base64,PLACEHOLDER", volume: 0.8, loop: false, variance: false },
-    HIT_LIGHT: { data: "data:audio/wav;base64,PLACEHOLDER", volume: 0.4, loop: false, variance: true },
-    HIT_HEAVY: { data: "data:audio/wav;base64,PLACEHOLDER", volume: 0.6, loop: false, variance: true },
-    ENTITY_DEATH: { data: "data:audio/wav;base64,PLACEHOLDER", volume: 0.7, loop: false, variance: true },
-    CLASH: { data: "data:audio/wav;base64,PLACEHOLDER", volume: 0.8, loop: false, variance: true },
-    PICKUP_COLLECT: { data: "data:audio/wav;base64,PLACEHOLDER", volume: 0.5, loop: false, variance: false },
-    HEAT_INCREASE: { data: "data:audio/wav;base64,PLACEHOLDER", volume: 0.3, loop: false, variance: false }
+    UI_HOVER: { volume: 0.2 }, UI_CLICK: { volume: 0.5 }, COMBAT_DASH: { volume: 0.4 }, COMBAT_CHARGE: { volume: 0.3 }, 
+    COMBAT_PARRY: { volume: 0.8 }, HIT_LIGHT: { volume: 0.4 }, HIT_HEAVY: { volume: 0.6 }, 
+    ENTITY_DEATH: { volume: 0.7 }, CLASH: { volume: 0.8 }, PICKUP_COLLECT: { volume: 0.5 }, HEAT_INCREASE: { volume: 0.3 }
 };
 
 const EntityDatabase = {
     PLAYER_ONE: { tags:['player','p1'], stats:{hp:100, maxHp:100, radius:16}, render:{color:GameConfiguration.ENTITY_COLORS.P1}, input:{deviceId:'p1'} },
     PLAYER_TWO: { tags:['player','p2'], stats:{hp:100, maxHp:100, radius:16}, render:{color:GameConfiguration.ENTITY_COLORS.P2}, input:{deviceId:'p2'} },
-    ENEMY_STANDARD: { stats:{hp:100, radius:16}, behavior:"AGGRESSIVE", traits:["BRAVE"], variants:[VisualPalette.RED] },
-    ENEMY_ELITE: { stats:{hp:800, radius:20}, behavior:"DEFENSIVE", traits:["CAUTIOUS"], variants:[VisualPalette.SLATE] },
-    ENEMY_BOSS: { stats:{hp:5000, radius:40}, behavior:"BOSS", traits:["BOSS"], variants:[VisualPalette.PURPLE] }
+    NORMAL_RUSHER: { stats:{hp:100, radius:16}, behavior:"AGGRESSIVE", traits:["SPRINTER"], variants:[VisualPalette.RED] },
+    NORMAL_DEFENDER: { stats:{hp:100, radius:16}, behavior:"DEFENSIVE", traits:["BRACER"], variants:[VisualPalette.SLATE] },
+    NORMAL_VULTURE: { stats:{hp:100, radius:16}, behavior:"OPPORTUNIST", traits:["TRICKY"], variants:[VisualPalette.INDIGO] },
+    ENEMY_BOSS: { stats:{hp:3000, radius:30}, behavior:"BOSS", traits:["BOSS"], variants:[VisualPalette.PURPLE] }
 };
 
 const LootDatabase = {
@@ -117,36 +90,41 @@ const LootDatabase = {
 };
 
 const ActionDatabase = {
-    'ACQUIRE_LOOT': (entity, target) => { 
-        entity.components.input.primaryPressed=false; entity.components.input.secondaryPressed=false; 
-        const dir = Vector2D.subtract(target.components.transform.position, entity.components.transform.position).normalize(); 
-        entity.components.velocity.add(dir.multiply(GameConfiguration.PHYSICS.BASE_ACCELERATION * GameConfiguration.SPEED_SCALARS.BASE)); 
-        entity.components.input.lastDirection = dir.clone();
+    _vec: (e, t) => Vector2D.subtract(t.components.transform.position, e.components.transform.position),
+    _dist: (e, t) => Vector2D.distance(e.components.transform.position, t.components.transform.position),
+    _smooth: (e, targetDir) => {
+        const current = e.components.input.lastDirection;
+        let finalDir = targetDir;
+        const dot = current.dot(targetDir);
+        const dynamicSnap = dot > 0.95 ? 0.5 : 1.5;
+        e.components.input.lastDirection = new Vector2D(
+            current.x + (finalDir.x - current.x) * dynamicSnap,
+            current.y + (finalDir.y - current.y) * dynamicSnap
+        ).normalize();
     },
-    'APPROACH_TARGET': (entity, target) => { 
-        entity.components.input.primaryPressed=false; entity.components.input.secondaryPressed=false; 
-        const dir = Vector2D.subtract(target.components.transform.position, entity.components.transform.position).normalize(); 
-        entity.components.velocity.add(dir.multiply(GameConfiguration.PHYSICS.BASE_ACCELERATION * GameConfiguration.SPEED_SCALARS.BASE)); 
-        entity.components.input.lastDirection = dir.clone();
+    'PLAYER_HOLD_SPRINT': (entity, target) => {
+        entity.components.input.primaryPressed = true; entity.components.input.secondaryPressed = false;
+        ActionDatabase._smooth(entity, ActionDatabase._vec(entity, target).normalize());
     },
-    'ATTACK_DASH': (entity, target) => { 
-        entity.components.input.primaryPressed=true; entity.components.input.secondaryPressed=false; entity.components.input.forceTapPrimary=true; 
-        entity.components.input.lastDirection=Vector2D.subtract(target.components.transform.position, entity.components.transform.position).normalize(); 
+    'PLAYER_HOLD_BRACE': (entity, target) => {
+        entity.components.input.primaryPressed = false; entity.components.input.secondaryPressed = true;
+        ActionDatabase._smooth(entity, ActionDatabase._vec(entity, target).normalize());
     },
-    'PERFORM_PARRY': (entity) => { entity.components.input.secondaryPressed=true; entity.components.input.primaryPressed=false; entity.components.input.forceTapSecondary=true; },
-    'CHARGE_ATTACK': (entity, target) => { 
-        entity.components.input.primaryPressed=true; entity.components.input.secondaryPressed=true; 
-        entity.components.input.lastDirection=Vector2D.subtract(target.components.transform.position, entity.components.transform.position).normalize(); 
-    }
+    'PLAYER_RELEASE_ATTACK': (entity, target) => { entity.components.input.primaryPressed = false; entity.components.input.secondaryPressed = false; },
+    'PLAYER_PARRY_BAIT': (entity, target) => {
+        ActionDatabase._smooth(entity, ActionDatabase._vec(entity, target).normalize().multiply(-1));
+        if(Math.random() < 0.1) entity.components.input.forceTapSecondary = true;
+    },
+    'BOSS_LOGIC': (entity, target) => { entity.components.input.primaryPressed = true; ActionDatabase._smooth(entity, ActionDatabase._vec(entity, target).normalize()); }
 };
 
 const AiBehaviorDatabase = {
-    AGGRESSIVE: [ { type:'ACQUIRE_LOOT', weight:3.0, range:[0,400] }, { type:'PERFORM_PARRY', weight:0.5, cooldown:'parry', range:[0,80] }, { type:'ATTACK_DASH', weight:2.0, cooldown:'dash', range:[80,300] }, { type:'APPROACH_TARGET', weight:1.0, range:[300,2000] } ],
-    DEFENSIVE: [ { type:'ACQUIRE_LOOT', weight:2.0, range:[0,300] }, { type:'PERFORM_PARRY', weight:1.5, cooldown:'parry', range:[0,120] }, { type:'APPROACH_TARGET', weight:0.5, range:[150,400] } ],
-    BOSS: [ { type:'ACQUIRE_LOOT', weight:5.0, range:[0,600] }, { type:'CHARGE_ATTACK', weight:0.5, range:[0,800] }, { type:'PERFORM_PARRY', weight:0.8, cooldown:'parry', range:[0,120] }, { type:'ATTACK_DASH', weight:1.0, cooldown:'dash', range:[120,500] }, { type:'APPROACH_TARGET', weight:0.3, range:[100,2000] } ]
+    AGGRESSIVE: [ { type:'PLAYER_HOLD_SPRINT', weight:5.0, range:[0,3000], duration:60 }, { type:'PLAYER_RELEASE_ATTACK', weight:3.0, cooldown:'dash', range:[0,300], duration:5 } ],
+    DEFENSIVE: [ { type:'PLAYER_HOLD_BRACE', weight:5.0, range:[0,3000], duration:120 }, { type:'PLAYER_RELEASE_ATTACK', weight:2.0, cooldown:'dash', range:[0,150], duration:5 }, { type:'PLAYER_HOLD_SPRINT', weight:1.0, range:[300,1000], duration:40 } ],
+    OPPORTUNIST: [ { type:'PLAYER_HOLD_SPRINT', weight:4.0, range:[200,3000], duration:40 }, { type:'PLAYER_PARRY_BAIT', weight:2.0, cooldown:'parry', range:[0,150], duration:20 }, { type:'PLAYER_RELEASE_ATTACK', weight:4.0, cooldown:'dash', range:[0,250], duration:5 } ],
+    BOSS: [ { type:'BOSS_LOGIC', weight:1.0, range:[0,3000], duration:100 } ]
 };
 
-// ================= 2. CORE UTILITIES =================
 class MemoryPool {
     constructor(factoryFn, size=100) { this.store=[]; this.factory=factoryFn; for(let i=0;i<size;i++)this.store.push(this.factory()); }
     acquire() { return this.store.length > 0 ? this.store.pop() : this.factory(); }
@@ -160,6 +138,7 @@ class Vector2D {
     multiply(scalar) { this.x*=scalar; this.y*=scalar; return this; }
     magnitude() { return Math.sqrt(this.x**2 + this.y**2); }
     normalize() { const m=this.magnitude(); if(m!==0) this.multiply(1/m); return this; }
+    dot(v) { return this.x * v.x + this.y * v.y; }
     clone() { return new Vector2D(this.x, this.y); }
     static distance(v1, v2) { return Math.sqrt((v1.x-v2.x)**2 + (v1.y-v2.y)**2); }
     static subtract(v1, v2) { return new Vector2D(v1.x-v2.x, v1.y-v2.y); }
@@ -173,17 +152,18 @@ const ColorUtils = {
         if(delta==0)h=0;else if(cmax==r)h=((g-b)/delta)%6;else if(cmax==g)h=(b-r)/delta+2;else h=(r-g)/delta+4;
         h=Math.round(h*60);if(h<0)h+=360;l=(cmax+cmin)/2;s=delta==0?0:delta/(1-Math.abs(2*l-1)); return {h:h,s:s*100,l:l*100};
     },
-    resolveDynamicColor: (baseHex, state) => {
+    resolveDynamicColor: (baseHex, combat) => {
         const hsl = ColorUtils.hexToHSL(baseHex);
+        const state = combat.state;
         switch(state) {
             case GameConfiguration.ACTION_STATE.STUNNED: return `hsl(${hsl.h}, 10%, ${30 + (Math.random()*10)}%)`; 
-            case GameConfiguration.ACTION_STATE.CHARGING: return `hsl(${hsl.h}, ${hsl.s}%, 40%)`; 
-            case GameConfiguration.ACTION_STATE.BRACING: return `hsl(${hsl.h}, 20%, 30%)`;
-            case GameConfiguration.ACTION_STATE.LEVEL_3_READY: return `hsl(${hsl.h}, 100%, 65%)`; 
-            case GameConfiguration.ACTION_STATE.LEVEL_4_READY: return `hsl(${(Date.now()/5)%360}, 100%, 60%)`; 
+            case GameConfiguration.ACTION_STATE.CHARGING: return `hsl(${hsl.h}, ${hsl.s}%, ${50 + Math.sin(Date.now()/50)*25}%)`; 
+            case GameConfiguration.ACTION_STATE.LEVEL_3_READY: return `hsl(${hsl.h}, 0%, ${Math.floor(80 + Math.random()*20)}%)`; 
+            case GameConfiguration.ACTION_STATE.LEVEL_4_READY: return `hsl(${(Date.now()/2)%360}, 100%, 80%)`; 
+            case GameConfiguration.ACTION_STATE.BRACING: return `hsl(${hsl.h}, ${Math.min(100, hsl.s+20)}%, 25%)`;
+            case GameConfiguration.ACTION_STATE.SPRINT: return `hsl(${hsl.h}, ${Math.max(0, hsl.s-10)}%, 75%)`;
             case GameConfiguration.ACTION_STATE.PARRY: return `#ffffff`; 
-            case GameConfiguration.ACTION_STATE.DASH: return `hsl(${hsl.h}, ${hsl.s}%, 80%)`; 
-            case GameConfiguration.ACTION_STATE.WALK: return `hsl(${hsl.h}, ${hsl.s*0.8}%, 25%)`; 
+            case GameConfiguration.ACTION_STATE.DASH: return `hsl(${hsl.h}, ${hsl.s}%, 85%)`; 
             default: return baseHex;
         }
     }
@@ -195,7 +175,6 @@ class GameEventBus {
     publish(event, payload) { if(this.subscribers[event]) this.subscribers[event].forEach(cb=>cb(payload)); } 
 }
 
-// ================= 3. FACTORIES & ENTITIES =================
 class GameObject { 
     constructor(id) { this.id=id; this.components={}; this.tags=new Set(); this.active=true; } 
     addComponent(name, data) { this.components[name]=data; return this; } 
@@ -215,13 +194,13 @@ class GameObjectManager {
 const GameObjectFactory = {
     instantiateFromBlueprint: (type, x, y) => {
         const obj = GameEngine.objectManager.createObject(), bp = EntityDatabase[type];
-        if(!bp && type.includes('ENEMY')) return GameObjectFactory.instantiateEnemy(type, x, y); 
+        if(!bp && type.includes('NORMAL_')) return GameObjectFactory.instantiateEnemy(type, x, y); 
         obj.components.transform={position:new Vector2D(x,y), rotation:0}; obj.components.velocity=new Vector2D(0,0);
         if(bp.tags) bp.tags.forEach(t=>obj.tags.add(t));
         if(bp.stats) obj.addComponent('stats', {...bp.stats, extraLives:0});
         if(bp.render) obj.addComponent('render', {...bp.render, baseColor:bp.render.color, trail:[]});
         if(bp.input) obj.addComponent('input', {...bp.input, primaryPressed:false, secondaryPressed:false, framesHeldPrimary:0, framesHeldSecondary:0, lastDirection:new Vector2D(1,0)});
-        obj.addComponent('combat', {state:GameConfiguration.ACTION_STATE.IDLE, stateTimer:0, sprintChargeAccumulator:0, braceChargeAccumulator:0, cooldowns:{parry:0, dash:0, turn:0}, invulnerabilityTimer:0, combatIntensity:0});
+        obj.addComponent('combat', {state:GameConfiguration.ACTION_STATE.IDLE, stateTimer:0, sprintChargeAccumulator:0, braceChargeAccumulator:0, cooldowns:{parry:0, dash:0, turn:0}, invulnerabilityTimer:0, combatIntensity:0, levelOverride:0});
         return obj;
     },
     instantiateEnemy: (key, x, y) => {
@@ -230,7 +209,7 @@ const GameObjectFactory = {
         obj.addComponent('stats', {...cfg.stats, maxHp:cfg.stats.hp, extraLives:0});
         obj.addComponent('render', {baseColor:cfg.variants[0], trail:[]});
         obj.addComponent('input', {deviceId:'ai', primaryPressed:false, secondaryPressed:false, framesHeldPrimary:0, framesHeldSecondary:0, lastDirection:new Vector2D(1,0), forceTapPrimary:false, forceTapSecondary:false});
-        obj.addComponent('combat', {state:GameConfiguration.ACTION_STATE.IDLE, stateTimer:0, sprintChargeAccumulator:0, braceChargeAccumulator:0, cooldowns:{parry:0, dash:0, turn:0}, invulnerabilityTimer:0, combatIntensity:0});
+        obj.addComponent('combat', {state:GameConfiguration.ACTION_STATE.IDLE, stateTimer:0, sprintChargeAccumulator:0, braceChargeAccumulator:0, cooldowns:{parry:0, dash:0, turn:0}, invulnerabilityTimer:0, combatIntensity:0, levelOverride:0});
         obj.addComponent('ai', {behavior:AiBehaviorDatabase[cfg.behavior], traits:cfg.traits||[], memory:{damageTaken:0}, thinkTimer:0, activePlan:null});
         return obj;
     },
@@ -249,9 +228,8 @@ const GameObjectFactory = {
     instantiateShockwave: (x, y, color) => { GameEngine.activeShockwaves.push({x, y, r: 5, color, alpha: 1, maxR: 100}); }
 };
 
-// ================= 4. SYSTEMS =================
 class AudioSystem {
-    constructor() { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); this.active = true; this.bindEvents(); }
+    constructor() { this.active = true; this.bindEvents(); }
     bindEvents() {
         GameEngine.eventBus.subscribe('EVENT_HIT', () => this.playSound('HIT_LIGHT'));
         GameEngine.eventBus.subscribe('EVENT_CLASH', () => this.playSound('CLASH'));
@@ -262,15 +240,8 @@ class AudioSystem {
         GameEngine.eventBus.subscribe('EVENT_UI_HOVER', () => this.playSound('UI_HOVER'));
         GameEngine.eventBus.subscribe('EVENT_UI_CLICK', () => this.playSound('UI_CLICK'));
         GameEngine.eventBus.subscribe('EVENT_LOOT', () => this.playSound('PICKUP_COLLECT'));
-        GameEngine.eventBus.subscribe('EVENT_INTENSITY_UP', () => this.playSound('HIT_HEAVY'));
     }
-    playSound(key) {
-        if(!this.active || !AudioDatabase[key]) return;
-        const cfg = AudioDatabase[key]; if (!cfg.data || cfg.data.length < 50) return; 
-        const aud = new Audio(cfg.data); aud.volume = cfg.volume; aud.loop = cfg.loop;
-        if(cfg.variance) { if(aud.mozPreservesPitch !== undefined) aud.mozPreservesPitch = false; aud.playbackRate = 0.9 + Math.random() * 0.2; }
-        aud.play().catch(e => { });
-    }
+    playSound(key) { }
 }
 
 class InputSystem {
@@ -293,6 +264,33 @@ class InputSystem {
         window.addEventListener('mouseup', e=>{if(this.scheme==='MOUSE'){if(e.button===0)this.controllerState.p1.primary=false;if(e.button===2)this.controllerState.p1.secondary=false;}});
         window.addEventListener('contextmenu', e=>e.preventDefault());
     }
+    
+    applyAimAssist(sourceObj, inputVector) {
+        if(inputVector.magnitude() < 0.1) return inputVector;
+        let targets = [];
+        if(sourceObj.hasTag('player')) targets = GameEngine.objectManager.queryTag('enemy');
+        else if(sourceObj.hasTag('enemy')) targets = GameEngine.objectManager.queryTag('player');
+        if(targets.length === 0) return inputVector;
+
+        let bestTargetDir = null; let maxDot = -1;
+        targets.forEach(t => {
+            const dist = Vector2D.distance(sourceObj.components.transform.position, t.components.transform.position);
+            if(dist > GameConfiguration.AIM_ASSIST.DIST_THRESHOLD) return;
+            const dirToTarget = Vector2D.subtract(t.components.transform.position, sourceObj.components.transform.position).normalize();
+            const dot = inputVector.dot(dirToTarget);
+            if(dot > GameConfiguration.AIM_ASSIST.ANGLE_THRESHOLD) {
+                const score = dot + (1 - dist/1000); 
+                if(score > maxDot) { maxDot = score; bestTargetDir = dirToTarget; }
+            }
+        });
+
+        if(bestTargetDir) {
+            const strength = GameConfiguration.AIM_ASSIST.STRENGTH;
+            return new Vector2D(inputVector.x * (1 - strength) + bestTargetDir.x * strength, inputVector.y * (1 - strength) + bestTargetDir.y * strength).normalize();
+        }
+        return inputVector;
+    }
+
     process() {
         this.pollGamepads();
         if(GameEngine.flags.inMenu && this.menuDebounce<=0) {
@@ -321,6 +319,7 @@ class InputSystem {
                 if(this.scheme==='MOUSE' && input.deviceId==='p1'){ 
                     if(Vector2D.distance(obj.components.transform.position, this.mouseCoords) > 10) rawAxis = Vector2D.subtract(this.mouseCoords, obj.components.transform.position).normalize();
                 } else { if(this.controllerState[input.deviceId].axis.magnitude() > 0.1) rawAxis = this.controllerState[input.deviceId].axis.clone(); }
+                if(rawAxis.magnitude() > 0.1) rawAxis = this.applyAimAssist(obj, rawAxis.normalize());
             }
 
             if (rawAxis.magnitude() > 0.1) input.lastDirection = rawAxis.clone().normalize(); else if (input.lastDirection.magnitude() === 0) input.lastDirection = new Vector2D(1, 0);
@@ -330,14 +329,12 @@ class InputSystem {
             const isTapP = !isHeldP && lastFramesP > 0 && lastFramesP <= GameConfiguration.TIMINGS.TAP_WINDOW;
             const isTapS = !isHeldS && lastFramesS > 0 && lastFramesS <= GameConfiguration.TIMINGS.TAP_WINDOW;
 
-            if([GameConfiguration.ACTION_STATE.DASH, GameConfiguration.ACTION_STATE.STUNNED, GameConfiguration.ACTION_STATE.DODGE].includes(combat.state)) return;
+            if([GameConfiguration.ACTION_STATE.DASH, GameConfiguration.ACTION_STATE.STUNNED, GameConfiguration.ACTION_STATE.DODGE, GameConfiguration.ACTION_STATE.PARRY].includes(combat.state)) return;
             const getAim = () => rawAxis.magnitude() > 0.1 ? rawAxis.normalize() : input.lastDirection;
 
-            // --- CHARGE ACTION (HOLD P + S) ---
             if (isHeldP && isHeldS) {
                 const chargeDuration = Math.min(input.framesHeldPrimary, input.framesHeldSecondary);
                 if(chargeDuration===1) GameEngine.eventBus.publish('EVENT_CHARGE_INIT');
-                
                 if(chargeDuration > GameConfiguration.TIMINGS.CHARGE_LEVEL_4) combat.state = GameConfiguration.ACTION_STATE.LEVEL_4_READY;
                 else if(chargeDuration > GameConfiguration.TIMINGS.CHARGE_LEVEL_3) combat.state = GameConfiguration.ACTION_STATE.LEVEL_3_READY;
                 else combat.state = GameConfiguration.ACTION_STATE.CHARGING;
@@ -347,28 +344,25 @@ class InputSystem {
                 return; 
             }
             
-            // --- RELEASE CHARGE ---
             if ((combat.state === GameConfiguration.ACTION_STATE.CHARGING || combat.state === GameConfiguration.ACTION_STATE.LEVEL_3_READY || combat.state === GameConfiguration.ACTION_STATE.LEVEL_4_READY) && (!isHeldP || !isHeldS)) {
                 let level = 0; if(combat.state === GameConfiguration.ACTION_STATE.LEVEL_4_READY) level = 4; else if(combat.state === GameConfiguration.ACTION_STATE.LEVEL_3_READY) level = 3;
                 if(level >= 3) {
-                     combat.state = GameConfiguration.ACTION_STATE.DASH; combat.stateTimer = level===4 ? 30 : 20; combat.invulnerabilityTimer = combat.stateTimer; combat.levelOverride = level;
-                     const force = level === 4 ? GameConfiguration.PHYSICS.FORCE_MAXIMUM : GameConfiguration.PHYSICS.FORCE_HIGH;
-                     obj.components.velocity = getAim().multiply(force);
-                     GameEngine.eventBus.publish('EVENT_DASH'); GameEngine.eventBus.publish('EVENT_SHAKE', 15);
+                      combat.state = GameConfiguration.ACTION_STATE.DASH; combat.stateTimer = level===4 ? 30 : 20; combat.invulnerabilityTimer = combat.stateTimer; combat.levelOverride = level;
+                      const force = level === 4 ? GameConfiguration.PHYSICS.FORCE_MAXIMUM : GameConfiguration.PHYSICS.FORCE_HIGH;
+                      obj.components.velocity = getAim().multiply(force);
+                      GameEngine.eventBus.publish('EVENT_DASH'); GameEngine.eventBus.publish('EVENT_SHAKE', 15);
                 } else combat.state = GameConfiguration.ACTION_STATE.IDLE;
                 return;
             }
 
-            // --- HOLD P: SPRINT ---
             if (isHeldP && !isHeldS) {
                 if (input.framesHeldPrimary > GameConfiguration.TIMINGS.TAP_WINDOW) {
                     combat.state = GameConfiguration.ACTION_STATE.SPRINT; combat.sprintChargeAccumulator++;
                     obj.components.velocity.add(rawAxis.multiply(GameConfiguration.PHYSICS.BASE_ACCELERATION * GameConfiguration.SPEED_SCALARS.SPRINT));
-                    if (combat.sprintChargeAccumulator >= GameConfiguration.TIMINGS.CHARGE_THRESHOLD && combat.sprintChargeAccumulator % 10 === 0) GameEngine.eventBus.publish('EVENT_PARTICLE_SPAWN', {x:obj.components.transform.position.x, y:obj.components.transform.position.y, col:VisualPalette.CYAN, speed:2, type:'EXPLODE'});
+                    if (combat.sprintChargeAccumulator >= GameConfiguration.TIMINGS.CHARGE_THRESHOLD && combat.sprintChargeAccumulator % 10 === 0) GameEngine.eventBus.publish('EVENT_PARTICLE_SPAWN', {x:obj.components.transform.position.x, y:obj.components.transform.position.y, col:obj.components.render.baseColor, speed:2, type:'EXPLODE'});
                     return;
                 }
             } else if (!isHeldP && lastFramesP > GameConfiguration.TIMINGS.TAP_WINDOW) {
-                // RELEASE SPRINT
                 if (combat.sprintChargeAccumulator >= GameConfiguration.TIMINGS.CHARGE_THRESHOLD) {
                     combat.state = GameConfiguration.ACTION_STATE.DASH; combat.stateTimer = 20; combat.invulnerabilityTimer = 15; combat.levelOverride = 3;
                     obj.components.velocity = getAim().multiply(GameConfiguration.PHYSICS.FORCE_HIGH);
@@ -377,35 +371,33 @@ class InputSystem {
                 combat.sprintChargeAccumulator = 0; return;
             }
 
-            // --- HOLD S: BRACE ---
             if (isHeldS && !isHeldP) {
                 if (input.framesHeldSecondary > GameConfiguration.TIMINGS.TAP_WINDOW) {
                     combat.state = GameConfiguration.ACTION_STATE.BRACING; combat.braceChargeAccumulator++;
                     obj.components.velocity.add(rawAxis.multiply(GameConfiguration.PHYSICS.BASE_ACCELERATION * GameConfiguration.SPEED_SCALARS.BRACE));
-                    if (combat.braceChargeAccumulator >= GameConfiguration.TIMINGS.CHARGE_THRESHOLD && combat.braceChargeAccumulator % 10 === 0) GameEngine.eventBus.publish('EVENT_PARTICLE_SPAWN', {x:obj.components.transform.position.x, y:obj.components.transform.position.y, col:VisualPalette.ORANGE, speed:1, type:'IMPLODE'});
+                    if (combat.braceChargeAccumulator >= GameConfiguration.TIMINGS.CHARGE_THRESHOLD && combat.braceChargeAccumulator % 10 === 0) GameEngine.eventBus.publish('EVENT_PARTICLE_SPAWN', {x:obj.components.transform.position.x, y:obj.components.transform.position.y, col:obj.components.render.baseColor, speed:1, type:'IMPLODE'});
                     return;
                 }
             } else if (!isHeldS && lastFramesS > GameConfiguration.TIMINGS.TAP_WINDOW) {
-                // RELEASE BRACE
                 if (combat.braceChargeAccumulator >= GameConfiguration.TIMINGS.CHARGE_THRESHOLD) {
                     GameEngine.eventBus.publish('EVENT_AREA_BLAST', {source: obj}); GameEngine.eventBus.publish('EVENT_SHAKE', 20);
                 }
                 combat.state = GameConfiguration.ACTION_STATE.IDLE; combat.braceChargeAccumulator = 0; return;
             }
 
-            // --- TAP P: SHORT DASH ---
             if(isTapP && combat.cooldowns.dash <= 0 && !isHeldS) {
                 combat.state = GameConfiguration.ACTION_STATE.DASH; combat.stateTimer = 10; combat.cooldowns.dash = GameConfiguration.TIMINGS.CD_DASH; combat.levelOverride = 2;
                 obj.components.velocity = getAim().multiply(GameConfiguration.PHYSICS.FORCE_DASH); GameEngine.eventBus.publish('EVENT_DASH'); return;
             }
 
-            // --- TAP S: PARRY ---
             if(isTapS && combat.cooldowns.parry <= 0 && !isHeldP) {
-                combat.state = GameConfiguration.ACTION_STATE.PARRY; combat.stateTimer = 20; combat.cooldowns.parry = GameConfiguration.TIMINGS.CD_PARRY; 
-                obj.components.velocity.multiply(0.1); return;
+                combat.state = GameConfiguration.ACTION_STATE.PARRY; 
+                combat.stateTimer = GameConfiguration.TIMINGS.PARRY_DURATION; 
+                combat.cooldowns.parry = GameConfiguration.TIMINGS.CD_PARRY; 
+                obj.components.velocity.multiply(0.1); 
+                return;
             }
 
-            // --- STANDARD MOVEMENT ---
             if(rawAxis.magnitude() > 0 && !isHeldP && !isHeldS){ 
                 combat.state = GameConfiguration.ACTION_STATE.MOVE; 
                 obj.components.velocity.add(rawAxis.multiply(GameConfiguration.PHYSICS.BASE_ACCELERATION * GameConfiguration.SPEED_SCALARS.BASE)); 
@@ -423,24 +415,24 @@ class InputSystem {
     }
     setInputScheme(schemeName) { this.scheme=schemeName; ['mouse','key','touch','pad'].forEach(k=>document.getElementById(`btn-input-${k}`).classList.toggle('active', schemeName.toUpperCase()===k.toUpperCase()||(k==='pad'&&schemeName==='GAMEPAD')||(k==='key'&&schemeName==='KEYBOARD'))); this.setupTouchInterface(); }
     setupTouchInterface() { 
-    const ui=document.getElementById("touch-layer"); ui.innerHTML=''; ui.style.display=this.scheme==='TOUCH'?'block':'none'; if(this.scheme!=='TOUCH')return; 
-    const add=(id,t,r,rot)=>{
-        const b=document.createElement('div'); b.className=`touch-pad ${t==='s'?'stick-base':(t==='a'?'btn-action':'btn-action')}`; 
-        if(t==='s'){
-            b.style.left='30px';const n=document.createElement('div');n.className='stick-nub';b.appendChild(n);let o=null;
-            b.addEventListener('touchmove',e=>{e.preventDefault();for(let v of e.changedTouches){if(o&&v.identifier===o.id){let dx=v.clientX-o.x,dy=v.clientY-o.y,d=Math.min(50,Math.sqrt(dx*dx+dy*dy)),a=Math.atan2(dy,dx);n.style.transform=`translate(calc(-50% + ${Math.cos(a)*d}px), calc(-50% + ${Math.sin(a)*d}px))`;let ox=Math.cos(a)*(d/50),oy=Math.sin(a)*(d/50);if(rot){ox*=-1;oy*=-1;}this.touches[`stick-${id}`]={x:ox,y:oy};}}});
-            b.addEventListener('touchstart',e=>{e.preventDefault();let rect=b.getBoundingClientRect();o={x:rect.left+rect.width/2,y:rect.top+rect.height/2,id:e.changedTouches[0].identifier};this.touches[`stick-${id}`]={x:0,y:0};});
-            b.addEventListener('touchend',e=>{o=null;n.style.transform=`translate(-50%,-50%)`;this.touches[`stick-${id}`]={x:0,y:0};});
-        } else {
-            b.innerText=t==='a'?'A':'B'; b.style.right=r+'px';
-            b.addEventListener('touchstart',e=>{e.preventDefault();this.touches[`${t==='a'?'btnA':'btnB'}-${id}`]=true;b.classList.add('active')});
-            b.addEventListener('touchend',e=>{e.preventDefault();this.touches[`${t==='a'?'btnA':'btnB'}-${id}`]=false;b.classList.remove('active')});
-        } 
-        b.style[rot?'top':'bottom']='30px'; if(rot)b.style.transform="rotate(180deg)"; ui.appendChild(b);
-    }; 
-    add('p1','s',0,false); add('p1','a',40,false); add('p1','b',140,false); 
-    if(GameEngine.flags.subMode==='COOP'){ add('p2','s',0,true); add('p2','a',40,true); add('p2','b',140,true); } 
-}
+        const ui=document.getElementById("touch-layer"); ui.innerHTML=''; ui.style.display=this.scheme==='TOUCH'?'block':'none'; if(this.scheme!=='TOUCH')return; 
+        const add=(id,t,r,rot)=>{
+            const b=document.createElement('div'); b.className=`touch-pad ${t==='s'?'stick-base':(t==='a'?'btn-action':'btn-action')}`; 
+            if(t==='s'){
+                b.style.left='30px';const n=document.createElement('div');n.className='stick-nub';b.appendChild(n);let o=null;
+                b.addEventListener('touchmove',e=>{e.preventDefault();for(let v of e.changedTouches){if(o&&v.identifier===o.id){let dx=v.clientX-o.x,dy=v.clientY-o.y,d=Math.min(50,Math.sqrt(dx*dx+dy*dy)),a=Math.atan2(dy,dx);n.style.transform=`translate(calc(-50% + ${Math.cos(a)*d}px), calc(-50% + ${Math.sin(a)*d}px))`;let ox=Math.cos(a)*(d/50),oy=Math.sin(a)*(d/50);if(rot){ox*=-1;oy*=-1;}this.touches[`stick-${id}`]={x:ox,y:oy};}}});
+                b.addEventListener('touchstart',e=>{e.preventDefault();let rect=b.getBoundingClientRect();o={x:rect.left+rect.width/2,y:rect.top+rect.height/2,id:e.changedTouches[0].identifier};this.touches[`stick-${id}`]={x:0,y:0};});
+                b.addEventListener('touchend',e=>{o=null;n.style.transform=`translate(-50%,-50%)`;this.touches[`stick-${id}`]={x:0,y:0};});
+            } else {
+                b.innerText=t==='a'?'A':'B'; b.style.right=r+'px';
+                b.addEventListener('touchstart',e=>{e.preventDefault();this.touches[`${t==='a'?'btnA':'btnB'}-${id}`]=true;b.classList.add('active')});
+                b.addEventListener('touchend',e=>{e.preventDefault();this.touches[`${t==='a'?'btnA':'btnB'}-${id}`]=false;b.classList.remove('active')});
+            } 
+            b.style[rot?'top':'bottom']='30px'; if(rot)b.style.transform="rotate(180deg)"; ui.appendChild(b);
+        }; 
+        add('p1','s',0,false); add('p1','a',40,false); add('p1','b',140,false); 
+        if(GameEngine.flags.subMode==='COOP'){ add('p2','s',0,true); add('p2','a',40,true); add('p2','b',140,true); } 
+    }
 }
 
 class AiSystem {
@@ -451,37 +443,45 @@ class AiSystem {
             const combat=me.components.combat, ai=me.components.ai;
             if([GameConfiguration.ACTION_STATE.STUNNED, GameConfiguration.ACTION_STATE.DASH, GameConfiguration.ACTION_STATE.PARRY].includes(combat.state)) return;
             ai.thinkTimer--;
+            
             if(ai.thinkTimer > 0 && ai.activePlan) {
                 let target = null;
                 if(ai.activePlan.targetType === 'LOOT') target = loot.find(p=>p.id===ai.activePlan.targetId);
                 else if(ai.activePlan.targetType === 'PLAYER') target = players.find(p=>p.id===ai.activePlan.targetId);
                 else target = enemies.find(e=>e.id===ai.activePlan.targetId);
-                if(ai.activePlan.type === 'CHARGE_ATTACK') {
-                    if(ai.thinkTimer > 10) { me.components.input.primaryPressed = true; me.components.input.secondaryPressed = true; } 
-                    else { me.components.input.primaryPressed = false; me.components.input.secondaryPressed = false; ai.activePlan = null; }
-                    return;
-                }
-                if(target && target.active) { if(ActionDatabase[ai.activePlan.type]) ActionDatabase[ai.activePlan.type](me, target); } else ai.thinkTimer = 0;
+                
+                if(target && target.active) { 
+                    if(ActionDatabase[ai.activePlan.type]) ActionDatabase[ai.activePlan.type](me, target); 
+                } else ai.thinkTimer = 0;
                 return;
             }
+
             let potentialTargets = targets;
             if (GameEngine.flags.inMenu && me.hasTag('player')) potentialTargets = enemies; else if (!me.hasTag('player')) potentialTargets = players;
             if (potentialTargets.length === 0 && GameEngine.flags.inMenu) potentialTargets = GameEngine.objectManager.queryTag('enemy').filter(e=>e.id!==me.id);
             if(potentialTargets.length === 0) return; 
+            
             const primaryTarget = potentialTargets.reduce((p,c)=>Vector2D.distance(me.components.transform.position,p.components.transform.position)<Vector2D.distance(me.components.transform.position,c.components.transform.position)?p:c);
             let lootTarget = loot.length ? loot.reduce((p,c)=>Vector2D.distance(me.components.transform.position,p.components.transform.position)<Vector2D.distance(me.components.transform.position,c.components.transform.position)?p:c) : null;
-            const valid = ai.behavior.filter(b=>{
+            
+            let behaviorList = ai.behavior;
+            const valid = behaviorList.filter(b=>{
                 const t = b.type==='ACQUIRE_LOOT'?lootTarget:primaryTarget; if(!t)return false;
                 const d=Vector2D.distance(me.components.transform.position, t.components.transform.position);
                 if(b.range && (d<b.range[0]||d>b.range[1])) return false; if(b.cooldown && combat.cooldowns[b.cooldown]>0) return false; return true;
             });
+            
             const total = valid.reduce((s,b)=>s+b.weight,0); let r=Math.random()*total, selected=null; for(const m of valid){r-=m.weight; if(r<=0){selected=m; break;}}
+            
             if(selected) {
                 const finalT = selected.type==='ACQUIRE_LOOT'?lootTarget:primaryTarget;
                 ai.activePlan = { type: selected.type, targetId: finalT.id, targetType: selected.type==='ACQUIRE_LOOT'?'LOOT':(finalT.hasTag('player')?'PLAYER':'ENEMY') };
-                let duration = Math.floor(Math.random() * (GameConfiguration.TIMINGS.AI_MAX_THINK - GameConfiguration.TIMINGS.AI_MIN_THINK) + GameConfiguration.TIMINGS.AI_MIN_THINK);
-                if(selected.type === 'CHARGE_ATTACK') duration = 120; ai.thinkTimer = duration;
-            } else { ai.activePlan = { type: 'APPROACH_TARGET', targetId: primaryTarget.id, targetType: 'PLAYER' }; ai.thinkTimer = 30; }
+                if (selected.duration) ai.thinkTimer = selected.duration;
+                else ai.thinkTimer = Math.floor(Math.random() * (GameConfiguration.TIMINGS.AI_MAX_THINK - GameConfiguration.TIMINGS.AI_MIN_THINK) + GameConfiguration.TIMINGS.AI_MIN_THINK);
+            } else { 
+                ai.activePlan = { type: 'PLAYER_HOLD_SPRINT', targetId: primaryTarget.id, targetType: 'PLAYER' }; 
+                ai.thinkTimer = 30; 
+            }
         });
     }
 }
@@ -502,10 +502,6 @@ class PhysicsSystem {
                 }
                 else if(s===GameConfiguration.ACTION_STATE.DODGE){ comp.velocity.multiply(0.9); comp.combat.invulnerabilityTimer=2; if(comp.combat.stateTimer<=0)comp.combat.state=GameConfiguration.ACTION_STATE.IDLE; }
                 else if(s===GameConfiguration.ACTION_STATE.CHARGING||s===GameConfiguration.ACTION_STATE.LEVEL_3_READY||s===GameConfiguration.ACTION_STATE.LEVEL_4_READY){ comp.velocity.multiply(0.5); }
-                else if(s===GameConfiguration.ACTION_STATE.WALK && comp.combat.combatIntensity > 0) {
-                    if(Math.random() > 0.7) GameObjectFactory.instantiateParticle(comp.transform.position.x, comp.transform.position.y - 10, VisualPalette.GREY, 1, 'IMPLODE');
-                    comp.velocity.multiply(GameConfiguration.PHYSICS.FRICTION); 
-                }
                 else { comp.velocity.multiply(GameConfiguration.PHYSICS.FRICTION); }
             }
             comp.transform.position.add(comp.velocity);
@@ -524,7 +520,16 @@ class PhysicsSystem {
 }
 
 class CombatSystem {
-    calculateVelocityLevel(obj) { if(!obj.hasComponent('combat'))return 0; if(obj.components.combat.levelOverride)return obj.components.combat.levelOverride; const s=obj.components.combat.state; if(s===GameConfiguration.ACTION_STATE.DASH||s===GameConfiguration.ACTION_STATE.SPRINT)return 2; if(s===GameConfiguration.ACTION_STATE.WALK || s===GameConfiguration.ACTION_STATE.BRACING)return 0.5; if(s===GameConfiguration.ACTION_STATE.MOVE)return 1; return 0; }
+    calculateVelocityLevel(obj) { 
+        if(!obj.hasComponent('combat'))return 0; 
+        if(obj.components.combat.levelOverride)return obj.components.combat.levelOverride; 
+        const s=obj.components.combat.state; 
+        if(s===GameConfiguration.ACTION_STATE.DASH||s===GameConfiguration.ACTION_STATE.SPRINT)return GameConfiguration.TIERS.SPRINT; 
+        if(s===GameConfiguration.ACTION_STATE.BRACING) return GameConfiguration.TIERS.SPRINT; 
+        if(s===GameConfiguration.ACTION_STATE.MOVE)return GameConfiguration.TIERS.MOVE; 
+        return GameConfiguration.TIERS.IDLE; 
+    }
+    
     process() {
         const combatants=GameEngine.objectManager.queryComponents(['combat','stats']), loot=GameEngine.objectManager.queryTag('loot');
         combatants.forEach(entity=>{
@@ -532,16 +537,35 @@ class CombatSystem {
             for(let i=loot.length-1;i>=0;i--) if(Vector2D.distance(entity.components.transform.position,loot[i].components.transform.position)<30) GameEngine.eventBus.publish('EVENT_LOOT',{target:entity,item:loot[i]});
         });
     }
+    
     resolveCollision(e1, e2) {
         const pushDir = Vector2D.subtract(e1.components.transform.position, e2.components.transform.position).normalize();
-        const pushForce = 1.2; e1.components.velocity.add(pushDir.clone().multiply(pushForce)); e2.components.velocity.subtract(pushDir.clone().multiply(pushForce));
-        if(e1.components.combat.state===GameConfiguration.ACTION_STATE.STUNNED) { if(this.calculateVelocityLevel(e2) < 1) { e1.components.stats.hp -= 5; return; } return GameEngine.eventBus.publish('EVENT_HIT',{attacker:e2,victim:e1,level:this.calculateVelocityLevel(e2)}); }
-        if(e2.components.combat.state===GameConfiguration.ACTION_STATE.STUNNED) { if(this.calculateVelocityLevel(e1) < 1) { e2.components.stats.hp -= 5; return; } return GameEngine.eventBus.publish('EVENT_HIT',{attacker:e1,victim:e2,level:this.calculateVelocityLevel(e1)}); }
+        let pushForce1 = 1.2; let pushForce2 = 1.2;
+        if (e1.components.combat.state === GameConfiguration.ACTION_STATE.BRACING) pushForce1 = 0.2; 
+        if (e2.components.combat.state === GameConfiguration.ACTION_STATE.BRACING) pushForce2 = 0.2; 
+        
+        e1.components.velocity.add(pushDir.clone().multiply(pushForce1)); 
+        e2.components.velocity.subtract(pushDir.clone().multiply(pushForce2));
+        
+        if(e1.components.combat.state===GameConfiguration.ACTION_STATE.STUNNED) { return GameEngine.eventBus.publish('EVENT_HIT',{attacker:e2,victim:e1,level:this.calculateVelocityLevel(e2)}); }
+        if(e2.components.combat.state===GameConfiguration.ACTION_STATE.STUNNED) { return GameEngine.eventBus.publish('EVENT_HIT',{attacker:e1,victim:e2,level:this.calculateVelocityLevel(e1)}); }
+
         const l1=this.calculateVelocityLevel(e1), l2=this.calculateVelocityLevel(e2);
-        if(e1.components.combat.state===GameConfiguration.ACTION_STATE.PARRY) { if (l2 > 3) GameEngine.eventBus.publish('EVENT_HIT',{attacker:e2,victim:e1,level:l2}); else return GameEngine.eventBus.publish('EVENT_PARRY',{blocker:e1,attacker:e2,level:l2}); }
-        if(e2.components.combat.state===GameConfiguration.ACTION_STATE.PARRY) { if (l1 > 3) GameEngine.eventBus.publish('EVENT_HIT',{attacker:e1,victim:e2,level:l1}); else return GameEngine.eventBus.publish('EVENT_PARRY',{blocker:e2,attacker:e1,level:l1}); }
-        if(l1>=2 && l2>=2){ if(l1===l2)GameEngine.eventBus.publish('EVENT_CLASH',{e1,e2}); else if(l1>l2)GameEngine.eventBus.publish('EVENT_HIT',{attacker:e1,victim:e2,level:l1}); else GameEngine.eventBus.publish('EVENT_HIT',{attacker:e2,victim:e1,level:l2}); return; }
-        if(l1>=2 && l2<2) GameEngine.eventBus.publish('EVENT_HIT',{attacker:e1,victim:e2,level:l1}); else if(l2>=2 && l1<2) GameEngine.eventBus.publish('EVENT_HIT',{attacker:e2,victim:e1,level:l2});
+        
+        if(e1.components.combat.state===GameConfiguration.ACTION_STATE.PARRY) { 
+            if (l2 > 3) GameEngine.eventBus.publish('EVENT_HIT',{attacker:e2,victim:e1,level:l2}); 
+            else return GameEngine.eventBus.publish('EVENT_PARRY',{blocker:e1,attacker:e2,level:l2}); 
+        }
+        if(e2.components.combat.state===GameConfiguration.ACTION_STATE.PARRY) { 
+            if (l1 > 3) GameEngine.eventBus.publish('EVENT_HIT',{attacker:e1,victim:e2,level:l1}); 
+            else return GameEngine.eventBus.publish('EVENT_PARRY',{blocker:e2,attacker:e1,level:l1}); 
+        }
+
+        if(l1 >= 2 || l2 >= 2) {
+            if(l1 > l2) GameEngine.eventBus.publish('EVENT_HIT',{attacker:e1,victim:e2,level:l1});
+            else if(l2 > l1) GameEngine.eventBus.publish('EVENT_HIT',{attacker:e2,victim:e1,level:l2});
+            else GameEngine.eventBus.publish('EVENT_CLASH',{e1,e2,level:Math.max(l1,l2)}); 
+        }
     }
 }
 
@@ -558,7 +582,8 @@ class RuleSystem {
                      GameObjectFactory.instantiateShockwave(target.components.transform.position.x, target.components.transform.position.y, VisualPalette.ORANGE); GameEngine.eventBus.publish('EVENT_SHAKE', 30);
                  }
              });
-             GameObjectFactory.instantiateShockwave(source.components.transform.position.x, source.components.transform.position.y, VisualPalette.ORANGE);
+             GameObjectFactory.instantiateShockwave(source.components.transform.position.x, source.components.transform.position.y, source.components.render.baseColor);
+             GameEngine.eventBus.publish('EVENT_PARTICLE_BURST',{x:source.components.transform.position.x, y:source.components.transform.position.y, col:source.components.render.baseColor, count:30});
         });
         GameEngine.eventBus.subscribe('EVENT_HIT', ({attacker,victim,level,wallCollision})=>{
             if(wallCollision) { victim.components.stats.hp -= GameConfiguration.DAMAGE_VALUES.WALL_COLLISION; return; }
@@ -595,12 +620,17 @@ class RuleSystem {
             GameObjectFactory.instantiateShockwave(blocker.components.transform.position.x, blocker.components.transform.position.y, VisualPalette.WHITE);
             GameEngine.eventBus.publish('EVENT_PARTICLE_BURST',{x:attacker.components.transform.position.x,y:attacker.components.transform.position.y,col:VisualPalette.WHITE,count:30}); GameEngine.eventBus.publish('EVENT_FLASH',0.3); GameEngine.eventBus.publish('EVENT_SHAKE',30);
         });
-        GameEngine.eventBus.subscribe('EVENT_CLASH', ({e1,e2})=>{
+        GameEngine.eventBus.subscribe('EVENT_CLASH', ({e1,e2,level})=>{
             GameEngine.flags.hitStopTimer=4; GameEngine.eventBus.publish('EVENT_SHAKE',30); const d=Vector2D.subtract(e1.components.transform.position,e2.components.transform.position).normalize();
             e1.components.velocity=d.clone().multiply(40); e2.components.velocity=d.clone().multiply(-40); e1.components.combat.state=e2.components.combat.state=GameConfiguration.ACTION_STATE.IDLE; e1.components.combat.invulnerabilityTimer=e2.components.combat.invulnerabilityTimer=10;
             if(e1.hasTag('player')||e2.hasTag('player')) GameEngine.flags.heat = Math.min(100, GameEngine.flags.heat + GameConfiguration.HEAT_SYSTEM.SCORE_CLASH);
             const m=Vector2D.subtract(e2.components.transform.position,e1.components.transform.position).multiply(0.5).add(e1.components.transform.position); 
-            GameObjectFactory.instantiateShockwave(m.x, m.y, VisualPalette.WHITE); GameEngine.eventBus.publish('EVENT_PARTICLE_BURST',{x:m.x,y:m.y,col:VisualPalette.WHITE,count:40});
+            
+            if (level >= 4) {
+                 GameEngine.flags.invertedFrame=true; GameEngine.flags.hitStopTimer=30; GameEngine.eventBus.publish('EVENT_SHAKE',100); GameEngine.activeParticles = [];
+            }
+            GameObjectFactory.instantiateShockwave(m.x, m.y, VisualPalette.WHITE); 
+            GameEngine.eventBus.publish('EVENT_PARTICLE_BURST',{x:m.x,y:m.y,col:VisualPalette.WHITE,count:level>=3?80:40});
         });
         GameEngine.eventBus.subscribe('EVENT_LOOT', ({target,item})=>{
             GameEngine.eventBus.publish('EVENT_PARTICLE_BURST',{x:item.components.transform.position.x,y:item.components.transform.position.y,col:item.components.render.baseColor,count:30});
@@ -627,7 +657,7 @@ class RuleSystem {
                     velocity:new Vector2D(Math.cos(Math.random()*6.28)*Math.random()*10,Math.sin(Math.random()*6.28)*Math.random()*10),
                     color:victim.components.render.baseColor, size:Math.random()*12+6, rotation:Math.random()*6, life:1000
                 });
-                if(GameEngine.visualEntities.blood.length > 500) GameEngine.visualEntities.blood.splice(0, GameEngine.visualEntities.blood.length - 100);
+                if(GameEngine.visualEntities.blood.length > 1000) GameEngine.visualEntities.blood.splice(0, GameEngine.visualEntities.blood.length - 100);
             }
         });
     }
@@ -636,38 +666,27 @@ class RuleSystem {
 class RenderSystem {
     constructor() { this.renderContext=document.getElementById("gameCanvas").getContext("2d"); }
     render() {
-    this.renderContext.clearRect(0,0,GameEngine.screenWidth,GameEngine.screenHeight);
-    if(GameEngine.flags.invertedFrame){this.renderContext.fillStyle=VisualPalette.WHITE;this.renderContext.fillRect(0,0,GameEngine.screenWidth,GameEngine.screenHeight);return;}
-    this.renderContext.save();
-    const sI=GameEngine.flags.shakeIntensity, sX=(Math.random()-0.5)*sI, sY=(Math.random()-0.5)*sI;
-    this.renderContext.translate(sX,sY); 
-    if(GameEngine.userInterface.menu) GameEngine.userInterface.menu.style.transform = `translate(${sX}px, ${sY}px)`;
-    if(GameEngine.config.FX.GRID) this.renderGrid();
-    GameEngine.visualEntities.blood.forEach(b=>{this.renderContext.save();this.renderContext.translate(b.position.x,b.position.y);this.renderContext.rotate(b.rotation);this.renderContext.fillStyle=b.color;this.renderContext.globalAlpha=0.6;this.renderContext.fillRect(-b.size/2,-b.size/2,b.size,b.size);this.renderContext.restore();});
-    const heat=GameEngine.flags.heat;
-    if(GameEngine.flags.chromaticAberration>1 || heat>50){
-        const dist = GameEngine.flags.chromaticAberration + (heat>75?(heat-75)/4:0);
-        this.renderContext.save(); this.renderContext.globalCompositeOperation="screen";
-        this.renderContext.translate(dist,0);this.renderAllEntities();
-        this.renderContext.translate(-dist*2,0);this.renderAllEntities();
-        this.renderContext.restore();
-    }
-    this.renderAllEntities();
+        this.renderContext.clearRect(0,0,GameEngine.screenWidth,GameEngine.screenHeight);
+        if(GameEngine.flags.invertedFrame){this.renderContext.fillStyle=VisualPalette.WHITE;this.renderContext.fillRect(0,0,GameEngine.screenWidth,GameEngine.screenHeight);return;}
+        this.renderContext.save();
+        const sI=GameEngine.flags.shakeIntensity, sX=(Math.random()-0.5)*sI, sY=(Math.random()-0.5)*sI;
+        this.renderContext.translate(sX,sY); 
+        if(GameEngine.userInterface.menu) GameEngine.userInterface.menu.style.transform = `translate(${sX}px, ${sY}px)`;
+        if(GameEngine.config.FX.GRID) this.renderGrid();
+        
+        GameEngine.visualEntities.blood.forEach(b=>{this.renderContext.save();this.renderContext.translate(b.position.x,b.position.y);this.renderContext.rotate(b.rotation);this.renderContext.fillStyle=b.color;this.renderContext.globalAlpha=0.6;this.renderContext.fillRect(-b.size/2,-b.size/2,b.size,b.size);this.renderContext.restore();});
+        
+        this.renderAllEntities();
 
-    this.renderContext.lineWidth=4; GameEngine.activeShockwaves.forEach(s=>{this.renderContext.globalAlpha=s.alpha;this.renderContext.strokeStyle=s.color;this.renderContext.beginPath();this.renderContext.arc(s.x,s.y,s.r,0,Math.PI*2);this.renderContext.stroke();});this.renderContext.globalAlpha=1;
-    if(GameEngine.flags.flashOpacity>0&&GameEngine.config.FX.FLASH){this.renderContext.fillStyle=`rgba(255,255,255,${GameEngine.flags.flashOpacity})`;this.renderContext.fillRect(-sX,-sY,GameEngine.screenWidth,GameEngine.screenHeight);}
-    GameEngine.visualEntities.texts.forEach(t=>{this.renderContext.globalAlpha=Math.max(0,t.life);this.renderContext.fillStyle=t.color;this.renderContext.font="30px VT323";this.renderContext.shadowColor=t.color;this.renderContext.shadowBlur=10;this.renderContext.fillText(t.str,t.position.x,t.position.y);this.renderContext.shadowBlur=0;});
-    if(GameEngine.flags.subMode==='SOLO'&&GameEngine.systems.input.scheme==='MOUSE'&&!GameEngine.flags.inMenu){
-        const p1=GameEngine.objectManager.queryTag('player')[0];
-        if(p1){ this.renderContext.strokeStyle="rgba(255,255,255,0.1)";this.renderContext.setLineDash([4,4]);this.renderContext.beginPath();this.renderContext.moveTo(p1.components.transform.position.x,p1.components.transform.position.y);this.renderContext.lineTo(GameEngine.systems.input.mouseCoords.x,GameEngine.systems.input.mouseCoords.y);this.renderContext.stroke();this.renderContext.setLineDash([]);this.renderContext.fillStyle=VisualPalette.CYAN;this.renderContext.fillRect(GameEngine.systems.input.mouseCoords.x-4,GameEngine.systems.input.mouseCoords.y-4,8,8); }
+        this.renderContext.lineWidth=4; GameEngine.activeShockwaves.forEach(s=>{this.renderContext.globalAlpha=s.alpha;this.renderContext.strokeStyle=s.color;this.renderContext.beginPath();this.renderContext.arc(s.x,s.y,s.r,0,Math.PI*2);this.renderContext.stroke();});this.renderContext.globalAlpha=1;
+        if(GameEngine.flags.flashOpacity>0&&GameEngine.config.FX.FLASH){this.renderContext.fillStyle=`rgba(255,255,255,${GameEngine.flags.flashOpacity})`;this.renderContext.fillRect(-sX,-sY,GameEngine.screenWidth,GameEngine.screenHeight);}
+        GameEngine.visualEntities.texts.forEach(t=>{this.renderContext.globalAlpha=Math.max(0,t.life);this.renderContext.fillStyle=t.color;this.renderContext.font="30px VT323";this.renderContext.shadowColor=t.color;this.renderContext.shadowBlur=10;this.renderContext.fillText(t.str,t.position.x,t.position.y);this.renderContext.shadowBlur=0;});
+        if(GameEngine.flags.subMode==='SOLO'&&GameEngine.systems.input.scheme==='MOUSE'&&!GameEngine.flags.inMenu){
+            const p1=GameEngine.objectManager.queryTag('player')[0];
+            if(p1){ this.renderContext.strokeStyle="rgba(255,255,255,0.1)";this.renderContext.setLineDash([4,4]);this.renderContext.beginPath();this.renderContext.moveTo(p1.components.transform.position.x,p1.components.transform.position.y);this.renderContext.lineTo(GameEngine.systems.input.mouseCoords.x,GameEngine.systems.input.mouseCoords.y);this.renderContext.stroke();this.renderContext.setLineDash([]);this.renderContext.fillStyle=VisualPalette.CYAN;this.renderContext.fillRect(GameEngine.systems.input.mouseCoords.x-4,GameEngine.systems.input.mouseCoords.y-4,8,8); }
+        }
+        this.renderContext.restore(); 
     }
-    this.renderContext.restore(); 
-    if(heat>20){
-        const g=this.renderContext.createRadialGradient(GameEngine.screenWidth/2,GameEngine.screenHeight/2,GameEngine.screenHeight*0.6,GameEngine.screenWidth/2,GameEngine.screenHeight/2,GameEngine.screenHeight);
-        g.addColorStop(0,"transparent"); g.addColorStop(1,`rgba(20,0,0,${(heat/150)})`);
-        this.renderContext.fillStyle=g;this.renderContext.fillRect(0,0,GameEngine.screenWidth,GameEngine.screenHeight);
-    }
-}
     renderAllEntities() {
         GameEngine.objectManager.queryTag('loot').forEach(p=>{this.renderContext.save();this.renderContext.translate(p.components.transform.position.x,p.components.transform.position.y);this.renderContext.rotate(p.components.transform.rotation);this.renderContext.fillStyle=p.components.render.baseColor;this.renderContext.globalAlpha=Math.min(1,p.components.loot.life/60);this.renderContext.beginPath();this.renderContext.moveTo(0,-10);this.renderContext.lineTo(10,0);this.renderContext.lineTo(0,10);this.renderContext.lineTo(-10,0);this.renderContext.fill();if(GameEngine.config.FX.GLOW){this.renderContext.shadowColor=p.components.render.baseColor;this.renderContext.shadowBlur=30;this.renderContext.stroke();}this.renderContext.restore();});
         GameEngine.activeParticles.forEach(p=>{
@@ -677,10 +696,12 @@ class RenderSystem {
         GameEngine.objectManager.queryTag('enemy').forEach(e=>this.renderEntity(e,0)); GameEngine.objectManager.queryTag('player').forEach(p=>this.renderEntity(p,Math.random()*(p.components.combat.state>=GameConfiguration.ACTION_STATE.CHARGING?2:0),p.components.combat.state===GameConfiguration.ACTION_STATE.PARRY));
     }
     renderEntity(obj, offset, shield) {
-        let col=ColorUtils.resolveDynamicColor(obj.components.render.baseColor, obj.components.combat.state);
+        let col=ColorUtils.resolveDynamicColor(obj.components.render.baseColor, obj.components.combat);
         const level = GameEngine.systems.combat.calculateVelocityLevel(obj);
         let scale = 1.0, showTrail = false, auraBlur = 0;
-        if (level >= 1) showTrail = true; if (level >= 2) scale = 1.1; if (level >= 3) { auraBlur = 20; scale = 1.2; } if (level >= 4) { col = GameConfiguration.ENTITY_COLORS.MAX_CHARGE; auraBlur = 40; scale = 1.3; } 
+        const isReady = obj.components.combat.state === GameConfiguration.ACTION_STATE.LEVEL_3_READY || obj.components.combat.state === GameConfiguration.ACTION_STATE.LEVEL_4_READY;
+        if (level >= 1 && !isReady) showTrail = true; 
+        if (level >= 2) scale = 1.1; if (level >= 3) { auraBlur = 20; scale = 1.2; } if (level >= 4) { col = GameConfiguration.ENTITY_COLORS.MAX_CHARGE; auraBlur = 40; scale = 1.3; } 
         this.renderContext.save(); this.renderContext.translate(obj.components.transform.position.x+offset,obj.components.transform.position.y+offset);
         if(obj.components.combat.invulnerabilityTimer > 0 && obj.components.combat.invulnerabilityTimer % 4 < 2) this.renderContext.globalAlpha = 0.4; 
         if(GameEngine.config.FX.GLOW){ this.renderContext.shadowBlur = obj.components.combat.state===GameConfiguration.ACTION_STATE.CHARGING ? 60 : (30 + auraBlur); this.renderContext.shadowColor = col; this.renderContext.globalCompositeOperation = 'screen'; }
@@ -697,14 +718,27 @@ class RenderSystem {
         this.renderContext.restore();
     }
     renderGrid() { 
-        this.renderContext.fillStyle=GameEngine.flags.heat>50?"#221":"#111"; this.renderContext.lineWidth=1;
-        for(let x=0;x<GameEngine.screenWidth;x+=100) { for(let y=0;y<GameEngine.screenHeight;y+=100) {
-            if((x+y)%200===0) { this.renderContext.fillStyle=GameEngine.flags.heat>70?"#511":"#222"; this.renderContext.fillRect(x-1,y-10,2,20); this.renderContext.fillRect(x-10,y-1,20,2); } else { this.renderContext.fillStyle="#1a1a1a"; this.renderContext.fillRect(x-2,y-2,4,4); }
-        }}
+        const heat = GameEngine.flags.heat / 100;
+        const heatColor = heat > 0.5 ? `rgba(255, ${Math.floor(100 - (heat * 100))}, 50, ${0.1 + (heat*0.4)})` : `rgba(30,30,30, 0.3)`;
+        this.renderContext.fillStyle=heatColor;
+        const jitter = heat > 0.5 ? 2 : 0;
+        
+        for(let x=0;x<GameEngine.screenWidth;x+=100) { 
+            for(let y=0;y<GameEngine.screenHeight;y+=100) {
+                const jX = jitter ? (Math.random()-0.5)*jitter : 0;
+                const jY = jitter ? (Math.random()-0.5)*jitter : 0;
+                if((x+y)%200===0) { 
+                    this.renderContext.fillRect(x+jX-1,y+jY-10,2,20); 
+                    this.renderContext.fillRect(x+jX-10,y+jY-1,20,2); 
+                } else { 
+                    const size = heat > 0.5 ? 4 + Math.sin(Date.now()/100)*2 : 4;
+                    this.renderContext.fillRect(x+jX-size/2,y+jY-size/2,size,size); 
+                }
+            }
+        }
     }
 }
 
-// ================= 5. GAME ENGINE =================
 class GameEngine {
     static objectManager=new GameObjectManager(); static visualEntities={blood:[],texts:[]}; static activeParticles=[]; static activeShockwaves=[]; static particlePool=null;
     static flags={inMenu:true, subMode:"SOLO",score:0,killStreak:0,heat:0,shakeIntensity:0,hitStopTimer:0,flashOpacity:0,waveTimer:0,lootTimer:1800,chromaticAberration:0,invertedFrame:false,particleLimit:0,comboCounter:0};
@@ -728,8 +762,8 @@ class GameEngine {
         setGameMode:(mode)=>{GameEngine.flags.subMode=mode; document.getElementById("btn-mode-solo").classList.toggle('active',mode==='SOLO'); document.getElementById("btn-mode-vs").classList.toggle('active',mode==='COOP');},
         startAttractMode:()=>{
             GameEngine.objectManager.objects=[]; GameEngine.objectManager.idCounter=0; GameEngine.activeParticles=[]; GameEngine.visualEntities.texts=[]; GameEngine.visualEntities.blood=[];
-            const ai1 = GameObjectFactory.instantiateFromBlueprint('PLAYER_ONE', GameEngine.screenWidth*0.3, GameEngine.screenHeight/2); ai1.components.input.deviceId = 'ai'; ai1.addComponent('ai', {behavior:AiBehaviorDatabase.AGGRESSIVE, traits:["BRAVE"], memory:{damageTaken:0}, thinkTimer:0, activePlan:null});
-            const ai2 = GameObjectFactory.instantiateFromBlueprint('PLAYER_TWO', GameEngine.screenWidth*0.7, GameEngine.screenHeight/2); ai2.components.input.deviceId = 'ai'; ai2.addComponent('ai', {behavior:AiBehaviorDatabase.AGGRESSIVE, traits:["BRAVE"], memory:{damageTaken:0}, thinkTimer:0, activePlan:null});
+            const ai1 = GameObjectFactory.instantiateFromBlueprint('PLAYER_ONE', GameEngine.screenWidth*0.3, GameEngine.screenHeight/2); ai1.components.input.deviceId = 'ai'; ai1.addComponent('ai', {behavior:AiBehaviorDatabase.AGGRESSIVE, traits:["SPRINTER"], memory:{damageTaken:0}, thinkTimer:0, activePlan:null});
+            const ai2 = GameObjectFactory.instantiateFromBlueprint('PLAYER_TWO', GameEngine.screenWidth*0.7, GameEngine.screenHeight/2); ai2.components.input.deviceId = 'ai'; ai2.addComponent('ai', {behavior:AiBehaviorDatabase.AGGRESSIVE, traits:["SPRINTER"], memory:{damageTaken:0}, thinkTimer:0, activePlan:null});
             GameEngine.userInterface.title.innerText="SYSTEM_IDLE"; GameEngine.userInterface.actionBtn.innerText="INITIALIZE"; GameEngine.flags.inMenu = true; document.body.classList.add('menu-mode');
         },
         startGameplay:()=>{ 
@@ -741,8 +775,13 @@ class GameEngine {
         spawnWave:()=>{ 
             const ec=GameEngine.objectManager.queryTag('enemy').length; const target = 1 + Math.floor(GameEngine.flags.heat / 20); 
             if(ec < target){
-                const r=Math.random(),t=r<0.02?"ENEMY_BOSS":(r<0.15?"ENEMY_ELITE":"ENEMY_STANDARD"),side=Math.floor(Math.random()*4),pos=[new Vector2D(Math.random()*GameEngine.screenWidth,-40),new Vector2D(GameEngine.screenWidth+40,Math.random()*GameEngine.screenHeight),new Vector2D(Math.random()*GameEngine.screenWidth,GameEngine.screenHeight+40),new Vector2D(-40,Math.random()*GameEngine.screenHeight)][side]; 
-                GameObjectFactory.instantiateEnemy(t,pos.x,pos.y);
+                const r=Math.random();
+                let type = "NORMAL_RUSHER";
+                if(r < 0.05) type = "ENEMY_BOSS";
+                else if (r < 0.40) type = "NORMAL_DEFENDER";
+                else if (r < 0.70) type = "NORMAL_VULTURE";
+                const side=Math.floor(Math.random()*4),pos=[new Vector2D(Math.random()*GameEngine.screenWidth,-40),new Vector2D(GameEngine.screenWidth+40,Math.random()*GameEngine.screenHeight),new Vector2D(Math.random()*GameEngine.screenWidth,GameEngine.screenHeight+40),new Vector2D(-40,Math.random()*GameEngine.screenHeight)][side]; 
+                GameObjectFactory.instantiateEnemy(type,pos.x,pos.y);
             }
             GameEngine.flags.lootTimer--; if(GameEngine.flags.lootTimer<=0){GameObjectFactory.instantiateLoot(Math.random()*(GameEngine.screenWidth-100)+50,Math.random()*(GameEngine.screenHeight-100)+50,Math.random()>0.8?"EXTRA_LIFE":(Math.random()>0.5?"INVINCIBILITY":"HEAL")); GameEngine.flags.lootTimer=1800+Math.random()*1800;} 
         },
@@ -764,8 +803,8 @@ class GameEngine {
                     GameEngine.systems.input.process(); 
                     if(!GameEngine.flags.inMenu) { GameEngine.flags.heat = Math.max(0, GameEngine.flags.heat - GameConfiguration.HEAT_SYSTEM.DECAY_RATE); GameEngine.userInterface.updateScore(); }
                     else if(GameEngine.flags.inMenu && GameEngine.objectManager.queryTag('player').length === 0 && GameEngine.objectManager.idCounter > 0) {
-                          const ai1 = GameObjectFactory.instantiateFromBlueprint('PLAYER_ONE', GameEngine.screenWidth*0.3, GameEngine.screenHeight/2); ai1.components.input.deviceId = 'ai'; ai1.addComponent('ai', {behavior:AiBehaviorDatabase.AGGRESSIVE, traits:["BRAVE"], memory:{damageTaken:0}, thinkTimer:0, activePlan:null});
-                          const ai2 = GameObjectFactory.instantiateFromBlueprint('PLAYER_TWO', GameEngine.screenWidth*0.7, GameEngine.screenHeight/2); ai2.components.input.deviceId = 'ai'; ai2.addComponent('ai', {behavior:AiBehaviorDatabase.AGGRESSIVE, traits:["BRAVE"], memory:{damageTaken:0}, thinkTimer:0, activePlan:null});
+                          const ai1 = GameObjectFactory.instantiateFromBlueprint('PLAYER_ONE', GameEngine.screenWidth*0.3, GameEngine.screenHeight/2); ai1.components.input.deviceId = 'ai'; ai1.addComponent('ai', {behavior:AiBehaviorDatabase.AGGRESSIVE, traits:["SPRINTER"], memory:{damageTaken:0}, thinkTimer:0, activePlan:null});
+                          const ai2 = GameObjectFactory.instantiateFromBlueprint('PLAYER_TWO', GameEngine.screenWidth*0.7, GameEngine.screenHeight/2); ai2.components.input.deviceId = 'ai'; ai2.addComponent('ai', {behavior:AiBehaviorDatabase.AGGRESSIVE, traits:["SPRINTER"], memory:{damageTaken:0}, thinkTimer:0, activePlan:null});
                     }
                     GameEngine.director.spawnWave(); 
                     GameEngine.systems.ai.process(); GameEngine.systems.physics.process(); GameEngine.systems.combat.process(); GameEngine.objectManager.cleanUp(); 
@@ -787,7 +826,7 @@ class GameEngine {
         this.eventBus.subscribe('EVENT_FLASH',opacity=>{if(this.config.FX.FLASH)this.flags.flashOpacity=opacity;}); 
         this.eventBus.subscribe('EVENT_PARTICLE_SPAWN',d=>{if(GameEngine.flags.particleLimit>GameConfiguration.RENDERING.MAX_PARTICLES)return;if(GameEngine.activeParticles.length>GameConfiguration.RENDERING.MAX_PARTICLES){GameEngine.particlePool.release(GameEngine.activeParticles.shift());}GameEngine.flags.particleLimit++;GameObjectFactory.instantiateParticle(d.x,d.y,d.col,d.speed, d.type);}); 
         this.eventBus.subscribe('EVENT_PARTICLE_IMPLODE',d=>{ for(let i=0;i<d.count;i++){ let ang=Math.random()*6.28, dist=30+Math.random()*20; 
-            let hsl = ColorUtils.hexToHSL(d.target.components.render.baseColor); let col = `hsl(${hsl.h}, ${hsl.s}%, 70%)`; if (d.count >= 4) col = `hsl(${Math.random()*360}, 100%, 70%)`; 
+            let hsl = ColorUtils.hexToHSL(d.target.components.render.baseColor); let col = `hsl(${hsl.h}, ${hsl.s}%, 90%)`; 
             const p = GameEngine.particlePool.acquire(); p.active=true; p.type='IMPLODE'; p.position.x = d.target.components.transform.position.x+Math.cos(ang)*dist; p.position.y = d.target.components.transform.position.y+Math.sin(ang)*dist; p.velocity.x = -Math.cos(ang)*2; p.velocity.y = -Math.sin(ang)*2; p.color=col; p.life=1; p.size=3; GameEngine.activeParticles.push(p);
         }});
         this.eventBus.subscribe('EVENT_PARTICLE_BURST',d=>{if(!this.config.FX.BLOOD&&!this.config.FX.FLASH)return;for(let i=0;i<d.count;i++)this.eventBus.publish('EVENT_PARTICLE_SPAWN',{x:d.x,y:d.y,col:d.col,speed:Math.random()*10+5});}); 
