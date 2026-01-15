@@ -48,19 +48,6 @@ Tier 0= completely still, tier 0.5 = slowed down, Tier 1 (base)=1.0 speed, tier 
 Clash requires both ≥ Tier 2
 Tier 1 never clashes, only takes damage
 Damage = relative speed delta, not flat tier
-| Input           | Function                                      | Tier Interaction      | Window / Duration | CD                      | Notes                                                    |
-| --------------- | --------------------------------------------- | --------------------- | ----------------- | ----------------------- | -------------------------------------------------------- |
-| Base            | —                                             | Every tier            | —                 | —                       | Tier 1 speed(base 1.0 move speed), recive damages        |
-| Tap A           | Flick dash                                    | (1–4 reach)           | 0.1s              | 1.0s (down per +1 tier) | No speed reset                                           |
-| Tap B           | Parry                                         | ≤ Tier 4              | 0.2s              | 1.0s (0.5s if < tier 1) | Stun 1s +0.5s/tier                                       |
-| Hold A          | Accelerate                                    | Tier 1→4              | Ramp slowly       | —                       | Turn rate ↓ per tier                                     |
-| Hold B          | Decelerate                                    | +1 momentum/2s(cap 4) | Reduce rapidly    | —                       | Parry CD ↓                                               |
-| Double Tap A    | Item use                                      | —                     | —                 | Item                    | No other button are being pressed                        |
-| Double Tap B    | Skill use                                     | —                     | —                 | Skill                   | No other button are being pressed                        |
-| Tap A + Tap B   | Dodge                                         | Tier 1–4              | 0.2s              | 5s                      | Loses to higher tier                                     |
-| Tap A + Hold B  | Use stored momentum to dash + back shocktrail | Tier 1–4              | Dash 0.2s         | 2s                      | **Reset speed → Tier 1**                                 |
-| Hold A + Tap B  | Hard stop + front shocktrail                  | Tier 1–4              | Burst             | 2s                      | **Reset speed → Tier 1**                                 |
-| Hold A + Hold B | Nuke charge dash + big shock trail            | Tier 5 at 5 sec       | Charge infinite   | —                       | Unparry-able, **reset → Tier 0**, speed 0 while charging |
 
 TO-DO:
 Add zoom level to menu, tweak every thing to be diegetic, tweak visual FX
@@ -79,3 +66,7 @@ Tanker:He braces a lot, close in with the player, also parry from time to time a
 Archer:stays far away, and will do charges a lot, sometimes charges to tier 4 too. after done charge and dash, he will return back to a safe position.
 Thief:This mf is a troll, he circles around the player, feint in and out, to "steal" player's precious time and focus, he won't directly commit to a kill unless he's low HP and is the only guy left on the field. He also will focus on getting the loots more than others.
 Berserker:pure respect, he won't back down no matter what, he mainly charges even from dangrous close distances, when he's low (<50% hp) he changes to constanty try to sprint nonstop at the player, never back out til he dies.
+
+Also, standardize the naming, don't use names that no one will understand, be more "systemic" and uniform....with prefix, suffix, don't abreviate, etc...basically try to standardize the naming.
+Also please fix the code to have no "magic numbers", i want to have everything configurable to be in the config zone.
+ALso please get rid of the small and verbose comments  

@@ -3,32 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Project: Speed</title>
+<title>Project: Speed // VISUAL JUICE</title>
 <style>
     @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-    :root { --c-bg:#050505; --c-txt:#eee; --c-dim:#444; }
+    :root { --c-bg:#050505; --c-txt:#eee; --c-dim:#444; --c-hi:#fff; }
     body { margin:0; overflow:hidden; background-color:var(--c-bg); color:var(--c-txt); font-family:'VT323',monospace; user-select:none; touch-action:none; }
-    body::after { content:" "; display:block; position:absolute; top:0; left:0; bottom:0; right:0; background:linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index:100; background-size:100% 2px, 3px 100%; pointer-events:none; }
-    canvas { position:absolute; top:0; left:0; z-index:10; display:block; cursor:crosshair; image-rendering:pixelated; filter:contrast(1.1) saturate(1.2); pointer-events:auto; }
-    body.menu-mode canvas { pointer-events: none; }
-    #ui-layer { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:5; display:flex; justify-content:center; align-items:center; }
-    #floor-interface { text-align:center; pointer-events:auto; display:flex; flex-direction:column; gap:15px; transition: opacity 0.5s ease; will-change: transform; }
-    #floor-interface.active { opacity: 1; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2)); }
-    #floor-interface.passive { opacity: 0.1; pointer-events:none; filter: blur(2px); }
-    h1 { font-size:80px; margin:0; line-height:0.8; letter-spacing:15px; font-weight:normal; color: var(--c-txt); text-shadow: 0 0 20px rgba(255,255,255,0.1); }
-    .score-readout { font-size:100px; margin:0; line-height:0.9; color: #fff; }
-    .heat-readout { font-size:24px; color:var(--c-dim); letter-spacing: 4px; font-weight:bold; }
+    body::after { content:" "; display:block; position:absolute; inset:0; background:linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%), linear-gradient(90deg, rgba(255,0,0,0.06), rgba(0,255,0,0.02), rgba(0,0,255,0.06)); z-index:100; background-size:100% 2px, 3px 100%; pointer-events:none; }
+    canvas { position:absolute; inset:0; z-index:10; cursor:crosshair; image-rendering:pixelated; filter:contrast(1.1) saturate(1.2); pointer-events:auto; }
+    body.menu-mode canvas { pointer-events:none; }
+    #ui-layer { position:absolute; inset:0; pointer-events:none; z-index:5; display:flex; justify-content:center; align-items:center; }
+    #floor-interface { text-align:center; pointer-events:auto; display:flex; flex-direction:column; gap:15px; transition:opacity 0.5s ease; will-change:transform; }
+    #floor-interface.active { opacity:1; filter:drop-shadow(0 0 10px rgba(255,255,255,0.2)); }
+    #floor-interface.passive { opacity:0.1; pointer-events:none; filter:blur(2px); }
+    h1 { font-size:80px; margin:0; line-height:0.8; letter-spacing:15px; font-weight:normal; text-shadow:0 0 20px rgba(255,255,255,0.1); }
+    .score-readout { font-size:100px; margin:0; line-height:0.9; color:var(--c-hi); }
+    .heat-readout { font-size:24px; color:var(--c-dim); letter-spacing:4px; font-weight:bold; }
     .btn-group { display:flex; justify-content:center; gap:30px; margin:20px 0; }
-    .bare-btn { background:transparent; border:none; color:var(--c-dim); font-family:'VT323',monospace; font-size:24px; cursor:pointer; text-transform:uppercase; letter-spacing:3px; padding:5px 15px; transition: all 0.1s; }
-    #floor-interface.active .bare-btn:hover, #floor-interface.active .bare-btn.active, #floor-interface.active .bare-btn:focus { color:#fff; text-shadow:0 0 15px #fff; outline:none; transform: scale(1.1); }
-    #btn-main-action { font-size:48px; margin-top:30px; color: #fff; }
-    #floor-interface.active #btn-main-action:hover, #floor-interface.active #btn-main-action:focus { text-shadow:0 0 30px #fff; letter-spacing: 6px; }
-    .touch-container { display:none; position:absolute; z-index:30; pointer-events:none; width:100%; height:100%; top:0; left:0; }
-    .touch-pad { position:absolute; border:1px solid rgba(255, 255, 255, 0.1); border-radius:50%; pointer-events:auto; }
+    .bare-btn { background:transparent; border:none; color:var(--c-dim); font-family:'VT323',monospace; font-size:24px; cursor:pointer; text-transform:uppercase; letter-spacing:3px; padding:5px 15px; transition:all 0.1s; }
+    #floor-interface.active .bare-btn:is(:hover,.active,:focus) { color:var(--c-hi); text-shadow:0 0 15px var(--c-hi); outline:none; transform:scale(1.1); }
+    #btn-main-action { font-size:48px; margin-top:30px; color:var(--c-hi); }
+    #btn-main-action:is(:hover,:focus) { text-shadow:0 0 30px var(--c-hi); letter-spacing:6px; }
+    .touch-container { display:none; position:absolute; z-index:30; pointer-events:none; inset:0; }
+    .touch-pad { position:absolute; border:1px solid rgba(255,255,255,0.1); border-radius:50%; pointer-events:auto; }
     .stick-base { width:120px; height:120px; background:rgba(255,255,255,0.05); }
-    .stick-nub { position:absolute; top:50%; left:50%; width:40px; height:40px; background:#fff; border-radius:50%; transform:translate(-50%, -50%); pointer-events:none; box-shadow:0 0 10px #fff; }
+    .stick-nub { position:absolute; top:50%; left:50%; width:40px; height:40px; background:var(--c-hi); border-radius:50%; transform:translate(-50%,-50%); pointer-events:none; box-shadow:0 0 10px var(--c-hi); }
     .btn-action { width:80px; height:80px; background:rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:center; color:#444; font-size:24px; }
-    .btn-action.active { background:#fff; color:#000; box-shadow:0 0 15px #fff; }
+    .btn-action.active { background:var(--c-hi); color:#000; box-shadow:0 0 15px var(--c-hi); }
 </style>
 </head>
 <body>
@@ -38,384 +38,388 @@
         <div id="score-val" class="score-readout">0</div>
         <div id="heat-val" class="heat-readout">HEAT // 0%</div>
         <div class="btn-group">
-            <button id="btn-mode-solo" class="bare-btn active" onclick="GameEngine.director.setGameMode('SOLO')">SOLO</button>
-            <button id="btn-mode-vs" class="bare-btn" onclick="GameEngine.director.setGameMode('COOP')">CO-OP</button>
+            <button id="btn-mode-solo" class="bare-btn active" onclick="Game.director.setMode('SOLO')">SOLO</button>
+            <button id="btn-mode-vs" class="bare-btn" onclick="Game.director.setMode('COOP')">CO-OP</button>
         </div>
         <div class="btn-group">
-            <button id="btn-input-mouse" class="bare-btn active" onclick="GameEngine.systems.input.setInputScheme('MOUSE')">MOUSE</button>
-            <button id="btn-input-key" class="bare-btn" onclick="GameEngine.systems.input.setInputScheme('KEYBOARD')">KEYS</button>
-            <button id="btn-input-touch" class="bare-btn" onclick="GameEngine.systems.input.setInputScheme('TOUCH')">TOUCH</button>
-            <button id="btn-input-pad" class="bare-btn" onclick="GameEngine.systems.input.setInputScheme('GAMEPAD')">PAD</button>
+            <button id="btn-input-mouse" class="bare-btn active" onclick="Game.sys.input.setScheme('MOUSE')">MOUSE</button>
+            <button id="btn-input-key" class="bare-btn" onclick="Game.sys.input.setScheme('KEYBOARD')">KEYS</button>
+            <button id="btn-input-touch" class="bare-btn" onclick="Game.sys.input.setScheme('TOUCH')">TOUCH</button>
+            <button id="btn-input-pad" class="bare-btn" onclick="Game.sys.input.setScheme('GAMEPAD')">PAD</button>
         </div>
-        <button id="btn-main-action" class="bare-btn" onclick="GameEngine.userInterface.triggerGameStart()">INITIALIZE</button>
+        <button id="btn-main-action" class="bare-btn" onclick="Game.ui.triggerStart()">INITIALIZE</button>
     </div>
 </div>
 <div id="touch-layer" class="touch-container"></div>
 <canvas id="gameCanvas"></canvas>
 <script>
-const VisualPalette = { CYAN:"#00e5ff", LIME:"#76ff03", PINK:"#f50057", WHITE:"#ffffff", DARK:"#050505", GREY:"#444", RED:"#ff2a2a", ORANGE:"#ff9100", INDIGO:"#651fff", SLATE:"#546e7a", PURPLE:"#d500f9", GOLD:"#ffd700" };
-
-const GameConfiguration = {
-    PHYSICS: { FRICTION: 0.92, BASE_ACCELERATION: 1.5, FORCE_DASH: 30, FORCE_HIGH: 60, FORCE_MAXIMUM: 100, RECOIL_MULTIPLIER: 1.2 },
-    SPEED_SCALARS: { STOP: 0, BRACE: 0.5, BASE: 1.0, SPRINT: 2.2 },
-    TIERS: { IDLE:0, MOVE: 1, SPRINT:2, DASH:2, CHARGE_3:3, CHARGE_4:4 },
-    DAMAGE_VALUES: { LEVEL_1:10, LEVEL_2:25, LEVEL_3:50, LEVEL_4:999, WALL_COLLISION: 25, AREA_BLAST: 50 },
-    ENTITY_COLORS: { P1:VisualPalette.CYAN, P2:VisualPalette.LIME, MAX_CHARGE:VisualPalette.WHITE, TEXT:VisualPalette.WHITE },
-    TIMINGS: { TAP_WINDOW:12, CHARGE_THRESHOLD: 180, CHARGE_LEVEL_3:60, CHARGE_LEVEL_4:120, CD_DASH:180, CD_PARRY:30, PARRY_DURATION: 25, INVULNERABILITY_HIT:20, AI_MIN_THINK:10, AI_MAX_THINK:30 },
-    ACTION_STATE: { IDLE:0, MOVE:1, SPRINT:3, DASH:4, PARRY:5, DODGE:6, CHARGING:7, LEVEL_3_READY:8, LEVEL_4_READY:9, STUNNED:10, BRACING: 11 },
-    HEAT_SYSTEM: { DECAY_RATE:0.04, SCORE_KILL:10, SCORE_PARRY:15, SCORE_CLASH:5, PENALTY_HIT:20 },
-    RENDERING: { MAX_PARTICLES:250, MAX_SHOCKWAVES:10 },
-    AIM_ASSIST: { ANGLE_THRESHOLD: 0.90, DIST_THRESHOLD: 500, STRENGTH: 0.35 } 
+// --- CONFIGURATION ZONE ---
+const Palette = { 
+    CYAN:"#00bcd4", LIME:"#76ff03", PINK:"#d500f9", WHITE:"#ffffff", BLACK:"#000000", GREY:"#333", 
+    RED:"#d50000", ORANGE:"#ff6d00", INDIGO:"#304ffe", SLATE:"#37474f", PURPLE:"#aa00ff", GOLD:"#ffab00" 
 };
 
-const AudioDatabase = {
-    UI_HOVER: { volume: 0.2 }, UI_CLICK: { volume: 0.5 }, COMBAT_DASH: { volume: 0.4 }, COMBAT_CHARGE: { volume: 0.3 }, 
-    COMBAT_PARRY: { volume: 0.8 }, HIT_LIGHT: { volume: 0.4 }, HIT_HEAVY: { volume: 0.6 }, 
-    ENTITY_DEATH: { volume: 0.7 }, CLASH: { volume: 0.8 }, PICKUP_COLLECT: { volume: 0.5 }, HEAT_INCREASE: { volume: 0.3 }
-};
-
-const EntityDatabase = {
-    PLAYER_ONE: { tags:['player','p1'], stats:{hp:100, maxHp:100, radius:16}, render:{color:GameConfiguration.ENTITY_COLORS.P1}, input:{deviceId:'p1'} },
-    PLAYER_TWO: { tags:['player','p2'], stats:{hp:100, maxHp:100, radius:16}, render:{color:GameConfiguration.ENTITY_COLORS.P2}, input:{deviceId:'p2'} },
-    NORMAL_RUSHER: { stats:{hp:100, radius:16}, behavior:"AGGRESSIVE", traits:["SPRINTER"], variants:[VisualPalette.RED] },
-    NORMAL_DEFENDER: { stats:{hp:100, radius:16}, behavior:"DEFENSIVE", traits:["BRACER"], variants:[VisualPalette.SLATE] },
-    NORMAL_VULTURE: { stats:{hp:100, radius:16}, behavior:"OPPORTUNIST", traits:["TRICKY"], variants:[VisualPalette.INDIGO] },
-    ENEMY_BOSS: { stats:{hp:3000, radius:30}, behavior:"BOSS", traits:["BOSS"], variants:[VisualPalette.PURPLE] }
-};
-
-const LootDatabase = {
-    HEAL: { color:VisualPalette.LIME, text:"HP UP", modifier:{type:'STAT', key:'hp', value:50} },
-    INVINCIBILITY: { color:VisualPalette.ORANGE, text:"GOD MODE", modifier:{type:'STATUS', key:'invulnerabilityTimer', value:600} },
-    EXTRA_LIFE: { color:VisualPalette.CYAN, text:"LIFE-UP", modifier:{type:'SPECIAL', key:'lives', value:1} }
-};
-
-const ActionDatabase = {
-    _vec: (e, t) => Vector2D.subtract(t.components.transform.position, e.components.transform.position),
-    _dist: (e, t) => Vector2D.distance(e.components.transform.position, t.components.transform.position),
-    _smooth: (e, targetDir) => {
-        const current = e.components.input.lastDirection;
-        let finalDir = targetDir;
-        const dot = current.dot(targetDir);
-        const dynamicSnap = dot > 0.95 ? 0.5 : 1.5;
-        e.components.input.lastDirection = new Vector2D(
-            current.x + (finalDir.x - current.x) * dynamicSnap,
-            current.y + (finalDir.y - current.y) * dynamicSnap
-        ).normalize();
+const Config = {
+    PHYS: { FRICTION: 0.90, BASE_ACCEL: 1.5, DASH: 30, HIGH: 60, MAX: 100, RECOIL: 1.2, OD_A: 2.5, OD_B: 0.2, WALL_BOUNCE: -0.8, BOUNDS: 25 },
+    MASS: { HEAVY: 0.1, LIGHT: 2.0, STD: 1.0 }, 
+    SPEED: { STOP: 0, BRACE: 0.4, BASE: 1.0, SPRINT: 2.2 },
+    TIERS: { IDLE:0, MOVE: 1, SPRINT:2, DASH:2, CHG_3:3, CHG_4:4 },
+    DMG: { LV1:10, LV2:25, LV3:50, LV4:999, WALL: 25, AREA: 50, OD_DASH: 35, OD_BLAST: 40 },
+    TIME: { 
+        TAP: 15, CHG_THRESH: 180, CHG_LV3: 90, CHG_LV4: 180, MIN_CHG: 15, 
+        CD_DASH: 180, CD_PARRY: 45, CD_CHG: 60, CD_OD: 15,
+        PARRY_DUR: 20, INVULN: 30, AI_MIN: 10, AI_MAX: 30, OD_TRIG: 600, OD_DUR: 600 // 600 frames = 10s
     },
-    'PLAYER_HOLD_SPRINT': (entity, target) => {
-        entity.components.input.primaryPressed = true; entity.components.input.secondaryPressed = false;
-        ActionDatabase._smooth(entity, ActionDatabase._vec(entity, target).normalize());
-    },
-    'PLAYER_HOLD_BRACE': (entity, target) => {
-        entity.components.input.primaryPressed = false; entity.components.input.secondaryPressed = true;
-        ActionDatabase._smooth(entity, ActionDatabase._vec(entity, target).normalize());
-    },
-    'PLAYER_RELEASE_ATTACK': (entity, target) => { entity.components.input.primaryPressed = false; entity.components.input.secondaryPressed = false; },
-    'PLAYER_PARRY_BAIT': (entity, target) => {
-        ActionDatabase._smooth(entity, ActionDatabase._vec(entity, target).normalize().multiply(-1));
-        if(Math.random() < 0.1) entity.components.input.forceTapSecondary = true;
-    },
-    'BOSS_LOGIC': (entity, target) => { entity.components.input.primaryPressed = true; ActionDatabase._smooth(entity, ActionDatabase._vec(entity, target).normalize()); }
+    STATE: { IDLE:0, MOVE:1, SPRINT:3, DASH:4, PARRY:5, DODGE:6, CHARGING:7, LV3_RDY:8, LV4_RDY:9, STUN:10, BRACE: 11 },
+    HEAT: { DECAY: 0.04, KILL: 10, PARRY: 15, CLASH: 5, HIT_PENALTY: 20 },
+    GFX: { MAX_PARTICLES: 400, SHAKE_BASE: 20, SHAKE_HIGH: 100, GRID_STEP: 50, FLASH_DEC: 0.05 },
+    AIM: { ANGLE: 0.90, DIST: 500, STR: 0.35, DEADZONE: 0.1 },
+    INPUT: { HOLD_THRESH: 300 }
 };
 
-const AiBehaviorDatabase = {
-    AGGRESSIVE: [ { type:'PLAYER_HOLD_SPRINT', weight:5.0, range:[0,3000], duration:60 }, { type:'PLAYER_RELEASE_ATTACK', weight:3.0, cooldown:'dash', range:[0,300], duration:5 } ],
-    DEFENSIVE: [ { type:'PLAYER_HOLD_BRACE', weight:5.0, range:[0,3000], duration:120 }, { type:'PLAYER_RELEASE_ATTACK', weight:2.0, cooldown:'dash', range:[0,150], duration:5 }, { type:'PLAYER_HOLD_SPRINT', weight:1.0, range:[300,1000], duration:40 } ],
-    OPPORTUNIST: [ { type:'PLAYER_HOLD_SPRINT', weight:4.0, range:[200,3000], duration:40 }, { type:'PLAYER_PARRY_BAIT', weight:2.0, cooldown:'parry', range:[0,150], duration:20 }, { type:'PLAYER_RELEASE_ATTACK', weight:4.0, cooldown:'dash', range:[0,250], duration:5 } ],
-    BOSS: [ { type:'BOSS_LOGIC', weight:1.0, range:[0,3000], duration:100 } ]
+const AudioDB = {
+    UI_HOVER:{v:0.2}, UI_CLICK:{v:0.5}, DASH:{v:0.4}, CHARGE:{v:0.3}, PARRY:{v:0.8}, 
+    HIT_L:{v:0.4}, HIT_H:{v:0.6}, DEATH:{v:0.7}, CLASH:{v:0.8}, LOOT:{v:0.5}, HEAT:{v:0.3}
+};
+
+const EntityDB = {
+    P1: { tags:['player','p1'], stats:{hp:100, max:100, r:15}, col:Palette.CYAN, in:'p1' },
+    P2: { tags:['player','p2'], stats:{hp:100, max:100, r:15}, col:Palette.LIME, in:'p2' },
+    RUSHER: { stats:{hp:100, r:15}, ai:"AGGRESSIVE", traits:["SPRINTER"], col:Palette.RED },
+    DEFENDER: { stats:{hp:100, r:15}, ai:"DEFENSIVE", traits:["BRACER"], col:Palette.SLATE },
+    VULTURE: { stats:{hp:100, r:1}, ai:"OPPORTUNIST", traits:["TRICKY"], col:Palette.INDIGO },
+    BOSS: { stats:{hp:3000, r:20}, ai:"BOSS", traits:["BOSS"], col:Palette.PURPLE }
+};
+
+const LootDB = {
+    HEAL: { col:Palette.LIME, txt:"HP UP", mod:{t:'STAT', k:'hp', v:50} },
+    GOD: { col:Palette.ORANGE, txt:"GOD MODE", mod:{t:'STATUS', k:'invuln', v:600} },
+    LIFE: { col:Palette.CYAN, txt:"LIFE-UP", mod:{t:'SPECIAL', k:'lives', v:1} }
+};
+
+// --- UTILS & CLASSES ---
+class Vec2 {
+    constructor(x, y) { this.x=x; this.y=y; }
+    add(v) { this.x+=v.x; this.y+=v.y; return this; }
+    sub(v) { this.x-=v.x; this.y-=v.y; return this; }
+    mul(s) { this.x*=s; this.y*=s; return this; }
+    mag() { return Math.sqrt(this.x**2 + this.y**2); }
+    norm() { const m=this.mag(); if(m!==0) this.mul(1/m); return this; }
+    dot(v) { return this.x*v.x + this.y*v.y; }
+    clone() { return new Vec2(this.x, this.y); }
+    static dist(v1, v2) { return Math.sqrt((v1.x-v2.x)**2 + (v1.y-v2.y)**2); }
+    static sub(v1, v2) { return new Vec2(v1.x-v2.x, v1.y-v2.y); }
+}
+
+const Actions = {
+    vec: (e, t) => Vec2.sub(t.comps.pos.pos, e.comps.pos.pos),
+    smooth: (e, tDir) => {
+        const cur = e.comps.input.lastDir, dot = cur.dot(tDir);
+        e.comps.input.lastDir = new Vec2(cur.x+(tDir.x-cur.x)*(dot>0.95?0.5:1.5), cur.y+(tDir.y-cur.y)*(dot>0.95?0.5:1.5)).norm();
+    },
+    'HOLD_SPRINT': (e, t) => { e.comps.input.p1=true; e.comps.input.p2=false; Actions.smooth(e, Actions.vec(e,t).norm()); },
+    'HOLD_BRACE': (e, t) => { e.comps.input.p1=false; e.comps.input.p2=true; Actions.smooth(e, Actions.vec(e,t).norm()); },
+    'HOLD_CHARGE': (e, t) => { e.comps.input.p1=true; e.comps.input.p2=true; Actions.smooth(e, Actions.vec(e,t).norm()); },
+    'REL_ATK': (e) => { e.comps.input.p1=false; e.comps.input.p2=false; },
+    'PARRY_BAIT': (e, t) => { Actions.smooth(e, Actions.vec(e,t).norm().mul(-1)); if(Math.random()<0.1) e.comps.input.forceP2=true; },
+    'BOSS_LOGIC': (e, t) => { e.comps.input.p1=true; Actions.smooth(e, Actions.vec(e,t).norm()); }
+};
+
+const AiBehaviors = {
+    AGGRESSIVE: [ { t:'HOLD_SPRINT', w:5.0, r:[0,3000], d:60 }, { t:'REL_ATK', w:3.0, cd:'dash', r:[0,300], d:5 } ],
+    DEFENSIVE: [ { t:'HOLD_BRACE', w:5.0, r:[0,3000], d:120 }, { t:'REL_ATK', w:2.0, cd:'dash', r:[0,150], d:5 }, { t:'HOLD_SPRINT', w:1.0, r:[300,1000], d:40 } ],
+    OPPORTUNIST: [ { t:'HOLD_SPRINT', w:4.0, r:[200,3000], d:40 }, { t:'PARRY_BAIT', w:2.0, cd:'parry', r:[0,150], d:20 }, { t:'REL_ATK', w:4.0, cd:'dash', r:[0,250], d:5 } ],
+    BOSS: [ { t:'HOLD_CHARGE', w:2.0, r:[0,3000], d:90 }, { t:'REL_ATK', w:4.0, cd:'dash', r:[0,3000], d:5 }, { t:'BOSS_LOGIC', w:1.0, r:[0,3000], d:100 } ]
 };
 
 class MemoryPool {
-    constructor(factoryFn, size=100) { this.store=[]; this.factory=factoryFn; for(let i=0;i<size;i++)this.store.push(this.factory()); }
-    acquire() { return this.store.length > 0 ? this.store.pop() : this.factory(); }
-    release(obj) { this.store.push(obj); }
+    constructor(fn, sz=100) { this.store=[]; this.fn=fn; for(let i=0;i<sz;i++)this.store.push(this.fn()); }
+    get() { return this.store.length>0 ? this.store.pop() : this.fn(); }
+    free(o) { this.store.push(o); }
 }
 
-class Vector2D {
-    constructor(x, y) { this.x=x; this.y=y; }
-    add(v) { this.x+=v.x; this.y+=v.y; return this; }
-    subtract(v) { this.x-=v.x; this.y-=v.y; return this; }
-    multiply(scalar) { this.x*=scalar; this.y*=scalar; return this; }
-    magnitude() { return Math.sqrt(this.x**2 + this.y**2); }
-    normalize() { const m=this.magnitude(); if(m!==0) this.multiply(1/m); return this; }
-    dot(v) { return this.x * v.x + this.y * v.y; }
-    clone() { return new Vector2D(this.x, this.y); }
-    static distance(v1, v2) { return Math.sqrt((v1.x-v2.x)**2 + (v1.y-v2.y)**2); }
-    static subtract(v1, v2) { return new Vector2D(v1.x-v2.x, v1.y-v2.y); }
-}
-
-const ColorUtils = {
-    hexToHSL: (hex) => {
+const ColorUtil = {
+    hexHSL: (hex) => {
         let r=0,g=0,b=0; 
-        if(hex.length==4){r="0x"+hex[1]+hex[1];g="0x"+hex[2]+hex[2];b="0x"+hex[3]+hex[3];} else if(hex.length==7){r="0x"+hex[1]+hex[2];g="0x"+hex[3]+hex[4];b="0x"+hex[5]+hex[6];}
-        r/=255;g/=255;b/=255; let cmin=Math.min(r,g,b), cmax=Math.max(r,g,b), delta=cmax-cmin, h=0, s=0, l=0;
-        if(delta==0)h=0;else if(cmax==r)h=((g-b)/delta)%6;else if(cmax==g)h=(b-r)/delta+2;else h=(r-g)/delta+4;
-        h=Math.round(h*60);if(h<0)h+=360;l=(cmax+cmin)/2;s=delta==0?0:delta/(1-Math.abs(2*l-1)); return {h:h,s:s*100,l:l*100};
+        if(hex.length==4){r="0x"+hex[1]+hex[1];g="0x"+hex[2]+hex[2];b="0x"+hex[3]+hex[3];} else {r="0x"+hex[1]+hex[2];g="0x"+hex[3]+hex[4];b="0x"+hex[5]+hex[6];}
+        r/=255;g/=255;b/=255; let cmin=Math.min(r,g,b), cmax=Math.max(r,g,b), delta=cmax-cmin, h=0, s=0, l=(cmax+cmin)/2;
+        if(delta==0)h=0; else h=cmax==r ? ((g-b)/delta)%6 : (cmax==g ? (b-r)/delta+2 : (r-g)/delta+4);
+        h=Math.round(h*60); if(h<0)h+=360; s=delta==0?0:delta/(1-Math.abs(2*l-1)); return {h,s:s*100,l:l*100};
     },
-    resolveDynamicColor: (baseHex, combat) => {
-        const hsl = ColorUtils.hexToHSL(baseHex);
-        const state = combat.state;
-        switch(state) {
-            case GameConfiguration.ACTION_STATE.STUNNED: return `hsl(${hsl.h}, 10%, ${30 + (Math.random()*10)}%)`; 
-            case GameConfiguration.ACTION_STATE.CHARGING: return `hsl(${hsl.h}, ${hsl.s}%, ${50 + Math.sin(Date.now()/50)*25}%)`; 
-            case GameConfiguration.ACTION_STATE.LEVEL_3_READY: return `hsl(${hsl.h}, 0%, ${Math.floor(80 + Math.random()*20)}%)`; 
-            case GameConfiguration.ACTION_STATE.LEVEL_4_READY: return `hsl(${(Date.now()/2)%360}, 100%, 80%)`; 
-            case GameConfiguration.ACTION_STATE.BRACING: return `hsl(${hsl.h}, ${Math.min(100, hsl.s+20)}%, 25%)`;
-            case GameConfiguration.ACTION_STATE.SPRINT: return `hsl(${hsl.h}, ${Math.max(0, hsl.s-10)}%, 75%)`;
-            case GameConfiguration.ACTION_STATE.PARRY: return `#ffffff`; 
-            case GameConfiguration.ACTION_STATE.DASH: return `hsl(${hsl.h}, ${hsl.s}%, 85%)`; 
-            default: return baseHex;
+    dynColor: (base, cmb) => {
+        const hsl = ColorUtil.hexHSL(base);
+        if(cmb.odType === 'A') return `hsl(${hsl.h}, ${Math.max(0, hsl.s-20)}%, 90%)`;
+        if(cmb.odType === 'B') return `hsl(${hsl.h}, 100%, 10%)`; 
+        switch(cmb.state) {
+            case Config.STATE.STUN: return `hsl(${hsl.h}, 10%, 30%)`; 
+            case Config.STATE.CHARGING: return `hsl(${hsl.h}, ${hsl.s}%, ${60 + Math.sin(Date.now()/50)*20}%)`; 
+            case Config.STATE.LV3_RDY: return `hsl(${hsl.h}, 100%, 85%)`; 
+            case Config.STATE.LV4_RDY: return `hsl(${(Date.now()/2)%360}, 100%, 90%)`; 
+            case Config.STATE.BRACE: return `hsl(${hsl.h}, ${hsl.s}%, 30%)`;
+            case Config.STATE.SPRINT: return `hsl(${hsl.h}, ${hsl.s}%, 70%)`;
+            case Config.STATE.PARRY: return Palette.WHITE; 
+            case Config.STATE.DASH: return `hsl(${hsl.h}, ${hsl.s}%, 85%)`; 
+            default: return base;
         }
     }
 };
 
-class GameEventBus { 
-    constructor() { this.subscribers={}; } 
-    subscribe(event, callback) { (this.subscribers[event]=this.subscribers[event]||[]).push(callback); } 
-    publish(event, payload) { if(this.subscribers[event]) this.subscribers[event].forEach(cb=>cb(payload)); } 
+class EventBus { 
+    constructor() { this.subs={}; } 
+    sub(ev, cb) { (this.subs[ev]=this.subs[ev]||[]).push(cb); } 
+    pub(ev, data) { if(this.subs[ev]) this.subs[ev].forEach(cb=>cb(data)); } 
 }
 
 class GameObject { 
-    constructor(id) { this.id=id; this.components={}; this.tags=new Set(); this.active=true; } 
-    addComponent(name, data) { this.components[name]=data; return this; } 
-    hasComponent(name) { return !!this.components[name]; } 
-    hasTag(tag) { return this.tags.has(tag); } 
+    constructor(id) { this.id=id; this.comps={}; this.tags=new Set(); this.active=true; } 
+    add(n, d) { this.comps[n]=d; return this; } 
+    has(n) { return !!this.comps[n]; } 
+    tag(t) { return this.tags.has(t); } 
 }
 
-class GameObjectManager {
-    constructor() { this.objects=[]; this.idCounter=0; }
-    createObject() { const obj=new GameObject(++this.idCounter); this.objects.push(obj); return obj; }
-    destroyObject(obj) { obj.active=false; }
-    cleanUp() { this.objects=this.objects.filter(e=>e.active); }
-    queryComponents(componentList) { return this.objects.filter(e=>e.active && componentList.every(n=>e.hasComponent(n))); }
-    queryTag(tag) { return this.objects.filter(e=>e.active && e.hasTag(tag)); }
+class ObjectMan {
+    constructor() { this.list=[]; this.ids=0; }
+    create() { const o=new GameObject(++this.ids); this.list.push(o); return o; }
+    kill(o) { o.active=false; }
+    clean() { this.list=this.list.filter(e=>e.active); }
+    get(comps) { return this.list.filter(e=>e.active && comps.every(n=>e.has(n))); }
+    getByTag(t) { return this.list.filter(e=>e.active && e.tag(t)); }
 }
 
-const GameObjectFactory = {
-    instantiateFromBlueprint: (type, x, y) => {
-        const obj = GameEngine.objectManager.createObject(), bp = EntityDatabase[type];
-        if(!bp && type.includes('NORMAL_')) return GameObjectFactory.instantiateEnemy(type, x, y); 
-        obj.components.transform={position:new Vector2D(x,y), rotation:0}; obj.components.velocity=new Vector2D(0,0);
+const Factory = {
+    bp: (type, x, y) => {
+        const obj = Game.om.create(), bp = EntityDB[type];
+        if(!bp && type.includes('RUSHER')) return Factory.enemy(type, x, y); 
+        obj.comps.pos={pos:new Vec2(x,y), rot:0}; obj.comps.vel=new Vec2(0,0);
         if(bp.tags) bp.tags.forEach(t=>obj.tags.add(t));
-        if(bp.stats) obj.addComponent('stats', {...bp.stats, extraLives:0});
-        if(bp.render) obj.addComponent('render', {...bp.render, baseColor:bp.render.color, trail:[]});
-        if(bp.input) obj.addComponent('input', {...bp.input, primaryPressed:false, secondaryPressed:false, framesHeldPrimary:0, framesHeldSecondary:0, lastDirection:new Vector2D(1,0)});
-        obj.addComponent('combat', {state:GameConfiguration.ACTION_STATE.IDLE, stateTimer:0, sprintChargeAccumulator:0, braceChargeAccumulator:0, cooldowns:{parry:0, dash:0, turn:0}, invulnerabilityTimer:0, combatIntensity:0, levelOverride:0});
+        if(bp.stats) obj.add('stats', {...bp.stats, lives:0});
+        obj.add('render', {col:bp.col||bp.render.color, trail:[]});
+        if(bp.in) obj.add('input', {dev:bp.in, p1:false, p2:false, hold1:0, hold2:0, lastDir:new Vec2(1,0)});
+        obj.add('combat', {state:Config.STATE.IDLE, sTimer:0, sprAcc:0, brcAcc:0, chgTimer:0, cd:{parry:0, dash:0, turn:0, od:0, chg:0}, invuln:0, intensity:0, lvl:0, odType:null, odTimer:0});
         return obj;
     },
-    instantiateEnemy: (key, x, y) => {
-        const obj = GameEngine.objectManager.createObject(), cfg = EntityDatabase[key];
-        obj.tags.add('enemy'); obj.tags.add(key); obj.components.transform={position:new Vector2D(x,y), rotation:0}; obj.components.velocity=new Vector2D(0,0);
-        obj.addComponent('stats', {...cfg.stats, maxHp:cfg.stats.hp, extraLives:0});
-        obj.addComponent('render', {baseColor:cfg.variants[0], trail:[]});
-        obj.addComponent('input', {deviceId:'ai', primaryPressed:false, secondaryPressed:false, framesHeldPrimary:0, framesHeldSecondary:0, lastDirection:new Vector2D(1,0), forceTapPrimary:false, forceTapSecondary:false});
-        obj.addComponent('combat', {state:GameConfiguration.ACTION_STATE.IDLE, stateTimer:0, sprintChargeAccumulator:0, braceChargeAccumulator:0, cooldowns:{parry:0, dash:0, turn:0}, invulnerabilityTimer:0, combatIntensity:0, levelOverride:0});
-        obj.addComponent('ai', {behavior:AiBehaviorDatabase[cfg.behavior], traits:cfg.traits||[], memory:{damageTaken:0}, thinkTimer:0, activePlan:null});
+    enemy: (key, x, y) => {
+        const obj = Game.om.create(), cfg = EntityDB[key.replace('NORMAL_','')]; // fix key mapping
+        const raw = EntityDB[Object.keys(EntityDB).find(k=>key.includes(k))];
+        obj.tags.add('enemy'); obj.tags.add(key); obj.comps.pos={pos:new Vec2(x,y), rot:0}; obj.comps.vel=new Vec2(0,0);
+        obj.add('stats', {...raw.stats, max:raw.stats.hp, lives:0});
+        obj.add('render', {col:raw.col, trail:[]});
+        obj.add('input', {dev:'ai', p1:false, p2:false, hold1:0, hold2:0, lastDir:new Vec2(1,0), forceP1:false, forceP2:false});
+        obj.add('combat', {state:Config.STATE.IDLE, sTimer:0, sprAcc:0, brcAcc:0, chgTimer:0, cd:{parry:0, dash:0, turn:0, od:0, chg:0}, invuln:0, lvl:0, odType:null, odTimer:0});
+        obj.add('ai', {behav:AiBehaviors[raw.ai], traits:raw.traits||[], mem:{dmg:0}, tick:0, plan:null});
         return obj;
     },
-    instantiateLoot: (x, y, key) => {
-        const obj = GameEngine.objectManager.createObject(); obj.tags.add('loot'); obj.components.transform={position:new Vector2D(x,y), rotation:0}; obj.components.velocity=new Vector2D(0,0);
-        obj.addComponent('loot', {type:key, life:1200, data:LootDatabase[key]});
-        obj.addComponent('render', {baseColor:LootDatabase[key].color}); return obj;
+    loot: (x, y, key) => {
+        const obj = Game.om.create(); obj.tags.add('loot'); obj.comps.pos={pos:new Vec2(x,y), rot:0}; obj.comps.vel=new Vec2(0,0);
+        obj.add('loot', {type:key, life:1200, data:LootDB[key]}); obj.add('render', {col:LootDB[key].col}); return obj;
     },
-    instantiateParticle: (x, y, color, speed, type='EXPLODE') => { 
-        const p = GameEngine.particlePool.acquire();
-        p.active=true; p.type=type; p.position.x=x; p.position.y=y; p.color=color; p.life=1; p.size=Math.random()*4+2;
-        if(type==='IMPLODE') { p.velocity.x=0; p.velocity.y=0; } 
-        else { const a=Math.random()*6.28; p.velocity.x=Math.cos(a)*speed; p.velocity.y=Math.sin(a)*speed; }
-        GameEngine.activeParticles.push(p);
+    part: (x, y, col, spd, type='EXPLODE') => { 
+        const p = Game.pool.get();
+        p.active=true; p.type=type; p.pos.x=x; p.pos.y=y; p.col=col; p.life=1; p.sz=Math.random()*4+2; p.rot=Math.random()*360;
+        if(type==='IMPLODE') { p.vel.x=0; p.vel.y=0; } 
+        else if(type==='FIZZLE') { p.vel.x=(Math.random()-0.5); p.vel.y=-2; p.col=Palette.GREY; }
+        else if(type==='DATA') { p.vel.x=0; p.vel.y=0; p.life=0.5; p.sz=3; }
+        else { const a=Math.random()*6.28; p.vel.x=Math.cos(a)*spd; p.vel.y=Math.sin(a)*spd; }
+        Game.parts.push(p);
     },
-    instantiateShockwave: (x, y, color) => { GameEngine.activeShockwaves.push({x, y, r: 5, color, alpha: 1, maxR: 100}); }
+    wave: (x, y, col) => { Game.waves.push({x, y, r:5, col, a:1}); }
 };
 
-class AudioSystem {
-    constructor() { this.active = true; this.bindEvents(); }
-    bindEvents() {
-        GameEngine.eventBus.subscribe('EVENT_HIT', () => this.playSound('HIT_LIGHT'));
-        GameEngine.eventBus.subscribe('EVENT_CLASH', () => this.playSound('CLASH'));
-        GameEngine.eventBus.subscribe('EVENT_PARRY', () => this.playSound('COMBAT_PARRY'));
-        GameEngine.eventBus.subscribe('EVENT_DEATH', () => this.playSound('ENTITY_DEATH'));
-        GameEngine.eventBus.subscribe('EVENT_DASH', () => this.playSound('COMBAT_DASH'));
-        GameEngine.eventBus.subscribe('EVENT_CHARGE_INIT', () => this.playSound('COMBAT_CHARGE')); 
-        GameEngine.eventBus.subscribe('EVENT_UI_HOVER', () => this.playSound('UI_HOVER'));
-        GameEngine.eventBus.subscribe('EVENT_UI_CLICK', () => this.playSound('UI_CLICK'));
-        GameEngine.eventBus.subscribe('EVENT_LOOT', () => this.playSound('PICKUP_COLLECT'));
+class AudioSys {
+    constructor() { 
+        const b = (e,k) => Game.bus.sub(e, ()=>this.play(k));
+        b('HIT', 'HIT_L'); b('CLASH','CLASH'); b('PARRY','PARRY'); b('DEATH','DEATH'); b('DASH','DASH');
+        b('CHARGE','CHARGE'); b('UI_HOVER','UI_HOVER'); b('UI_CLICK','UI_CLICK'); b('LOOT','LOOT');
     }
-    playSound(key) { }
+    play(k) { /* Placeholder */ }
 }
 
-class InputSystem {
+class InputSys {
     constructor() {
-        this.scheme="MOUSE"; this.controllerState={p1:{primary:false,secondary:false,axis:new Vector2D(0,0)}, p2:{primary:false,secondary:false,axis:new Vector2D(0,0)}};
-        this.keys={}; this.touches={}; this.mouseCoords={x:0,y:0}; this.menuDebounce=0; this.bindEvents();
+        this.mode="MOUSE"; this.pads={p1:{p1:0,p2:0,ax:new Vec2(0,0)}, p2:{p1:0,p2:0,ax:new Vec2(0,0)}};
+        this.keys={}; this.touches={}; this.mouse={x:0,y:0}; this.db=0; this.bind();
     }
-    bindEvents() {
-        window.addEventListener('keydown', e=>{ 
+    bind() {
+        const L=window.addEventListener;
+        L('keydown', e=>{ 
             this.keys[e.code]=true;
-            if(GameEngine.flags.inMenu){
-                if(['ArrowUp','KeyW'].includes(e.code)) { GameEngine.userInterface.navigateMenu(-1); GameEngine.eventBus.publish('EVENT_UI_HOVER'); }
-                if(['ArrowDown','KeyS'].includes(e.code)) { GameEngine.userInterface.navigateMenu(1); GameEngine.eventBus.publish('EVENT_UI_HOVER'); }
-                if(['Enter','Space'].includes(e.code)) { GameEngine.userInterface.triggerMenuSelect(); GameEngine.eventBus.publish('EVENT_UI_CLICK'); }
+            if(Game.flags.menu){
+                if(['ArrowUp','KeyW'].includes(e.code)) { Game.ui.nav(-1); Game.bus.pub('UI_HOVER'); }
+                if(['ArrowDown','KeyS'].includes(e.code)) { Game.ui.nav(1); Game.bus.pub('UI_HOVER'); }
+                if(['Enter','Space'].includes(e.code)) { Game.ui.sel(); Game.bus.pub('UI_CLICK'); }
             }
         });
-        window.addEventListener('keyup', e=>this.keys[e.code]=false);
-        window.addEventListener('mousemove', e=>{if(this.scheme==='MOUSE'){this.mouseCoords.x=e.clientX;this.mouseCoords.y=e.clientY;}});
-        window.addEventListener('mousedown', e=>{if(this.scheme==='MOUSE'&&!GameEngine.flags.inMenu){if(e.button===0)this.controllerState.p1.primary=true;if(e.button===2)this.controllerState.p1.secondary=true;}});
-        window.addEventListener('mouseup', e=>{if(this.scheme==='MOUSE'){if(e.button===0)this.controllerState.p1.primary=false;if(e.button===2)this.controllerState.p1.secondary=false;}});
-        window.addEventListener('contextmenu', e=>e.preventDefault());
+        L('keyup', e=>this.keys[e.code]=false);
+        L('mousemove', e=>{if(this.mode==='MOUSE'){this.mouse.x=e.clientX;this.mouse.y=e.clientY;}});
+        L('mousedown', e=>{if(this.mode==='MOUSE'&&!Game.flags.menu){if(e.button===0)this.pads.p1.p1=true;if(e.button===2)this.pads.p1.p2=true;}});
+        L('mouseup', e=>{if(this.mode==='MOUSE'){if(e.button===0)this.pads.p1.p1=false;if(e.button===2)this.pads.p1.p2=false;}});
+        L('contextmenu', e=>e.preventDefault());
     }
     
-    applyAimAssist(sourceObj, inputVector) {
-        if(inputVector.magnitude() < 0.1) return inputVector;
-        let targets = [];
-        if(sourceObj.hasTag('player')) targets = GameEngine.objectManager.queryTag('enemy');
-        else if(sourceObj.hasTag('enemy')) targets = GameEngine.objectManager.queryTag('player');
-        if(targets.length === 0) return inputVector;
-
-        let bestTargetDir = null; let maxDot = -1;
-        targets.forEach(t => {
-            const dist = Vector2D.distance(sourceObj.components.transform.position, t.components.transform.position);
-            if(dist > GameConfiguration.AIM_ASSIST.DIST_THRESHOLD) return;
-            const dirToTarget = Vector2D.subtract(t.components.transform.position, sourceObj.components.transform.position).normalize();
-            const dot = inputVector.dot(dirToTarget);
-            if(dot > GameConfiguration.AIM_ASSIST.ANGLE_THRESHOLD) {
-                const score = dot + (1 - dist/1000); 
-                if(score > maxDot) { maxDot = score; bestTargetDir = dirToTarget; }
-            }
+    aimAssist(src, vec) {
+        if(vec.mag()<Config.AIM.DEADZONE) return vec;
+        let tgs = src.tag('player') ? Game.om.getByTag('enemy') : Game.om.getByTag('player');
+        if(!tgs.length) return vec;
+        let best=null, max=-1;
+        tgs.forEach(t => {
+            const dist = Vec2.dist(src.comps.pos.pos, t.comps.pos.pos);
+            if(dist > Config.AIM.DIST) return;
+            const dir = Vec2.sub(t.comps.pos.pos, src.comps.pos.pos).norm(), dot = vec.dot(dir);
+            if(dot > Config.AIM.ANGLE) { const sc = dot + (1 - dist/1000); if(sc > max) { max=sc; best=dir; } }
         });
-
-        if(bestTargetDir) {
-            const strength = GameConfiguration.AIM_ASSIST.STRENGTH;
-            return new Vector2D(inputVector.x * (1 - strength) + bestTargetDir.x * strength, inputVector.y * (1 - strength) + bestTargetDir.y * strength).normalize();
-        }
-        return inputVector;
+        return best ? new Vec2(vec.x*(1-Config.AIM.STR) + best.x*Config.AIM.STR, vec.y*(1-Config.AIM.STR) + best.y*Config.AIM.STR).norm() : vec;
     }
 
     process() {
-        this.pollGamepads();
-        if(GameEngine.flags.inMenu && this.menuDebounce<=0) {
-            const pad = navigator.getGamepads()[0];
-            if(pad) {
-                if(pad.axes[1] < -0.5 || pad.buttons[12].pressed) { GameEngine.userInterface.navigateMenu(-1); this.menuDebounce=10; GameEngine.eventBus.publish('EVENT_UI_HOVER'); }
-                else if(pad.axes[1] > 0.5 || pad.buttons[13].pressed) { GameEngine.userInterface.navigateMenu(1); this.menuDebounce=10; GameEngine.eventBus.publish('EVENT_UI_HOVER'); }
-                else if(pad.buttons[0].pressed || pad.buttons[9].pressed) { GameEngine.userInterface.triggerMenuSelect(); this.menuDebounce=20; GameEngine.eventBus.publish('EVENT_UI_CLICK'); }
+        this.poll();
+        if(Game.flags.menu && this.db<=0) {
+            const p = navigator.getGamepads()[0];
+            if(p) {
+                if(p.axes[1]<-0.5 || p.buttons[12].pressed) { Game.ui.nav(-1); this.db=10; Game.bus.pub('UI_HOVER'); }
+                else if(p.axes[1]>0.5 || p.buttons[13].pressed) { Game.ui.nav(1); this.db=10; Game.bus.pub('UI_HOVER'); }
+                else if(p.buttons[0].pressed || p.buttons[9].pressed) { Game.ui.sel(); this.db=20; Game.bus.pub('UI_CLICK'); }
             }
         }
-        if(this.menuDebounce>0) this.menuDebounce--;
-        this.mapInputsToState();
+        if(this.db>0) this.db--;
+        this.map();
         
-        GameEngine.objectManager.queryComponents(['input','combat','velocity']).forEach(obj=>{
-            if(GameEngine.flags.inMenu && obj.components.input.deviceId !== 'ai') return;
-            const input=obj.components.input, combat=obj.components.combat;
-            const lastFramesP = input.framesHeldPrimary, lastFramesS = input.framesHeldSecondary;
-            let rawP = false, rawS = false, rawAxis = new Vector2D(0,0);
+        Game.om.get(['input','combat','vel']).forEach(o=>{
+            if(Game.flags.menu && o.comps.input.dev !== 'ai') return;
+            const inp=o.comps.input, cmb=o.comps.combat;
+            const last1 = inp.hold1, last2 = inp.hold2;
+            let r1=false, r2=false, rAx = new Vec2(0,0);
             
-            if(input.deviceId==='ai') {
-                if(input.forceTapPrimary){ rawP=true; input.forceTapPrimary=false; } else rawP = input.primaryPressed;
-                if(input.forceTapSecondary){ rawS=true; input.forceTapSecondary=false; } else rawS = input.secondaryPressed;
-                rawAxis = input.lastDirection.clone(); 
+            if(inp.dev==='ai') {
+                if(inp.forceP1){ r1=true; inp.forceP1=false; } else r1 = inp.p1;
+                if(inp.forceP2){ r2=true; inp.forceP2=false; } else r2 = inp.p2;
+                rAx = inp.lastDir.clone(); 
             } else {
-                rawP = this.controllerState[input.deviceId].primary; rawS = this.controllerState[input.deviceId].secondary;
-                if(this.scheme==='MOUSE' && input.deviceId==='p1'){ 
-                    if(Vector2D.distance(obj.components.transform.position, this.mouseCoords) > 10) rawAxis = Vector2D.subtract(this.mouseCoords, obj.components.transform.position).normalize();
-                } else { if(this.controllerState[input.deviceId].axis.magnitude() > 0.1) rawAxis = this.controllerState[input.deviceId].axis.clone(); }
-                if(rawAxis.magnitude() > 0.1) rawAxis = this.applyAimAssist(obj, rawAxis.normalize());
+                r1 = this.pads[inp.dev].p1; r2 = this.pads[inp.dev].p2;
+                if(this.mode==='MOUSE' && inp.dev==='p1'){ 
+                    if(Vec2.dist(o.comps.pos.pos, this.mouse) > 10) rAx = Vec2.sub(this.mouse, o.comps.pos.pos).norm();
+                } else { if(this.pads[inp.dev].ax.mag() > Config.AIM.DEADZONE) rAx = this.pads[inp.dev].ax.clone(); }
+                if(rAx.mag() > Config.AIM.DEADZONE) rAx = this.aimAssist(o, rAx.norm());
             }
 
-            if (rawAxis.magnitude() > 0.1) input.lastDirection = rawAxis.clone().normalize(); else if (input.lastDirection.magnitude() === 0) input.lastDirection = new Vector2D(1, 0);
+            if (rAx.mag() > Config.AIM.DEADZONE) inp.lastDir = rAx.clone().norm(); else if (inp.lastDir.mag()===0) inp.lastDir = new Vec2(1, 0);
+            const aim = () => rAx.mag() > Config.AIM.DEADZONE ? rAx.norm() : inp.lastDir;
 
-            input.framesHeldPrimary = rawP ? input.framesHeldPrimary + 1 : 0; input.framesHeldSecondary = rawS ? input.framesHeldSecondary + 1 : 0;
-            const isHeldP = input.framesHeldPrimary > 0, isHeldS = input.framesHeldSecondary > 0;
-            const isTapP = !isHeldP && lastFramesP > 0 && lastFramesP <= GameConfiguration.TIMINGS.TAP_WINDOW;
-            const isTapS = !isHeldS && lastFramesS > 0 && lastFramesS <= GameConfiguration.TIMINGS.TAP_WINDOW;
+            inp.hold1 = r1 ? inp.hold1 + 1 : 0; inp.hold2 = r2 ? inp.hold2 + 1 : 0;
+            const h1 = inp.hold1 > 0, h2 = inp.hold2 > 0;
+            const tap1 = !h1 && last1 > 0 && last1 <= Config.TIME.TAP;
+            const tap2 = !h2 && last2 > 0 && last2 <= Config.TIME.TAP;
 
-            if([GameConfiguration.ACTION_STATE.DASH, GameConfiguration.ACTION_STATE.STUNNED, GameConfiguration.ACTION_STATE.DODGE, GameConfiguration.ACTION_STATE.PARRY].includes(combat.state)) return;
-            const getAim = () => rawAxis.magnitude() > 0.1 ? rawAxis.normalize() : input.lastDirection;
+            if([Config.STATE.DASH, Config.STATE.STUN, Config.STATE.DODGE, Config.STATE.PARRY].includes(cmb.state)) return;
+            
+            // OVERDRIVE
+            if (cmb.odType) {
+                cmb.odTimer--;
+                if (cmb.odTimer <= 0) { cmb.odType = null; cmb.odTimer = 0; }
+                else {
+                    if (cmb.odType === 'A') {
+                        o.comps.vel.add(rAx.mul(Config.PHYS.BASE_ACCEL * Config.PHYS.OD_A));
+                        if (o.comps.vel.mag() > 2 && Math.random() < 0.3) Game.bus.pub('PART_SPAWN', {x:o.comps.pos.pos.x, y:o.comps.pos.pos.y, col:Palette.WHITE, type:'DATA'});
+                        if (tap1 && cmb.cd.od <= 0) {
+                            cmb.state = Config.STATE.DASH; cmb.sTimer = 10; cmb.cd.od = Config.TIME.CD_OD; cmb.lvl = 3;
+                            o.comps.vel = aim().mul(Config.PHYS.DASH); Game.bus.pub('DASH'); Game.bus.pub('PART_BURST',{x:o.comps.pos.pos.x, y:o.comps.pos.pos.y, col:Palette.WHITE, c:5});
+                        }
+                    } else if (cmb.odType === 'B') {
+                        o.comps.vel.add(rAx.mul(Config.PHYS.BASE_ACCEL * Config.PHYS.OD_B));
+                         if (tap2 && cmb.cd.od <= 0) { cmb.cd.od = Config.TIME.CD_OD; Game.bus.pub('OD_BLAST', {src: o}); }
+                    }
+                    if (cmb.state === Config.STATE.IDLE && rAx.mag() > 0) cmb.state = Config.STATE.MOVE;
+                    else if (cmb.state === Config.STATE.MOVE && rAx.mag() === 0) cmb.state = Config.STATE.IDLE;
+                    return; 
+                }
+            }
 
-            if (isHeldP && isHeldS) {
-                const chargeDuration = Math.min(input.framesHeldPrimary, input.framesHeldSecondary);
-                if(chargeDuration===1) GameEngine.eventBus.publish('EVENT_CHARGE_INIT');
-                if(chargeDuration > GameConfiguration.TIMINGS.CHARGE_LEVEL_4) combat.state = GameConfiguration.ACTION_STATE.LEVEL_4_READY;
-                else if(chargeDuration > GameConfiguration.TIMINGS.CHARGE_LEVEL_3) combat.state = GameConfiguration.ACTION_STATE.LEVEL_3_READY;
-                else combat.state = GameConfiguration.ACTION_STATE.CHARGING;
-
-                obj.components.velocity.multiply(0.8);
-                if(chargeDuration % 5 === 0) GameEngine.eventBus.publish('EVENT_PARTICLE_IMPLODE', {target:obj, count:2});
-                return; 
+            // TRIGGERS
+            if (h1 && !h2 && inp.hold1 >= Config.TIME.OD_TRIG) {
+                cmb.odType = 'A'; cmb.odTimer = Config.TIME.OD_DUR; inp.hold1 = 0; Game.bus.pub('SHAKE', 20); return;
+            }
+            if (!h1 && h2 && inp.hold2 >= Config.TIME.OD_TRIG) {
+                cmb.odType = 'B'; cmb.odTimer = Config.TIME.OD_DUR; inp.hold2 = 0; Game.bus.pub('SHAKE', 20); return;
             }
             
-            if ((combat.state === GameConfiguration.ACTION_STATE.CHARGING || combat.state === GameConfiguration.ACTION_STATE.LEVEL_3_READY || combat.state === GameConfiguration.ACTION_STATE.LEVEL_4_READY) && (!isHeldP || !isHeldS)) {
-                let level = 0; if(combat.state === GameConfiguration.ACTION_STATE.LEVEL_4_READY) level = 4; else if(combat.state === GameConfiguration.ACTION_STATE.LEVEL_3_READY) level = 3;
-                if(level >= 3) {
-                      combat.state = GameConfiguration.ACTION_STATE.DASH; combat.stateTimer = level===4 ? 30 : 20; combat.invulnerabilityTimer = combat.stateTimer; combat.levelOverride = level;
-                      const force = level === 4 ? GameConfiguration.PHYSICS.FORCE_MAXIMUM : GameConfiguration.PHYSICS.FORCE_HIGH;
-                      obj.components.velocity = getAim().multiply(force);
-                      GameEngine.eventBus.publish('EVENT_DASH'); GameEngine.eventBus.publish('EVENT_SHAKE', 15);
-                } else combat.state = GameConfiguration.ACTION_STATE.IDLE;
-                return;
+            if ((h1 && inp.hold1 > Config.INPUT.HOLD_THRESH) || (h2 && inp.hold2 > Config.INPUT.HOLD_THRESH)) {
+                if (Math.random() > 0.8) Game.bus.pub('PART_SPAWN', {x:o.comps.pos.pos.x+(Math.random()-0.5)*20, y:o.comps.pos.pos.y+(Math.random()-0.5)*20, col:o.comps.render.col, spd:1, type:'IMPLODE'});
             }
 
-            if (isHeldP && !isHeldS) {
-                if (input.framesHeldPrimary > GameConfiguration.TIMINGS.TAP_WINDOW) {
-                    combat.state = GameConfiguration.ACTION_STATE.SPRINT; combat.sprintChargeAccumulator++;
-                    obj.components.velocity.add(rawAxis.multiply(GameConfiguration.PHYSICS.BASE_ACCELERATION * GameConfiguration.SPEED_SCALARS.SPRINT));
-                    if (combat.sprintChargeAccumulator >= GameConfiguration.TIMINGS.CHARGE_THRESHOLD && combat.sprintChargeAccumulator % 10 === 0) GameEngine.eventBus.publish('EVENT_PARTICLE_SPAWN', {x:obj.components.transform.position.x, y:obj.components.transform.position.y, col:obj.components.render.baseColor, speed:2, type:'EXPLODE'});
+            // CHARGE (A+B)
+            if (h1 && h2) {
+                cmb.chgTimer++; 
+                if(cmb.chgTimer===1) Game.bus.pub('CHARGE_INIT');
+                if(cmb.chgTimer > Config.TIME.CHG_LV4) cmb.state = Config.STATE.LV4_RDY;
+                else if(cmb.chgTimer > Config.TIME.CHG_LV3) cmb.state = Config.STATE.LV3_RDY;
+                else cmb.state = Config.STATE.CHARGING;
+                o.comps.vel.mul(0.8); return; 
+            }
+            
+            if ((cmb.state >= Config.STATE.CHARGING && cmb.state <= Config.STATE.LV4_RDY) && (!h1 || !h2)) {
+                if (cmb.chgTimer < Config.TIME.MIN_CHG || cmb.cd.chg > 0) {
+                    cmb.state = Config.STATE.IDLE; Game.bus.pub('FIZZLE', {x:o.comps.pos.pos.x, y:o.comps.pos.pos.y}); cmb.chgTimer = 0; return;
+                }
+                let lvl = cmb.state === Config.STATE.LV4_RDY ? 4 : (cmb.state === Config.STATE.LV3_RDY ? 3 : 2);
+                cmb.state = Config.STATE.DASH; cmb.sTimer = lvl===4 ? 30 : 20; cmb.invuln = cmb.sTimer; cmb.lvl = lvl; cmb.cd.chg = Config.TIME.CD_CHG; 
+                o.comps.vel = aim().mul(lvl===4 ? Config.PHYS.MAX : (lvl===3 ? Config.PHYS.HIGH : Config.PHYS.DASH));
+                Game.bus.pub('DASH'); Game.bus.pub('SHAKE', lvl===4?30:10); cmb.chgTimer = 0; return;
+            }
+            if (!h1 || !h2) cmb.chgTimer = 0;
+
+            // SPRINT (A)
+            if (h1 && !h2) {
+                if (inp.hold1 > Config.TIME.TAP) {
+                    cmb.state = Config.STATE.SPRINT; cmb.sprAcc++;
+                    o.comps.vel.add(rAx.mul(Config.PHYS.BASE_ACCEL * Config.SPEED.SPRINT));
+                    if (cmb.sprAcc >= Config.TIME.CHG_THRESH && cmb.sprAcc % 10 === 0) Game.bus.pub('PART_SPAWN', {x:o.comps.pos.pos.x, y:o.comps.pos.pos.y, col:o.comps.render.col, spd:2, type:'EXPLODE'});
                     return;
                 }
-            } else if (!isHeldP && lastFramesP > GameConfiguration.TIMINGS.TAP_WINDOW) {
-                if (combat.sprintChargeAccumulator >= GameConfiguration.TIMINGS.CHARGE_THRESHOLD) {
-                    combat.state = GameConfiguration.ACTION_STATE.DASH; combat.stateTimer = 20; combat.invulnerabilityTimer = 15; combat.levelOverride = 3;
-                    obj.components.velocity = getAim().multiply(GameConfiguration.PHYSICS.FORCE_HIGH);
-                    GameEngine.eventBus.publish('EVENT_DASH'); GameEngine.eventBus.publish('EVENT_SHAKE', 10);
-                } else combat.state = GameConfiguration.ACTION_STATE.IDLE;
-                combat.sprintChargeAccumulator = 0; return;
+            } else if (!h1 && last1 > Config.TIME.TAP) {
+                if (cmb.sprAcc >= Config.TIME.CHG_THRESH) {
+                    cmb.state = Config.STATE.DASH; cmb.sTimer = 20; cmb.invuln = 15; cmb.lvl = 3;
+                    o.comps.vel = aim().mul(Config.PHYS.HIGH); Game.bus.pub('DASH'); Game.bus.pub('SHAKE', 10);
+                } else cmb.state = Config.STATE.IDLE;
+                cmb.sprAcc = 0; return;
             }
 
-            if (isHeldS && !isHeldP) {
-                if (input.framesHeldSecondary > GameConfiguration.TIMINGS.TAP_WINDOW) {
-                    combat.state = GameConfiguration.ACTION_STATE.BRACING; combat.braceChargeAccumulator++;
-                    obj.components.velocity.add(rawAxis.multiply(GameConfiguration.PHYSICS.BASE_ACCELERATION * GameConfiguration.SPEED_SCALARS.BRACE));
-                    if (combat.braceChargeAccumulator >= GameConfiguration.TIMINGS.CHARGE_THRESHOLD && combat.braceChargeAccumulator % 10 === 0) GameEngine.eventBus.publish('EVENT_PARTICLE_SPAWN', {x:obj.components.transform.position.x, y:obj.components.transform.position.y, col:obj.components.render.baseColor, speed:1, type:'IMPLODE'});
+            // BRACE (B)
+            if (h2 && !h1) {
+                if (inp.hold2 > Config.TIME.TAP) {
+                    cmb.state = Config.STATE.BRACE; cmb.brcAcc++;
+                    o.comps.vel.add(rAx.mul(Config.PHYS.BASE_ACCEL * Config.SPEED.BRACE));
+                    if (cmb.brcAcc >= Config.TIME.CHG_THRESH && cmb.brcAcc % 10 === 0) Game.bus.pub('PART_SPAWN', {x:o.comps.pos.pos.x, y:o.comps.pos.pos.y, col:o.comps.render.col, spd:1, type:'IMPLODE'});
                     return;
                 }
-            } else if (!isHeldS && lastFramesS > GameConfiguration.TIMINGS.TAP_WINDOW) {
-                if (combat.braceChargeAccumulator >= GameConfiguration.TIMINGS.CHARGE_THRESHOLD) {
-                    GameEngine.eventBus.publish('EVENT_AREA_BLAST', {source: obj}); GameEngine.eventBus.publish('EVENT_SHAKE', 20);
-                }
-                combat.state = GameConfiguration.ACTION_STATE.IDLE; combat.braceChargeAccumulator = 0; return;
+            } else if (!h2 && last2 > Config.TIME.TAP) {
+                if (cmb.brcAcc >= Config.TIME.CHG_THRESH) { Game.bus.pub('AREA_BLAST', {src: o}); Game.bus.pub('SHAKE', 20); }
+                cmb.state = Config.STATE.IDLE; cmb.brcAcc = 0; return;
             }
 
-            if(isTapP && combat.cooldowns.dash <= 0 && !isHeldS) {
-                combat.state = GameConfiguration.ACTION_STATE.DASH; combat.stateTimer = 10; combat.cooldowns.dash = GameConfiguration.TIMINGS.CD_DASH; combat.levelOverride = 2;
-                obj.components.velocity = getAim().multiply(GameConfiguration.PHYSICS.FORCE_DASH); GameEngine.eventBus.publish('EVENT_DASH'); return;
+            // QUICK ACTS
+            if(tap1 && cmb.cd.dash <= 0 && !h2) {
+                cmb.state = Config.STATE.DASH; cmb.sTimer = 10; cmb.cd.dash = Config.TIME.CD_DASH; cmb.lvl = 2;
+                o.comps.vel = aim().mul(Config.PHYS.DASH); Game.bus.pub('DASH'); return;
+            }
+            if(tap2 && cmb.cd.parry <= 0 && !h1) {
+                cmb.state = Config.STATE.PARRY; cmb.sTimer = Config.TIME.PARRY_DUR; cmb.cd.parry = Config.TIME.CD_PARRY; o.comps.vel.mul(0.1); return;
             }
 
-            if(isTapS && combat.cooldowns.parry <= 0 && !isHeldP) {
-                combat.state = GameConfiguration.ACTION_STATE.PARRY; 
-                combat.stateTimer = GameConfiguration.TIMINGS.PARRY_DURATION; 
-                combat.cooldowns.parry = GameConfiguration.TIMINGS.CD_PARRY; 
-                obj.components.velocity.multiply(0.1); 
-                return;
-            }
-
-            if(rawAxis.magnitude() > 0 && !isHeldP && !isHeldS){ 
-                combat.state = GameConfiguration.ACTION_STATE.MOVE; 
-                obj.components.velocity.add(rawAxis.multiply(GameConfiguration.PHYSICS.BASE_ACCELERATION * GameConfiguration.SPEED_SCALARS.BASE)); 
-            } else if (!isHeldP && !isHeldS && combat.state !== GameConfiguration.ACTION_STATE.PARRY) { combat.state = GameConfiguration.ACTION_STATE.IDLE; }
+            if(rAx.mag() > 0 && !h1 && !h2){ cmb.state = Config.STATE.MOVE; o.comps.vel.add(rAx.mul(Config.PHYS.BASE_ACCEL * Config.SPEED.BASE)); } 
+            else if (!h1 && !h2 && cmb.state !== Config.STATE.PARRY) { cmb.state = Config.STATE.IDLE; }
         });
     }
-    pollGamepads() {
-        const pads=navigator.getGamepads?navigator.getGamepads():[];
-        const map=(pid,i)=>{const g=pads[i]; if(g){this.controllerState[pid].axis.x=Math.abs(g.axes[0])>0.1?g.axes[0]:0;this.controllerState[pid].axis.y=Math.abs(g.axes[1])>0.1?g.axes[1]:0;this.controllerState[pid].primary=g.buttons[0].pressed||g.buttons[2].pressed;this.controllerState[pid].secondary=g.buttons[1].pressed||g.buttons[3].pressed;}else{this.controllerState[pid].axis=new Vector2D(0,0);this.controllerState[pid].primary=false;this.controllerState[pid].secondary=false;}};
-        if(this.scheme==='GAMEPAD'){ map('p1',0); if(GameEngine.flags.subMode==='COOP')map('p2',1); else if(pads[1])map('p1',1); }
+    poll() {
+        const pd=navigator.getGamepads?navigator.getGamepads():[];
+        const map=(id,i)=>{const g=pd[i]; if(g){this.pads[id].ax.x=Math.abs(g.axes[0])>0.1?g.axes[0]:0;this.pads[id].ax.y=Math.abs(g.axes[1])>0.1?g.axes[1]:0;this.pads[id].p1=g.buttons[0].pressed||g.buttons[2].pressed;this.pads[id].p2=g.buttons[1].pressed||g.buttons[3].pressed;}else{this.pads[id].ax=new Vec2(0,0);this.pads[id].p1=false;this.pads[id].p2=false;}};
+        if(this.mode==='GAMEPAD'){ map('p1',0); if(Game.flags.subMode==='COOP')map('p2',1); else if(pd[1])map('p1',1); }
     }
-    mapInputsToState() {
-        if(this.scheme==='KEYBOARD'){ const m=(id,u,d,l,r,a,b)=>{this.controllerState[id].axis.x=(this.keys[r]?1:0)-(this.keys[l]?1:0);this.controllerState[id].axis.y=(this.keys[d]?1:0)-(this.keys[u]?1:0);this.controllerState[id].primary=this.keys[a];this.controllerState[id].secondary=this.keys[b];}; m('p1','KeyW','KeyS','KeyA','KeyD','KeyZ','KeyX'); m('p2','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyK','KeyL'); if(this.keys['Space'])this.controllerState.p1.primary=true; if(this.keys['ShiftLeft'])this.controllerState.p1.secondary=true; }
-        else if(this.scheme==='TOUCH'){ ['p1','p2'].forEach(id=>{let s=this.touches[`stick-${id}`];if(s){this.controllerState[id].axis.x=s.x;this.controllerState[id].axis.y=s.y;}this.controllerState[id].primary=this.touches[`btnA-${id}`];this.controllerState[id].secondary=this.touches[`btnB-${id}`];}); }
+    map() {
+        if(this.mode==='KEYBOARD'){ const m=(id,u,d,l,r,a,b)=>{this.pads[id].ax.x=(this.keys[r]?1:0)-(this.keys[l]?1:0);this.pads[id].ax.y=(this.keys[d]?1:0)-(this.keys[u]?1:0);this.pads[id].p1=this.keys[a];this.pads[id].p2=this.keys[b];}; m('p1','KeyW','KeyS','KeyA','KeyD','KeyZ','KeyX'); m('p2','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyK','KeyL'); if(this.keys['Space'])this.pads.p1.p1=true; if(this.keys['ShiftLeft'])this.pads.p1.p2=true; }
+        else if(this.mode==='TOUCH'){ ['p1','p2'].forEach(id=>{let s=this.touches[`stick-${id}`];if(s){this.pads[id].ax.x=s.x;this.pads[id].ax.y=s.y;}this.pads[id].p1=this.touches[`btnA-${id}`];this.pads[id].p2=this.touches[`btnB-${id}`];}); }
     }
-    setInputScheme(schemeName) { this.scheme=schemeName; ['mouse','key','touch','pad'].forEach(k=>document.getElementById(`btn-input-${k}`).classList.toggle('active', schemeName.toUpperCase()===k.toUpperCase()||(k==='pad'&&schemeName==='GAMEPAD')||(k==='key'&&schemeName==='KEYBOARD'))); this.setupTouchInterface(); }
-    setupTouchInterface() { 
-        const ui=document.getElementById("touch-layer"); ui.innerHTML=''; ui.style.display=this.scheme==='TOUCH'?'block':'none'; if(this.scheme!=='TOUCH')return; 
+    setScheme(s) { this.mode=s; ['mouse','key','touch','pad'].forEach(k=>document.getElementById(`btn-input-${k}`).classList.toggle('active', s.toUpperCase()===k.toUpperCase()||(k==='pad'&&s==='GAMEPAD')||(k==='key'&&s==='KEYBOARD'))); this.setupTouch(); }
+    setupTouch() { 
+        const ui=document.getElementById("touch-layer"); ui.innerHTML=''; ui.style.display=this.mode==='TOUCH'?'block':'none'; if(this.mode!=='TOUCH')return; 
         const add=(id,t,r,rot)=>{
             const b=document.createElement('div'); b.className=`touch-pad ${t==='s'?'stick-base':(t==='a'?'btn-action':'btn-action')}`; 
             if(t==='s'){
@@ -431,410 +435,406 @@ class InputSystem {
             b.style[rot?'top':'bottom']='30px'; if(rot)b.style.transform="rotate(180deg)"; ui.appendChild(b);
         }; 
         add('p1','s',0,false); add('p1','a',40,false); add('p1','b',140,false); 
-        if(GameEngine.flags.subMode==='COOP'){ add('p2','s',0,true); add('p2','a',40,true); add('p2','b',140,true); } 
+        if(Game.flags.subMode==='COOP'){ add('p2','s',0,true); add('p2','a',40,true); add('p2','b',140,true); } 
     }
 }
 
-class AiSystem {
+class AiSys {
     process() {
-        const players=GameEngine.objectManager.queryTag('player'), enemies=GameEngine.objectManager.queryTag('enemy'), loot=GameEngine.objectManager.queryTag('loot'); 
-        const targets = GameEngine.flags.inMenu ? enemies : players;
-        GameEngine.objectManager.queryComponents(['ai','combat']).forEach(me=>{
-            const combat=me.components.combat, ai=me.components.ai;
-            if([GameConfiguration.ACTION_STATE.STUNNED, GameConfiguration.ACTION_STATE.DASH, GameConfiguration.ACTION_STATE.PARRY].includes(combat.state)) return;
-            ai.thinkTimer--;
+        const ps=Game.om.getByTag('player'), ens=Game.om.getByTag('enemy'), lts=Game.om.getByTag('loot'); 
+        const tgs = Game.flags.menu ? ens : ps;
+        Game.om.get(['ai','combat']).forEach(me=>{
+            const cmb=me.comps.combat, ai=me.comps.ai;
+            if([Config.STATE.STUN, Config.STATE.DASH, Config.STATE.PARRY].includes(cmb.state)) return;
+            ai.tick--;
             
-            if(ai.thinkTimer > 0 && ai.activePlan) {
-                let target = null;
-                if(ai.activePlan.targetType === 'LOOT') target = loot.find(p=>p.id===ai.activePlan.targetId);
-                else if(ai.activePlan.targetType === 'PLAYER') target = players.find(p=>p.id===ai.activePlan.targetId);
-                else target = enemies.find(e=>e.id===ai.activePlan.targetId);
-                
-                if(target && target.active) { 
-                    if(ActionDatabase[ai.activePlan.type]) ActionDatabase[ai.activePlan.type](me, target); 
-                } else ai.thinkTimer = 0;
+            if(ai.tick > 0 && ai.plan) {
+                let t = null;
+                if(ai.plan.tType === 'LOOT') t = lts.find(p=>p.id===ai.plan.tid);
+                else if(ai.plan.tType === 'PLAYER') t = ps.find(p=>p.id===ai.plan.tid);
+                else t = ens.find(e=>e.id===ai.plan.tid);
+                if(t && t.active && Actions[ai.plan.type]) Actions[ai.plan.type](me, t); else ai.tick = 0;
                 return;
             }
 
-            let potentialTargets = targets;
-            if (GameEngine.flags.inMenu && me.hasTag('player')) potentialTargets = enemies; else if (!me.hasTag('player')) potentialTargets = players;
-            if (potentialTargets.length === 0 && GameEngine.flags.inMenu) potentialTargets = GameEngine.objectManager.queryTag('enemy').filter(e=>e.id!==me.id);
-            if(potentialTargets.length === 0) return; 
+            let pots = tgs;
+            if (Game.flags.menu && me.tag('player')) pots = ens; else if (!me.tag('player')) pots = ps;
+            if (pots.length === 0 && Game.flags.menu) pots = Game.om.getByTag('enemy').filter(e=>e.id!==me.id);
+            if(pots.length === 0) return; 
             
-            const primaryTarget = potentialTargets.reduce((p,c)=>Vector2D.distance(me.components.transform.position,p.components.transform.position)<Vector2D.distance(me.components.transform.position,c.components.transform.position)?p:c);
-            let lootTarget = loot.length ? loot.reduce((p,c)=>Vector2D.distance(me.components.transform.position,p.components.transform.position)<Vector2D.distance(me.components.transform.position,c.components.transform.position)?p:c) : null;
+            const pTgt = pots.reduce((p,c)=>Vec2.dist(me.comps.pos.pos,p.comps.pos.pos)<Vec2.dist(me.comps.pos.pos,c.comps.pos.pos)?p:c);
+            let lTgt = lts.length ? lts.reduce((p,c)=>Vec2.dist(me.comps.pos.pos,p.comps.pos.pos)<Vec2.dist(me.comps.pos.pos,c.comps.pos.pos)?p:c) : null;
             
-            let behaviorList = ai.behavior;
-            const valid = behaviorList.filter(b=>{
-                const t = b.type==='ACQUIRE_LOOT'?lootTarget:primaryTarget; if(!t)return false;
-                const d=Vector2D.distance(me.components.transform.position, t.components.transform.position);
-                if(b.range && (d<b.range[0]||d>b.range[1])) return false; if(b.cooldown && combat.cooldowns[b.cooldown]>0) return false; return true;
+            let bList = ai.behav;
+            const valid = bList.filter(b=>{
+                const t = b.t==='ACQUIRE_LOOT'?lTgt:pTgt; if(!t)return false;
+                const d=Vec2.dist(me.comps.pos.pos, t.comps.pos.pos);
+                if(b.r && (d<b.r[0]||d>b.r[1])) return false; if(b.cd && cmb.cd[b.cd]>0) return false; return true;
             });
             
-            const total = valid.reduce((s,b)=>s+b.weight,0); let r=Math.random()*total, selected=null; for(const m of valid){r-=m.weight; if(r<=0){selected=m; break;}}
+            const total = valid.reduce((s,b)=>s+b.w,0); let r=Math.random()*total, sel=null; for(const m of valid){r-=m.w; if(r<=0){sel=m; break;}}
             
-            if(selected) {
-                const finalT = selected.type==='ACQUIRE_LOOT'?lootTarget:primaryTarget;
-                ai.activePlan = { type: selected.type, targetId: finalT.id, targetType: selected.type==='ACQUIRE_LOOT'?'LOOT':(finalT.hasTag('player')?'PLAYER':'ENEMY') };
-                if (selected.duration) ai.thinkTimer = selected.duration;
-                else ai.thinkTimer = Math.floor(Math.random() * (GameConfiguration.TIMINGS.AI_MAX_THINK - GameConfiguration.TIMINGS.AI_MIN_THINK) + GameConfiguration.TIMINGS.AI_MIN_THINK);
-            } else { 
-                ai.activePlan = { type: 'PLAYER_HOLD_SPRINT', targetId: primaryTarget.id, targetType: 'PLAYER' }; 
-                ai.thinkTimer = 30; 
-            }
+            if(sel) {
+                const fin = sel.type==='ACQUIRE_LOOT'?lTgt:pTgt;
+                ai.plan = { type: sel.t, tid: fin.id, tType: sel.t==='ACQUIRE_LOOT'?'LOOT':(fin.tag('player')?'PLAYER':'ENEMY') };
+                ai.tick = sel.d || Math.floor(Math.random()*(Config.TIME.AI_MAX-Config.TIME.AI_MIN)+Config.TIME.AI_MIN);
+            } else { ai.plan = { type: 'HOLD_SPRINT', tid: pTgt.id, tType: 'PLAYER' }; ai.tick = 30; }
         });
     }
 }
 
-class PhysicsSystem {
+class PhysicsSys {
     process() {
-        GameEngine.objectManager.queryComponents(['velocity','transform']).forEach(obj=>{
-            const comp=obj.components;
-            if(obj.hasComponent('combat')){
-                ['dash','parry','turn'].forEach(k=>comp.combat.cooldowns[k]=Math.max(0,comp.combat.cooldowns[k]-1));
-                comp.combat.invulnerabilityTimer=Math.max(0,comp.combat.invulnerabilityTimer-1); comp.combat.stateTimer=Math.max(0,comp.combat.stateTimer-1);
-                const s=comp.combat.state;
-                if(s===GameConfiguration.ACTION_STATE.STUNNED){ comp.velocity.multiply(0.85); if(comp.combat.stateTimer<=0)comp.combat.state=GameConfiguration.ACTION_STATE.IDLE; }
-                else if(s===GameConfiguration.ACTION_STATE.DASH){ comp.combat.invulnerabilityTimer=2; if(comp.combat.stateTimer<=0){comp.combat.state=GameConfiguration.ACTION_STATE.IDLE;comp.velocity.multiply(0.5);comp.combat.levelOverride=0;} }
-                else if(s===GameConfiguration.ACTION_STATE.PARRY){ 
-                    comp.velocity.multiply(1.0); if(comp.combat.stateTimer<=0)comp.combat.state=GameConfiguration.ACTION_STATE.IDLE; 
-                    if(comp.velocity.magnitude() > 1.0) GameObjectFactory.instantiateParticle(comp.transform.position.x, comp.transform.position.y, VisualPalette.WHITE, 2, 'SPARK');
+        Game.om.get(['vel','pos']).forEach(o=>{
+            const c=o.comps;
+            if(o.has('combat')){
+                ['dash','parry','turn','od','chg'].forEach(k=>c.combat.cd[k]=Math.max(0,c.combat.cd[k]-1));
+                c.combat.invuln=Math.max(0,c.combat.invuln-1); c.combat.sTimer=Math.max(0,c.combat.sTimer-1);
+                const s=c.combat.state;
+                if(s===Config.STATE.STUN){ c.vel.mul(0.85); if(c.combat.sTimer<=0)c.combat.state=Config.STATE.IDLE; }
+                else if(s===Config.STATE.DASH){ c.combat.invuln=2; if(c.combat.sTimer<=0){c.combat.state=Config.STATE.IDLE;c.vel.mul(0.5);c.combat.lvl=0;} }
+                else if(s===Config.STATE.PARRY){ 
+                    c.vel.mul(1.0); if(c.combat.sTimer<=0)c.combat.state=Config.STATE.IDLE; 
+                    if(c.vel.mag() > 1.0) Factory.part(c.pos.pos.x, c.pos.pos.y, Palette.WHITE, 2, 'SPARK');
                 }
-                else if(s===GameConfiguration.ACTION_STATE.DODGE){ comp.velocity.multiply(0.9); comp.combat.invulnerabilityTimer=2; if(comp.combat.stateTimer<=0)comp.combat.state=GameConfiguration.ACTION_STATE.IDLE; }
-                else if(s===GameConfiguration.ACTION_STATE.CHARGING||s===GameConfiguration.ACTION_STATE.LEVEL_3_READY||s===GameConfiguration.ACTION_STATE.LEVEL_4_READY){ comp.velocity.multiply(0.5); }
-                else { comp.velocity.multiply(GameConfiguration.PHYSICS.FRICTION); }
+                else if(s===Config.STATE.DODGE){ c.vel.mul(0.9); c.combat.invuln=2; if(c.combat.sTimer<=0)c.combat.state=Config.STATE.IDLE; }
+                else if(s>=Config.STATE.CHARGING && s<=Config.STATE.LV4_RDY){ c.vel.mul(0.5); }
+                else { c.vel.mul(Config.PHYS.FRICTION); }
             }
-            comp.transform.position.add(comp.velocity);
-            const bounds=GameEngine.config.BOUNDS; let wallHit = false;
-            if(comp.transform.position.x<bounds){comp.transform.position.x=bounds;comp.velocity.x*=-0.8; wallHit=true;} 
-            if(comp.transform.position.x>GameEngine.screenWidth-bounds){comp.transform.position.x=GameEngine.screenWidth-bounds;comp.velocity.x*=-0.8; wallHit=true;}
-            if(comp.transform.position.y<bounds){comp.transform.position.y=bounds;comp.velocity.y*=-0.8; wallHit=true;} 
-            if(comp.transform.position.y>GameEngine.screenHeight-bounds){comp.transform.position.y=GameEngine.screenHeight-bounds;comp.velocity.y*=-0.8; wallHit=true;}
-            if(wallHit && obj.components.combat.state === GameConfiguration.ACTION_STATE.STUNNED) {
-                GameEngine.eventBus.publish('EVENT_HIT', {attacker:obj, victim:obj, level:0, wallCollision:true}); GameEngine.eventBus.publish('EVENT_SHAKE', 20);
-            }
+            c.pos.pos.add(c.vel);
+            const b=Config.PHYS.BOUNDS; let hit = false;
+            if(c.pos.pos.x<b){c.pos.pos.x=b;c.vel.x*=Config.PHYS.WALL_BOUNCE; hit=true;} 
+            if(c.pos.pos.x>Game.w-b){c.pos.pos.x=Game.w-b;c.vel.x*=Config.PHYS.WALL_BOUNCE; hit=true;}
+            if(c.pos.pos.y<b){c.pos.pos.y=b;c.vel.y*=Config.PHYS.WALL_BOUNCE; hit=true;} 
+            if(c.pos.pos.y>Game.h-b){c.pos.pos.y=Game.h-b;c.vel.y*=Config.PHYS.WALL_BOUNCE; hit=true;}
+            if(hit && o.comps.combat.state === Config.STATE.STUN) { Game.bus.pub('HIT', {atk:o, vic:o, lvl:0, wall:true}); Game.bus.pub('SHAKE', 20); }
         });
-        GameEngine.objectManager.queryTag('loot').forEach(p=>{p.components.transform.rotation+=0.05; p.components.loot.life--; if(p.components.loot.life<=0)GameEngine.objectManager.destroyObject(p);});
-        if(GameEngine.flags.subMode==='COOP'){const ps=GameEngine.objectManager.queryTag('player'); if(ps.length>1 && Vector2D.distance(ps[0].components.transform.position,ps[1].components.transform.position)<42){const push=Vector2D.subtract(ps[0].components.transform.position,ps[1].components.transform.position).normalize().multiply(3); ps[0].components.velocity.add(push); ps[1].components.velocity.subtract(push);}}
+        Game.om.getByTag('loot').forEach(p=>{p.comps.pos.rot+=0.05; p.comps.loot.life--; if(p.comps.loot.life<=0)Game.om.kill(p);});
+        if(Game.flags.subMode==='COOP'){const ps=Game.om.getByTag('player'); if(ps.length>1 && Vec2.dist(ps[0].comps.pos.pos,ps[1].comps.pos.pos)<42){const push=Vec2.sub(ps[0].comps.pos.pos,ps[1].comps.pos.pos).norm().mul(3); ps[0].comps.vel.add(push); ps[1].comps.vel.sub(push);}}
     }
 }
 
-class CombatSystem {
-    calculateVelocityLevel(obj) { 
-        if(!obj.hasComponent('combat'))return 0; 
-        if(obj.components.combat.levelOverride)return obj.components.combat.levelOverride; 
-        const s=obj.components.combat.state; 
-        if(s===GameConfiguration.ACTION_STATE.DASH||s===GameConfiguration.ACTION_STATE.SPRINT)return GameConfiguration.TIERS.SPRINT; 
-        if(s===GameConfiguration.ACTION_STATE.BRACING) return GameConfiguration.TIERS.SPRINT; 
-        if(s===GameConfiguration.ACTION_STATE.MOVE)return GameConfiguration.TIERS.MOVE; 
-        return GameConfiguration.TIERS.IDLE; 
+class CombatSys {
+    getLvl(o) { 
+        if(!o.has('combat'))return 0; if(o.comps.combat.lvl)return o.comps.combat.lvl; 
+        const s=o.comps.combat.state; 
+        if(s===Config.STATE.DASH||s===Config.STATE.SPRINT||s===Config.STATE.BRACE)return Config.TIERS.SPRINT; 
+        if(s===Config.STATE.MOVE)return Config.TIERS.MOVE; return Config.TIERS.IDLE; 
     }
     
     process() {
-        const combatants=GameEngine.objectManager.queryComponents(['combat','stats']), loot=GameEngine.objectManager.queryTag('loot');
-        combatants.forEach(entity=>{
-            combatants.forEach(other=>{ if(entity!==other && Vector2D.distance(entity.components.transform.position, other.components.transform.position) < (entity.components.stats.radius + other.components.stats.radius)) this.resolveCollision(entity,other); });
-            for(let i=loot.length-1;i>=0;i--) if(Vector2D.distance(entity.components.transform.position,loot[i].components.transform.position)<30) GameEngine.eventBus.publish('EVENT_LOOT',{target:entity,item:loot[i]});
+        const c=Game.om.get(['combat','stats']), l=Game.om.getByTag('loot');
+        c.forEach(e=>{
+            c.forEach(o=>{ if(e!==o && Vec2.dist(e.comps.pos.pos, o.comps.pos.pos) < (e.comps.stats.r + o.comps.stats.r)) this.collide(e,o); });
+            for(let i=l.length-1;i>=0;i--) if(Vec2.dist(e.comps.pos.pos,l[i].comps.pos.pos)<30) Game.bus.pub('LOOT',{tgt:e,it:l[i]});
         });
     }
     
-    resolveCollision(e1, e2) {
-        const pushDir = Vector2D.subtract(e1.components.transform.position, e2.components.transform.position).normalize();
-        let pushForce1 = 1.2; let pushForce2 = 1.2;
-        if (e1.components.combat.state === GameConfiguration.ACTION_STATE.BRACING) pushForce1 = 0.2; 
-        if (e2.components.combat.state === GameConfiguration.ACTION_STATE.BRACING) pushForce2 = 0.2; 
+    collide(e1, e2) {
+        const dir = Vec2.sub(e1.comps.pos.pos, e2.comps.pos.pos).norm();
+        let f1 = 1.2, f2 = 1.2;
+        if (e1.comps.combat.odType === 'A') f1 *= Config.MASS.LIGHT; if (e2.comps.combat.odType === 'A') f2 *= Config.MASS.LIGHT;
+        if (e1.comps.combat.odType === 'B') f1 *= Config.MASS.HEAVY; if (e2.comps.combat.odType === 'B') f2 *= Config.MASS.HEAVY;
+        if (e1.comps.combat.state === Config.STATE.BRACE) f1 = 0.2; if (e2.comps.combat.state === Config.STATE.BRACE) f2 = 0.2; 
         
-        e1.components.velocity.add(pushDir.clone().multiply(pushForce1)); 
-        e2.components.velocity.subtract(pushDir.clone().multiply(pushForce2));
+        e1.comps.vel.add(dir.clone().mul(f1)); e2.comps.vel.sub(dir.clone().mul(f2));
         
-        if(e1.components.combat.state===GameConfiguration.ACTION_STATE.STUNNED) { return GameEngine.eventBus.publish('EVENT_HIT',{attacker:e2,victim:e1,level:this.calculateVelocityLevel(e2)}); }
-        if(e2.components.combat.state===GameConfiguration.ACTION_STATE.STUNNED) { return GameEngine.eventBus.publish('EVENT_HIT',{attacker:e1,victim:e2,level:this.calculateVelocityLevel(e1)}); }
+        if(e1.comps.combat.state===Config.STATE.STUN) { return Game.bus.pub('HIT',{atk:e2,vic:e1,lvl:this.getLvl(e2)}); }
+        if(e2.comps.combat.state===Config.STATE.STUN) { return Game.bus.pub('HIT',{atk:e1,vic:e2,lvl:this.getLvl(e1)}); }
 
-        const l1=this.calculateVelocityLevel(e1), l2=this.calculateVelocityLevel(e2);
+        const l1=this.getLvl(e1), l2=this.getLvl(e2);
         
-        if(e1.components.combat.state===GameConfiguration.ACTION_STATE.PARRY) { 
-            if (l2 > 3) GameEngine.eventBus.publish('EVENT_HIT',{attacker:e2,victim:e1,level:l2}); 
-            else return GameEngine.eventBus.publish('EVENT_PARRY',{blocker:e1,attacker:e2,level:l2}); 
-        }
-        if(e2.components.combat.state===GameConfiguration.ACTION_STATE.PARRY) { 
-            if (l1 > 3) GameEngine.eventBus.publish('EVENT_HIT',{attacker:e1,victim:e2,level:l1}); 
-            else return GameEngine.eventBus.publish('EVENT_PARRY',{blocker:e2,attacker:e1,level:l1}); 
-        }
+        if(e1.comps.combat.state===Config.STATE.PARRY) { if (l2>3) Game.bus.pub('HIT',{atk:e2,vic:e1,lvl:l2}); else return Game.bus.pub('PARRY',{blk:e1,atk:e2,lvl:l2}); }
+        if(e2.comps.combat.state===Config.STATE.PARRY) { if (l1>3) Game.bus.pub('HIT',{atk:e1,vic:e2,lvl:l1}); else return Game.bus.pub('PARRY',{blk:e2,atk:e1,lvl:l1}); }
 
         if(l1 >= 2 || l2 >= 2) {
-            if(l1 > l2) GameEngine.eventBus.publish('EVENT_HIT',{attacker:e1,victim:e2,level:l1});
-            else if(l2 > l1) GameEngine.eventBus.publish('EVENT_HIT',{attacker:e2,victim:e1,level:l2});
-            else GameEngine.eventBus.publish('EVENT_CLASH',{e1,e2,level:Math.max(l1,l2)}); 
+            if(l1 > l2) Game.bus.pub('HIT',{atk:e1,vic:e2,lvl:l1});
+            else if(l2 > l1) Game.bus.pub('HIT',{atk:e2,vic:e1,lvl:l2});
+            else Game.bus.pub('CLASH',{e1,e2,lvl:Math.max(l1,l2)}); 
         }
     }
 }
 
-class RuleSystem {
+class Rules {
     constructor() {
-        GameEngine.eventBus.subscribe('EVENT_AREA_BLAST', ({source}) => {
-             GameEngine.objectManager.queryComponents(['combat','stats']).forEach(target => {
-                 if (target === source) return;
-                 const d = Vector2D.distance(source.components.transform.position, target.components.transform.position);
-                 if (d < 150) { 
-                     const dir = Vector2D.subtract(target.components.transform.position, source.components.transform.position).normalize();
-                     target.components.velocity = dir.multiply(50); target.components.stats.hp -= GameConfiguration.DAMAGE_VALUES.AREA_BLAST;
-                     target.components.combat.state = GameConfiguration.ACTION_STATE.STUNNED; target.components.combat.stateTimer = 60;
-                     GameObjectFactory.instantiateShockwave(target.components.transform.position.x, target.components.transform.position.y, VisualPalette.ORANGE); GameEngine.eventBus.publish('EVENT_SHAKE', 30);
+        const B = Game.bus;
+        B.sub('AREA_BLAST', ({src}) => {
+             Game.om.get(['combat','stats']).forEach(t => {
+                 if (t === src) return;
+                 if (Vec2.dist(src.comps.pos.pos, t.comps.pos.pos) < 150) { 
+                     t.comps.vel = Vec2.sub(t.comps.pos.pos, src.comps.pos.pos).norm().mul(50); t.comps.stats.hp -= Config.DMG.AREA;
+                     t.comps.combat.state = Config.STATE.STUN; t.comps.combat.sTimer = 60;
+                     Factory.wave(t.comps.pos.pos.x, t.comps.pos.pos.y, Palette.ORANGE); B.pub('SHAKE', 30);
                  }
              });
-             GameObjectFactory.instantiateShockwave(source.components.transform.position.x, source.components.transform.position.y, source.components.render.baseColor);
-             GameEngine.eventBus.publish('EVENT_PARTICLE_BURST',{x:source.components.transform.position.x, y:source.components.transform.position.y, col:source.components.render.baseColor, count:30});
+             Factory.wave(src.comps.pos.pos.x, src.comps.pos.pos.y, src.comps.render.col); B.pub('PART_BURST',{x:src.comps.pos.pos.x, y:src.comps.pos.pos.y, col:src.comps.render.col, c:30});
         });
-        GameEngine.eventBus.subscribe('EVENT_HIT', ({attacker,victim,level,wallCollision})=>{
-            if(wallCollision) { victim.components.stats.hp -= GameConfiguration.DAMAGE_VALUES.WALL_COLLISION; return; }
-            if(victim.components.combat.state!==GameConfiguration.ACTION_STATE.STUNNED && victim.components.combat.invulnerabilityTimer>0) return;
-            if(victim.components.combat.state===GameConfiguration.ACTION_STATE.DODGE) return;
-            let dmg = level===4?GameConfiguration.DAMAGE_VALUES.LEVEL_4:(level===3?GameConfiguration.DAMAGE_VALUES.LEVEL_3:(level===2?GameConfiguration.DAMAGE_VALUES.LEVEL_2:GameConfiguration.DAMAGE_VALUES.LEVEL_1));
-            const isBracing = victim.components.combat.state === GameConfiguration.ACTION_STATE.BRACING;
-            if (isBracing) { dmg *= 0.5; GameEngine.eventBus.publish('EVENT_FLASH', 0.2); }
-            victim.components.stats.hp-=dmg; 
-            if(victim.hasComponent('ai')){ 
-                victim.components.ai.memory.damageTaken++; 
-                if(victim.hasTag('BOSS') && victim.components.stats.hp<victim.components.stats.maxHp*0.5) GameEngine.eventBus.publish('EVENT_BOSS_PHASE',{boss:victim,phase:2}); 
-            }
-            if(victim.hasTag('player')) GameEngine.flags.heat = Math.max(0, GameEngine.flags.heat - GameConfiguration.HEAT_SYSTEM.PENALTY_HIT);
-            const isCharging = (victim.components.combat.state >= GameConfiguration.ACTION_STATE.CHARGING && victim.components.combat.state <= GameConfiguration.ACTION_STATE.LEVEL_4_READY);
-            const isStunned = victim.components.combat.state === GameConfiguration.ACTION_STATE.STUNNED;
-            if (!isCharging) { if(!isStunned) victim.components.combat.state=GameConfiguration.ACTION_STATE.IDLE; }
-            let force = level===4?100:(level===3?60:(level===2?30:10)); if (isBracing) force *= 0.5;
-            if (force > 0) { const k=Vector2D.subtract(victim.components.transform.position,attacker.components.transform.position).normalize().multiply(force*GameConfiguration.PHYSICS.RECOIL_MULTIPLIER); victim.components.velocity=k; attacker.components.velocity.add(k.clone().multiply(0.2)); }
-            victim.components.combat.invulnerabilityTimer = GameConfiguration.TIMINGS.INVULNERABILITY_HIT; GameEngine.flags.hitStopTimer=(level>=3)?3:0; 
-            const shake = level===4?50:(level>=2?15:5); GameEngine.eventBus.publish('EVENT_SHAKE', shake);
-            if(level>=3){ GameEngine.flags.chromaticAberration=20; if(level===4 && GameEngine.config.FX.FLASH) GameEngine.flags.invertedFrame=true; }
-            if(level>=2) GameObjectFactory.instantiateShockwave(victim.components.transform.position.x, victim.components.transform.position.y, victim.components.render.baseColor);
-            GameEngine.eventBus.publish('EVENT_PARTICLE_BURST',{x:victim.components.transform.position.x,y:victim.components.transform.position.y,col:victim.components.render.baseColor,count:10+shake});
-            if(victim.components.stats.hp<=0) GameEngine.eventBus.publish('EVENT_DEATH',{victim,attacker}); else if(victim.hasTag('player') && !GameEngine.flags.inMenu) GameEngine.flags.comboCounter=0;
+        B.sub('OD_BLAST', ({src}) => {
+             Game.om.get(['combat','stats']).forEach(t => {
+                 if (t === src) return;
+                 if (Vec2.dist(src.comps.pos.pos, t.comps.pos.pos) < 250) { 
+                     t.comps.vel = Vec2.sub(t.comps.pos.pos, src.comps.pos.pos).norm().mul(80); t.comps.stats.hp -= Config.DMG.OD_BLAST;
+                     t.comps.combat.state = Config.STATE.STUN; t.comps.combat.sTimer = 120; Factory.wave(t.comps.pos.pos.x, t.comps.pos.pos.y, Palette.WHITE); 
+                 }
+             });
+             Factory.wave(src.comps.pos.pos.x, src.comps.pos.pos.y, src.comps.render.col); B.pub('SHAKE', 50); 
+             for(let i=0; i<15; i++) B.pub('PART_SPAWN', {x:src.comps.pos.pos.x+(Math.random()-0.5)*100, y:src.comps.pos.pos.y+(Math.random()-0.5)*100, col:src.comps.render.col, spd:0.5, type:'IMPLODE'});
         });
-        GameEngine.eventBus.subscribe('EVENT_PARRY', ({blocker,attacker,level})=>{
-            const blockerSpeed = blocker.components.velocity.magnitude();
-            const recoil = 30 + (blockerSpeed > 1.0 ? blockerSpeed * 2.0 : 0); 
-            const r=Vector2D.subtract(attacker.components.transform.position,blocker.components.transform.position).normalize().multiply(recoil);
-            attacker.components.velocity=r; attacker.components.combat.state=GameConfiguration.ACTION_STATE.STUNNED; attacker.components.combat.stateTimer = (level >= 3) ? 120 : 60; attacker.components.combat.invulnerabilityTimer=0;
-            blocker.components.velocity=r.clone().multiply(-0.2); blocker.components.combat.invulnerabilityTimer=20; GameEngine.flags.hitStopTimer=3;
-            if(blocker.hasTag('player')) GameEngine.flags.heat = Math.min(100, GameEngine.flags.heat + GameConfiguration.HEAT_SYSTEM.SCORE_PARRY);
-            GameObjectFactory.instantiateShockwave(blocker.components.transform.position.x, blocker.components.transform.position.y, VisualPalette.WHITE);
-            GameEngine.eventBus.publish('EVENT_PARTICLE_BURST',{x:attacker.components.transform.position.x,y:attacker.components.transform.position.y,col:VisualPalette.WHITE,count:30}); GameEngine.eventBus.publish('EVENT_FLASH',0.3); GameEngine.eventBus.publish('EVENT_SHAKE',30);
-        });
-        GameEngine.eventBus.subscribe('EVENT_CLASH', ({e1,e2,level})=>{
-            GameEngine.flags.hitStopTimer=4; GameEngine.eventBus.publish('EVENT_SHAKE',30); const d=Vector2D.subtract(e1.components.transform.position,e2.components.transform.position).normalize();
-            e1.components.velocity=d.clone().multiply(40); e2.components.velocity=d.clone().multiply(-40); e1.components.combat.state=e2.components.combat.state=GameConfiguration.ACTION_STATE.IDLE; e1.components.combat.invulnerabilityTimer=e2.components.combat.invulnerabilityTimer=10;
-            if(e1.hasTag('player')||e2.hasTag('player')) GameEngine.flags.heat = Math.min(100, GameEngine.flags.heat + GameConfiguration.HEAT_SYSTEM.SCORE_CLASH);
-            const m=Vector2D.subtract(e2.components.transform.position,e1.components.transform.position).multiply(0.5).add(e1.components.transform.position); 
+        B.sub('HIT', ({atk,vic,lvl,wall})=>{
+            if(wall) { vic.comps.stats.hp -= Config.DMG.WALL; return; }
+            if(vic.comps.combat.state!==Config.STATE.STUN && vic.comps.combat.invuln>0) return;
+            if(vic.comps.combat.state===Config.STATE.DODGE) return;
+            let dmg = lvl===4?Config.DMG.LV4:(lvl===3?Config.DMG.LV3:(lvl===2?Config.DMG.LV2:Config.DMG.LV1));
+            const brace = vic.comps.combat.state === Config.STATE.BRACE;
+            if (brace) { dmg *= 0.5; B.pub('FLASH', 0.2); }
+            vic.comps.stats.hp-=dmg; 
+            if(vic.has('ai')){ vic.comps.ai.mem.dmg++; if(vic.tag('BOSS') && vic.comps.stats.hp<vic.comps.stats.max*0.5) B.pub('BOSS_PHASE',{boss:vic,p:2}); }
+            if(vic.tag('player')) Game.flags.heat = Math.max(0, Game.flags.heat - Config.HEAT.HIT_PENALTY);
+            const charging = (vic.comps.combat.state >= Config.STATE.CHARGING && vic.comps.combat.state <= Config.STATE.LV4_RDY);
+            if (!charging && vic.comps.combat.state !== Config.STATE.STUN) vic.comps.combat.state=Config.STATE.IDLE;
             
-            if (level >= 4) {
-                 GameEngine.flags.invertedFrame=true; GameEngine.flags.hitStopTimer=30; GameEngine.eventBus.publish('EVENT_SHAKE',100); GameEngine.activeParticles = [];
-            }
-            GameObjectFactory.instantiateShockwave(m.x, m.y, VisualPalette.WHITE); 
-            GameEngine.eventBus.publish('EVENT_PARTICLE_BURST',{x:m.x,y:m.y,col:VisualPalette.WHITE,count:level>=3?80:40});
+            let force = lvl===4?100:(lvl===3?60:(lvl===2?30:10)); if (brace) force *= 0.5;
+            if(vic.comps.combat.odType === 'A') force *= Config.MASS.LIGHT; if(vic.comps.combat.odType === 'B') force *= Config.MASS.HEAVY;
+            
+            if (force > 0) { const k=Vec2.sub(vic.comps.pos.pos,atk.comps.pos.pos).norm().mul(force*Config.PHYS.RECOIL); vic.comps.vel=k; atk.comps.vel.add(k.clone().mul(0.2)); }
+            vic.comps.combat.invuln = Config.TIME.INVULN; Game.flags.stop=lvl>=3?3:0; 
+            const shake = lvl===4?50:(lvl>=2?15:5); B.pub('SHAKE', shake);
+            if(lvl>=3){ Game.flags.aberr=20; if(lvl===4 && Game.cfg.FX.FLASH) Game.flags.invert=true; }
+            if(lvl>=2) Factory.wave(vic.comps.pos.pos.x, vic.comps.pos.pos.y, vic.comps.render.col);
+            B.pub('PART_BURST',{x:vic.comps.pos.pos.x,y:vic.comps.pos.pos.y,col:vic.comps.render.col,c:10+shake});
+            if(vic.comps.stats.hp<=0) B.pub('DEATH',{vic,atk}); else if(vic.tag('player') && !Game.flags.menu) Game.flags.combo=0;
         });
-        GameEngine.eventBus.subscribe('EVENT_LOOT', ({target,item})=>{
-            GameEngine.eventBus.publish('EVENT_PARTICLE_BURST',{x:item.components.transform.position.x,y:item.components.transform.position.y,col:item.components.render.baseColor,count:30});
-            const mod=item.components.loot.data.modifier;
-            if(mod.type==='STAT') target.components.stats[mod.key]=Math.min(target.components.stats[mod.key]+mod.value,target.components.stats.maxHp);
-            else if(mod.type==='STATUS') target.components.combat[mod.key]=mod.value;
-            else if(mod.type==='SPECIAL' && target.hasTag('player')) { if(target.components.stats.extraLives<1)target.components.stats.extraLives++; else target.components.stats.hp=target.components.stats.maxHp; }
-            GameEngine.objectManager.destroyObject(item);
+        B.sub('PARRY', ({blk,atk,lvl})=>{
+            const spd = blk.comps.vel.mag(), recoil = 30 + (spd > 1.0 ? spd * 2.0 : 0); 
+            const r=Vec2.sub(atk.comps.pos.pos,blk.comps.pos.pos).norm().mul(recoil);
+            atk.comps.vel=r; atk.comps.combat.state=Config.STATE.STUN; atk.comps.combat.sTimer = lvl>=3?120:60; atk.comps.combat.invuln=0;
+            blk.comps.vel=r.clone().mul(-0.2); blk.comps.combat.invuln=20; Game.flags.stop=3;
+            if(blk.tag('player')) Game.flags.heat = Math.min(100, Game.flags.heat + Config.HEAT.PARRY);
+            Factory.wave(blk.comps.pos.pos.x, blk.comps.pos.pos.y, Palette.WHITE);
+            B.pub('PART_BURST',{x:atk.comps.pos.pos.x,y:atk.comps.pos.pos.y,col:Palette.WHITE,c:30}); B.pub('FLASH',0.3); B.pub('SHAKE',30);
         });
-        GameEngine.eventBus.subscribe('EVENT_REVIVE', ({entity})=>{
-            entity.components.stats.extraLives--; entity.components.stats.hp=entity.components.stats.maxHp; entity.components.combat.invulnerabilityTimer=180;
-            GameEngine.flags.hitStopTimer=30; GameEngine.eventBus.publish('EVENT_SHAKE',50); GameEngine.eventBus.publish('EVENT_FLASH',1); GameEngine.eventBus.publish('EVENT_PARTICLE_BURST',{x:entity.components.transform.position.x,y:entity.components.transform.position.y,col:LootDatabase.EXTRA_LIFE.color,count:50});
+        B.sub('CLASH', ({e1,e2,lvl})=>{
+            Game.flags.stop=4; B.pub('SHAKE',30); const d=Vec2.sub(e1.comps.pos.pos,e2.comps.pos.pos).norm();
+            let f1=40, f2=40;
+            if(e1.comps.combat.odType === 'A') f1 *= Config.MASS.LIGHT; if(e1.comps.combat.odType === 'B') f1 *= Config.MASS.HEAVY;
+            if(e2.comps.combat.odType === 'A') f2 *= Config.MASS.LIGHT; if(e2.comps.combat.odType === 'B') f2 *= Config.MASS.HEAVY;
+
+            e1.comps.vel=d.clone().mul(f1); e2.comps.vel=d.clone().mul(-f2); e1.comps.combat.state=e2.comps.combat.state=Config.STATE.IDLE; e1.comps.combat.invuln=e2.comps.combat.invuln=10;
+            if(e1.tag('player')||e2.tag('player')) Game.flags.heat = Math.min(100, Game.flags.heat + Config.HEAT.CLASH);
+            const m=Vec2.sub(e2.comps.pos.pos,e1.comps.pos.pos).mul(0.5).add(e1.comps.pos.pos); 
+            if (lvl>=4) { Game.flags.invert=true; Game.flags.stop=30; B.pub('SHAKE',100); Game.parts=[]; }
+            Factory.wave(m.x, m.y, Palette.WHITE); B.pub('PART_BURST',{x:m.x,y:m.y,col:Palette.WHITE,c:lvl>=3?80:40});
         });
-        GameEngine.eventBus.subscribe('EVENT_DEATH', ({victim,attacker})=>{
-            if(victim.components.stats.extraLives>0) return GameEngine.eventBus.publish('EVENT_REVIVE',{entity:victim});
-            GameEngine.objectManager.destroyObject(victim); GameEngine.flags.hitStopTimer=5; GameEngine.flags.killStreak++; GameEngine.flags.comboCounter++;
-            let s=100; if(victim.hasTag('ENEMY_BOSS'))s=5000; else if(victim.hasTag('ENEMY_ELITE'))s=1000;
-            if(attacker.hasTag('player')) GameEngine.flags.heat = Math.min(100, GameEngine.flags.heat + GameConfiguration.HEAT_SYSTEM.SCORE_KILL * (victim.hasTag('ENEMY_BOSS')?5:1));
-            if(!GameEngine.flags.inMenu) { GameEngine.flags.score += s * (1 + GameEngine.flags.heat * 0.1); GameEngine.userInterface.updateScore(); }
-            if(!victim.hasTag('ENEMY_STANDARD')){ GameEngine.flags.hitStopTimer=20; GameEngine.eventBus.publish('EVENT_SHAKE',100); GameEngine.eventBus.publish('EVENT_FLASH',0.8); }
-            if(GameEngine.config.FX.BLOOD) {
-                for(let i=0;i<15;i++) GameEngine.visualEntities.blood.push({
-                    position:new Vector2D(victim.components.transform.position.x,victim.components.transform.position.y),
-                    velocity:new Vector2D(Math.cos(Math.random()*6.28)*Math.random()*10,Math.sin(Math.random()*6.28)*Math.random()*10),
-                    color:victim.components.render.baseColor, size:Math.random()*12+6, rotation:Math.random()*6, life:1000
+        B.sub('LOOT', ({tgt,it})=>{
+            B.pub('PART_BURST',{x:it.comps.pos.pos.x,y:it.comps.pos.pos.y,col:it.comps.render.col,c:30});
+            const mod=it.comps.loot.data.mod;
+            if(mod.t==='STAT') tgt.comps.stats[mod.k]=Math.min(tgt.comps.stats[mod.k]+mod.v,tgt.comps.stats.max);
+            else if(mod.t==='STATUS') tgt.comps.combat[mod.k]=mod.v;
+            else if(mod.t==='SPECIAL' && tgt.tag('player')) { if(tgt.comps.stats.lives<1)tgt.comps.stats.lives++; else tgt.comps.stats.hp=tgt.comps.stats.max; }
+            Game.om.kill(it);
+        });
+        B.sub('REVIVE', ({ent})=>{
+            ent.comps.stats.lives--; ent.comps.stats.hp=ent.comps.stats.max; ent.comps.combat.invuln=180;
+            Game.flags.stop=30; B.pub('SHAKE',50); B.pub('FLASH',1); B.pub('PART_BURST',{x:ent.comps.pos.pos.x,y:ent.comps.pos.pos.y,col:LootDB.LIFE.col,c:50});
+        });
+        B.sub('DEATH', ({vic,atk})=>{
+            if(vic.comps.stats.lives>0) return B.pub('REVIVE',{ent:vic});
+            Game.om.kill(vic); Game.flags.stop=5; Game.flags.kills++; Game.flags.combo++;
+            let s=100; if(vic.tag('BOSS'))s=5000; else if(vic.tag('ELITE'))s=1000;
+            if(atk.tag('player')) Game.flags.heat = Math.min(100, Game.flags.heat + Config.HEAT.KILL * (vic.tag('BOSS')?5:1));
+            if(!Game.flags.menu) { Game.flags.score += s * (1 + Game.flags.heat * 0.1); Game.ui.upd(); }
+            if(!vic.tag('RUSHER')){ Game.flags.stop=20; B.pub('SHAKE',100); B.pub('FLASH',0.8); }
+            if(Game.cfg.FX.BLOOD) {
+                for(let i=0;i<15;i++) Game.vis.blood.push({
+                    pos:new Vec2(vic.comps.pos.pos.x,vic.comps.pos.pos.y),
+                    vel:new Vec2(Math.cos(Math.random()*6.28)*Math.random()*10,Math.sin(Math.random()*6.28)*Math.random()*10),
+                    col:vic.comps.render.col, sz:Math.random()*12+6, rot:Math.random()*6, life:1000
                 });
-                if(GameEngine.visualEntities.blood.length > 1000) GameEngine.visualEntities.blood.splice(0, GameEngine.visualEntities.blood.length - 100);
+                if(Game.vis.blood.length > 1000) Game.vis.blood.splice(0, Game.vis.blood.length - 100);
             }
         });
     }
 }
 
-class RenderSystem {
-    constructor() { this.renderContext=document.getElementById("gameCanvas").getContext("2d"); }
-    render() {
-        this.renderContext.clearRect(0,0,GameEngine.screenWidth,GameEngine.screenHeight);
-        if(GameEngine.flags.invertedFrame){this.renderContext.fillStyle=VisualPalette.WHITE;this.renderContext.fillRect(0,0,GameEngine.screenWidth,GameEngine.screenHeight);return;}
-        this.renderContext.save();
-        const sI=GameEngine.flags.shakeIntensity, sX=(Math.random()-0.5)*sI, sY=(Math.random()-0.5)*sI;
-        this.renderContext.translate(sX,sY); 
-        if(GameEngine.userInterface.menu) GameEngine.userInterface.menu.style.transform = `translate(${sX}px, ${sY}px)`;
-        if(GameEngine.config.FX.GRID) this.renderGrid();
+class RenderSys {
+    constructor() { this.ctx=document.getElementById("gameCanvas").getContext("2d"); }
+    draw() {
+        this.ctx.clearRect(0,0,Game.w,Game.h);
+        if(Game.flags.invert){this.ctx.fillStyle=Palette.WHITE;this.ctx.fillRect(0,0,Game.w,Game.h);return;}
+        this.ctx.save();
+        const sI=Game.flags.shake, sX=(Math.random()-0.5)*sI, sY=(Math.random()-0.5)*sI;
+        this.ctx.translate(sX,sY); 
+        if(Game.ui.el) Game.ui.el.style.transform = `translate(${sX}px, ${sY}px)`;
+        if(Game.cfg.FX.GRID) this.grid();
         
-        GameEngine.visualEntities.blood.forEach(b=>{this.renderContext.save();this.renderContext.translate(b.position.x,b.position.y);this.renderContext.rotate(b.rotation);this.renderContext.fillStyle=b.color;this.renderContext.globalAlpha=0.6;this.renderContext.fillRect(-b.size/2,-b.size/2,b.size,b.size);this.renderContext.restore();});
-        
-        this.renderAllEntities();
+        Game.vis.blood.forEach(b=>{this.ctx.save();this.ctx.translate(b.pos.x,b.pos.y);this.ctx.rotate(b.rot);this.ctx.fillStyle=b.col;this.ctx.globalAlpha=0.6;this.ctx.fillRect(-b.sz/2,-b.sz/2,b.sz,b.sz);this.ctx.restore();});
+        this.all();
 
-        this.renderContext.lineWidth=4; GameEngine.activeShockwaves.forEach(s=>{this.renderContext.globalAlpha=s.alpha;this.renderContext.strokeStyle=s.color;this.renderContext.beginPath();this.renderContext.arc(s.x,s.y,s.r,0,Math.PI*2);this.renderContext.stroke();});this.renderContext.globalAlpha=1;
-        if(GameEngine.flags.flashOpacity>0&&GameEngine.config.FX.FLASH){this.renderContext.fillStyle=`rgba(255,255,255,${GameEngine.flags.flashOpacity})`;this.renderContext.fillRect(-sX,-sY,GameEngine.screenWidth,GameEngine.screenHeight);}
-        GameEngine.visualEntities.texts.forEach(t=>{this.renderContext.globalAlpha=Math.max(0,t.life);this.renderContext.fillStyle=t.color;this.renderContext.font="30px VT323";this.renderContext.shadowColor=t.color;this.renderContext.shadowBlur=10;this.renderContext.fillText(t.str,t.position.x,t.position.y);this.renderContext.shadowBlur=0;});
-        if(GameEngine.flags.subMode==='SOLO'&&GameEngine.systems.input.scheme==='MOUSE'&&!GameEngine.flags.inMenu){
-            const p1=GameEngine.objectManager.queryTag('player')[0];
-            if(p1){ this.renderContext.strokeStyle="rgba(255,255,255,0.1)";this.renderContext.setLineDash([4,4]);this.renderContext.beginPath();this.renderContext.moveTo(p1.components.transform.position.x,p1.components.transform.position.y);this.renderContext.lineTo(GameEngine.systems.input.mouseCoords.x,GameEngine.systems.input.mouseCoords.y);this.renderContext.stroke();this.renderContext.setLineDash([]);this.renderContext.fillStyle=VisualPalette.CYAN;this.renderContext.fillRect(GameEngine.systems.input.mouseCoords.x-4,GameEngine.systems.input.mouseCoords.y-4,8,8); }
+        this.ctx.lineWidth=4; Game.waves.forEach(s=>{this.ctx.globalAlpha=s.a;this.ctx.strokeStyle=s.col;this.ctx.beginPath();this.ctx.arc(s.x,s.y,s.r,0,Math.PI*2);this.ctx.stroke();});this.ctx.globalAlpha=1;
+        if(Game.flags.flash>0&&Game.cfg.FX.FLASH){this.ctx.fillStyle=`rgba(255,255,255,${Game.flags.flash})`;this.ctx.fillRect(-sX,-sY,Game.w,Game.h);}
+        Game.vis.txt.forEach(t=>{this.ctx.globalAlpha=Math.max(0,t.life);this.ctx.fillStyle=t.col;this.ctx.font="30px VT323";this.ctx.shadowColor=t.col;this.ctx.shadowBlur=10;this.ctx.fillText(t.str,t.pos.x,t.pos.y);this.ctx.shadowBlur=0;});
+        if(Game.flags.subMode==='SOLO'&&Game.sys.input.mode==='MOUSE'&&!Game.flags.menu){
+            const p1=Game.om.getByTag('player')[0];
+            if(p1){ this.ctx.strokeStyle="rgba(255,255,255,0.1)";this.ctx.setLineDash([4,4]);this.ctx.beginPath();this.ctx.moveTo(p1.comps.pos.pos.x,p1.comps.pos.pos.y);this.ctx.lineTo(Game.sys.input.mouse.x,Game.sys.input.mouse.y);this.ctx.stroke();this.ctx.setLineDash([]);this.ctx.fillStyle=Palette.CYAN;this.ctx.fillRect(Game.sys.input.mouse.x-4,Game.sys.input.mouse.y-4,8,8); }
         }
-        this.renderContext.restore(); 
+        this.ctx.restore(); 
     }
-    renderAllEntities() {
-        GameEngine.objectManager.queryTag('loot').forEach(p=>{this.renderContext.save();this.renderContext.translate(p.components.transform.position.x,p.components.transform.position.y);this.renderContext.rotate(p.components.transform.rotation);this.renderContext.fillStyle=p.components.render.baseColor;this.renderContext.globalAlpha=Math.min(1,p.components.loot.life/60);this.renderContext.beginPath();this.renderContext.moveTo(0,-10);this.renderContext.lineTo(10,0);this.renderContext.lineTo(0,10);this.renderContext.lineTo(-10,0);this.renderContext.fill();if(GameEngine.config.FX.GLOW){this.renderContext.shadowColor=p.components.render.baseColor;this.renderContext.shadowBlur=30;this.renderContext.stroke();}this.renderContext.restore();});
-        GameEngine.activeParticles.forEach(p=>{
-            this.renderContext.globalAlpha=p.life; this.renderContext.fillStyle=p.color;
-            if(p.type==='IMPLODE') { this.renderContext.fillRect(p.position.x, p.position.y, 4, 4); } else if (p.type === 'SPARK') { this.renderContext.fillRect(p.position.x, p.position.y, 2, 2); } else { this.renderContext.fillRect(p.position.x,p.position.y,p.size,p.size); }
+    all() {
+        Game.om.getByTag('loot').forEach(p=>{this.ctx.save();this.ctx.translate(p.comps.pos.pos.x,p.comps.pos.pos.y);this.ctx.rotate(p.comps.pos.rot);this.ctx.fillStyle=p.comps.render.col;this.ctx.globalAlpha=Math.min(1,p.comps.loot.life/60);this.ctx.beginPath();this.ctx.moveTo(0,-10);this.ctx.lineTo(10,0);this.ctx.lineTo(0,10);this.ctx.lineTo(-10,0);this.ctx.fill();if(Game.cfg.FX.GLOW){this.ctx.shadowColor=p.comps.render.col;this.ctx.shadowBlur=30;this.ctx.stroke();}this.ctx.restore();});
+        Game.parts.forEach(p=>{
+            this.ctx.save(); this.ctx.translate(p.pos.x, p.pos.y); this.ctx.rotate(p.rot + Date.now()/100);
+            this.ctx.globalAlpha=p.life; this.ctx.fillStyle=p.col;
+            if(p.type==='IMPLODE'||p.type==='SPARK') this.ctx.fillRect(-1, -1, 2, 2); else this.ctx.fillRect(-p.sz/2,-p.sz/2,p.sz,p.sz);
+            this.ctx.restore();
         });
-        GameEngine.objectManager.queryTag('enemy').forEach(e=>this.renderEntity(e,0)); GameEngine.objectManager.queryTag('player').forEach(p=>this.renderEntity(p,Math.random()*(p.components.combat.state>=GameConfiguration.ACTION_STATE.CHARGING?2:0),p.components.combat.state===GameConfiguration.ACTION_STATE.PARRY));
+        Game.om.getByTag('enemy').forEach(e=>this.ent(e,0)); Game.om.getByTag('player').forEach(p=>this.ent(p,0));
     }
-    renderEntity(obj, offset, shield) {
-        let col=ColorUtils.resolveDynamicColor(obj.components.render.baseColor, obj.components.combat);
-        const level = GameEngine.systems.combat.calculateVelocityLevel(obj);
-        let scale = 1.0, showTrail = false, auraBlur = 0;
-        const isReady = obj.components.combat.state === GameConfiguration.ACTION_STATE.LEVEL_3_READY || obj.components.combat.state === GameConfiguration.ACTION_STATE.LEVEL_4_READY;
-        if (level >= 1 && !isReady) showTrail = true; 
-        if (level >= 2) scale = 1.1; if (level >= 3) { auraBlur = 20; scale = 1.2; } if (level >= 4) { col = GameConfiguration.ENTITY_COLORS.MAX_CHARGE; auraBlur = 40; scale = 1.3; } 
-        this.renderContext.save(); this.renderContext.translate(obj.components.transform.position.x+offset,obj.components.transform.position.y+offset);
-        if(obj.components.combat.invulnerabilityTimer > 0 && obj.components.combat.invulnerabilityTimer % 4 < 2) this.renderContext.globalAlpha = 0.4; 
-        if(GameEngine.config.FX.GLOW){ this.renderContext.shadowBlur = obj.components.combat.state===GameConfiguration.ACTION_STATE.CHARGING ? 60 : (30 + auraBlur); this.renderContext.shadowColor = col; this.renderContext.globalCompositeOperation = 'screen'; }
-        if(GameEngine.config.FX.GLOW && showTrail){
-            obj.components.render.trail.push({x:obj.components.transform.position.x,y:obj.components.transform.position.y}); if(obj.components.render.trail.length > (level>=3?10:5)) obj.components.render.trail.shift();
-            obj.components.render.trail.forEach((t,i)=>{this.renderContext.globalAlpha=i/15;this.renderContext.fillStyle=col;this.renderContext.beginPath();this.renderContext.arc(t.x-obj.components.transform.position.x,t.y-obj.components.transform.position.y,obj.components.stats.radius,0,2*Math.PI);this.renderContext.fill();}); this.renderContext.globalAlpha=1;
-        } else { if(obj.components.render.trail.length > 0) obj.components.render.trail.shift(); }
-        if(shield){this.renderContext.strokeStyle=VisualPalette.WHITE;this.renderContext.lineWidth=4;this.renderContext.beginPath();this.renderContext.arc(0,0,obj.components.stats.radius+8,0,2*Math.PI);this.renderContext.stroke();}
-        if(obj.components.stats.hp<30&&Math.floor(Date.now()/50)%2==0)this.renderContext.globalAlpha=0.4;
-        this.renderContext.rotate(Math.atan2(obj.components.velocity.y,obj.components.velocity.x));
-        const speedMag = obj.components.velocity.magnitude(); const stretch = 1 + Math.min(speedMag/60, 0.8); this.renderContext.scale(stretch * scale, (1/stretch) * scale);
-        this.renderContext.fillStyle=col;this.renderContext.beginPath();this.renderContext.arc(0,0,obj.components.stats.radius,0,2*Math.PI);this.renderContext.fill();
-        this.renderContext.fillStyle=VisualPalette.WHITE;this.renderContext.globalAlpha=0.4;this.renderContext.beginPath();this.renderContext.arc(0,0,obj.components.stats.radius*0.6,0,2*Math.PI);this.renderContext.fill();
-        this.renderContext.restore();
-    }
-    renderGrid() { 
-        const heat = GameEngine.flags.heat / 100;
-        const heatColor = heat > 0.5 ? `rgba(255, ${Math.floor(100 - (heat * 100))}, 50, ${0.1 + (heat*0.4)})` : `rgba(30,30,30, 0.3)`;
-        this.renderContext.fillStyle=heatColor;
-        const jitter = heat > 0.5 ? 2 : 0;
+    ent(o, off) {
+        let col=ColorUtil.dynColor(o.comps.render.col, o.comps.combat);
+        const lvl = Game.sys.combat.getLvl(o);
+        let scale=1.0, trail=false, blur=0, str=1.0;
+        const spd = o.comps.vel.mag();
+        const rdy = o.comps.combat.state === Config.STATE.LV3_RDY || o.comps.combat.state === Config.STATE.LV4_RDY;
         
-        for(let x=0;x<GameEngine.screenWidth;x+=100) { 
-            for(let y=0;y<GameEngine.screenHeight;y+=100) {
-                const jX = jitter ? (Math.random()-0.5)*jitter : 0;
-                const jY = jitter ? (Math.random()-0.5)*jitter : 0;
-                if((x+y)%200===0) { 
-                    this.renderContext.fillRect(x+jX-1,y+jY-10,2,20); 
-                    this.renderContext.fillRect(x+jX-10,y+jY-1,20,2); 
-                } else { 
-                    const size = heat > 0.5 ? 4 + Math.sin(Date.now()/100)*2 : 4;
-                    this.renderContext.fillRect(x+jX-size/2,y+jY-size/2,size,size); 
-                }
-            }
+        if (o.comps.combat.odType === 'A') { trail=true; str=1+Math.min(spd/40,1.5); scale=1.1; if(Math.floor(Date.now()/50)%2===0) col=Palette.WHITE; } 
+        else if (o.comps.combat.odType === 'B') { trail=false; str=1.0; scale=1.2; } 
+        else { if(lvl>=1&&!rdy)trail=true; if(lvl>=2)scale=1.1; if(lvl>=3){blur=20;scale=1.2;} if(lvl>=4){col=Palette.WHITE;blur=40;scale=1.3;} str=1+Math.min(spd/60,0.8); }
+
+        this.ctx.save(); 
+        if(o.comps.combat.state === Config.STATE.PARRY) { const g=(Math.random()-0.5)*6; this.ctx.translate(o.comps.pos.pos.x+off+g,o.comps.pos.pos.y+off+g); } 
+        else this.ctx.translate(o.comps.pos.pos.x+off,o.comps.pos.pos.y+off);
+        if(o.comps.combat.invuln > 0 && o.comps.combat.invuln % 4 < 2) this.ctx.globalAlpha = 0.4; 
+        if(Game.cfg.FX.GLOW){ this.ctx.shadowBlur = o.comps.combat.state===Config.STATE.CHARGING ? 60 : (30+blur); this.ctx.shadowColor = col; this.ctx.globalCompositeOperation = 'screen'; }
+        
+        if(Game.cfg.FX.GLOW && trail){
+            o.comps.render.trail.push({x:o.comps.pos.pos.x,y:o.comps.pos.pos.y}); if(o.comps.render.trail.length>(lvl>=3?10:5)) o.comps.render.trail.shift();
+            o.comps.render.trail.forEach((t,i)=>{this.ctx.globalAlpha=i/20;this.ctx.strokeStyle=col;this.ctx.lineWidth=2;this.ctx.beginPath();this.ctx.arc(t.x-o.comps.pos.pos.x,t.y-o.comps.pos.pos.y,o.comps.stats.r,0,2*Math.PI);this.ctx.stroke();}); this.ctx.globalAlpha=1;
+        } else if(o.comps.render.trail.length>0) o.comps.render.trail.shift();
+        
+        if(o.comps.combat.state>=Config.STATE.CHARGING && o.comps.combat.state<=Config.STATE.LV4_RDY) {
+             const t=o.comps.combat.chgTimer, b=Math.max(o.comps.stats.r+5, 60-(t%30));
+             this.ctx.strokeStyle=(t>Config.TIME.CHG_LV3)?Palette.WHITE:col; this.ctx.lineWidth=3;
+             this.ctx.beginPath(); this.ctx.moveTo(-b,-10);this.ctx.lineTo(-b,10);this.ctx.moveTo(-b-5,-10);this.ctx.lineTo(-b,-10);this.ctx.moveTo(-b-5,10);this.ctx.lineTo(-b,10);this.ctx.stroke();
+             this.ctx.beginPath(); this.ctx.moveTo(b,-10);this.ctx.lineTo(b,10);this.ctx.moveTo(b+5,-10);this.ctx.lineTo(b,-10);this.ctx.moveTo(b+5,10);this.ctx.lineTo(b,10);this.ctx.stroke();
         }
+
+        if(o.comps.combat.odType === 'B') {
+            this.ctx.fillStyle=col; for(let i=0;i<4;i++) { const a=(Date.now()/200)+(i*Math.PI/2), d=25+Math.sin(Date.now()/100+i)*5; this.ctx.fillRect(Math.cos(a)*d,Math.sin(a)*d,6,6); }
+        }
+
+        if(o.comps.combat.state === Config.STATE.PARRY) {
+             this.ctx.shadowBlur=50; this.ctx.shadowColor='#fff';
+             for(let i=0;i<5;i++) {
+                 const h=o.comps.stats.r*0.4, y=-o.comps.stats.r+(i*h), of=(Math.random()-0.5)*15;
+                 this.ctx.fillStyle=i%2===0?Palette.WHITE:col; this.ctx.fillRect(-o.comps.stats.r+of,y,o.comps.stats.r*2,h);
+             }
+        } else {
+            if(o.comps.stats.hp<30&&Math.floor(Date.now()/50)%2==0)this.ctx.globalAlpha=0.4;
+            this.ctx.rotate(Math.atan2(o.comps.vel.y,o.comps.vel.x)); this.ctx.scale(str*scale, (1/str)*scale);
+            this.ctx.fillStyle=col;this.ctx.beginPath();this.ctx.arc(0,0,o.comps.stats.r,0,2*Math.PI);this.ctx.fill();
+            this.ctx.fillStyle=Palette.WHITE;this.ctx.globalAlpha=0.4;this.ctx.beginPath();this.ctx.arc(0,0,o.comps.stats.r*0.6,0,2*Math.PI);this.ctx.fill();
+        }
+        this.ctx.restore();
+    }
+    grid() { 
+        const h = Game.flags.heat/100, step=Config.GFX.GRID_STEP, c=h>0.5?`rgba(255,${Math.floor(100-(h*100))},50,${0.1+(h*0.4)})`:`rgba(30,30,30,0.3)`;
+        this.ctx.fillStyle=c;
+        for(let x=0;x<Game.w;x+=step) for(let y=0;y<Game.h;y+=step) {
+            if((Math.floor(x/step)+Math.floor(y/step))%2!==0) continue; const s=h>0.5?20:12;
+            this.ctx.fillRect(x-s/2,y-2,s,4); this.ctx.fillRect(x-2,y-s/2,4,s);
+        }
+        this.ctx.fillStyle="rgba(255,255,255,0.02)"; this.ctx.fillRect(0,(Date.now()/5)%Game.h,Game.w,10);
     }
 }
 
-class GameEngine {
-    static objectManager=new GameObjectManager(); static visualEntities={blood:[],texts:[]}; static activeParticles=[]; static activeShockwaves=[]; static particlePool=null;
-    static flags={inMenu:true, subMode:"SOLO",score:0,killStreak:0,heat:0,shakeIntensity:0,hitStopTimer:0,flashOpacity:0,waveTimer:0,lootTimer:1800,chromaticAberration:0,invertedFrame:false,particleLimit:0,comboCounter:0};
-    static config={ FX:{BLOOD:true,SHAKE:true,FLASH:true,GLOW:true,GRID:true}, BOUNDS:25 };
-    static eventBus=new GameEventBus(); static screenWidth=window.innerWidth; static screenHeight=window.innerHeight; static systems={}; 
+class Game {
+    static om=new ObjectMan(); static vis={blood:[],txt:[]}; static parts=[]; static waves=[]; static pool=null;
+    static flags={menu:true, subMode:"SOLO",score:0,kills:0,heat:0,shake:0,stop:0,flash:0,wT:0,lT:1800,aberr:0,invert:false,pLim:0,combo:0};
+    static cfg={ FX:{BLOOD:true,SHAKE:true,FLASH:true,GLOW:true,GRID:true} };
+    static bus=new EventBus(); static w=window.innerWidth; static h=window.innerHeight; static sys={}; 
     
-    static userInterface={
-        menu:document.getElementById("floor-interface"), title:document.getElementById("menu-title"), score:document.getElementById("score-val"), heat:document.getElementById("heat-val"), actionBtn:document.getElementById("btn-main-action"), focusIdx:0, elements:[],
-        triggerGameStart:()=>{ 
-            if(GameEngine.flags.inMenu){ GameEngine.flags.inMenu = false; document.body.classList.remove('menu-mode'); GameEngine.userInterface.menu.classList.remove("active"); GameEngine.userInterface.menu.classList.add("passive"); GameEngine.director.startGameplay(); } 
-            else { GameEngine.flags.inMenu = true; document.body.classList.add('menu-mode'); GameEngine.userInterface.menu.classList.remove("passive"); GameEngine.userInterface.menu.classList.add("active"); }
+    static ui={
+        el:document.getElementById("floor-interface"), title:document.getElementById("menu-title"), sc:document.getElementById("score-val"), ht:document.getElementById("heat-val"), btn:document.getElementById("btn-main-action"), idx:0, list:[],
+        triggerStart:()=>{ 
+            if(Game.flags.menu){ Game.flags.menu=false; document.body.classList.remove('menu-mode'); Game.ui.el.classList.remove("active"); Game.ui.el.classList.add("passive"); Game.director.play(); } 
+            else { Game.flags.menu=true; document.body.classList.add('menu-mode'); Game.ui.el.classList.remove("passive"); Game.ui.el.classList.add("active"); }
         },
-        initMenuFocus:()=>{ GameEngine.userInterface.elements=Array.from(document.querySelectorAll('#floor-interface button')); GameEngine.userInterface.focusIdx=GameEngine.userInterface.elements.length-1; GameEngine.userInterface.refreshFocus(); },
-        refreshFocus:()=>{ GameEngine.userInterface.elements.forEach((e,i)=>{const a=i===GameEngine.userInterface.focusIdx;e.classList.toggle('focused',a);if(a)e.scrollIntoView({block:'nearest'});}); },
-        navigateMenu:(d)=>{ if(!GameEngine.userInterface.elements.length)GameEngine.userInterface.initMenuFocus(); GameEngine.userInterface.focusIdx=(GameEngine.userInterface.focusIdx+d+GameEngine.userInterface.elements.length)%GameEngine.userInterface.elements.length; GameEngine.userInterface.refreshFocus(); },
-        triggerMenuSelect:()=>{ if(!GameEngine.userInterface.elements.length)return; GameEngine.userInterface.elements[GameEngine.userInterface.focusIdx].click(); },
-        updateScore:()=>{ GameEngine.userInterface.score.innerText=Math.floor(GameEngine.flags.score); GameEngine.userInterface.heat.innerText=`HEAT // ${Math.floor(GameEngine.flags.heat)}%`; }
+        init:()=>{ Game.ui.list=Array.from(document.querySelectorAll('#floor-interface button')); Game.ui.idx=Game.ui.list.length-1; Game.ui.ref(); },
+        ref:()=>{ Game.ui.list.forEach((e,i)=>{const a=i===Game.ui.idx;e.classList.toggle('focused',a);if(a)e.scrollIntoView({block:'nearest'});}); },
+        nav:(d)=>{ if(!Game.ui.list.length)Game.ui.init(); Game.ui.idx=(Game.ui.idx+d+Game.ui.list.length)%Game.ui.list.length; Game.ui.ref(); },
+        sel:()=>{ if(!Game.ui.list.length)return; Game.ui.list[Game.ui.idx].click(); },
+        upd:()=>{ Game.ui.sc.innerText=Math.floor(Game.flags.score); Game.ui.ht.innerText=`HEAT // ${Math.floor(Game.flags.heat)}%`; }
     };
     
     static director={
-        setGameMode:(mode)=>{GameEngine.flags.subMode=mode; document.getElementById("btn-mode-solo").classList.toggle('active',mode==='SOLO'); document.getElementById("btn-mode-vs").classList.toggle('active',mode==='COOP');},
-        startAttractMode:()=>{
-            GameEngine.objectManager.objects=[]; GameEngine.objectManager.idCounter=0; GameEngine.activeParticles=[]; GameEngine.visualEntities.texts=[]; GameEngine.visualEntities.blood=[];
-            const ai1 = GameObjectFactory.instantiateFromBlueprint('PLAYER_ONE', GameEngine.screenWidth*0.3, GameEngine.screenHeight/2); ai1.components.input.deviceId = 'ai'; ai1.addComponent('ai', {behavior:AiBehaviorDatabase.AGGRESSIVE, traits:["SPRINTER"], memory:{damageTaken:0}, thinkTimer:0, activePlan:null});
-            const ai2 = GameObjectFactory.instantiateFromBlueprint('PLAYER_TWO', GameEngine.screenWidth*0.7, GameEngine.screenHeight/2); ai2.components.input.deviceId = 'ai'; ai2.addComponent('ai', {behavior:AiBehaviorDatabase.AGGRESSIVE, traits:["SPRINTER"], memory:{damageTaken:0}, thinkTimer:0, activePlan:null});
-            GameEngine.userInterface.title.innerText="SYSTEM_IDLE"; GameEngine.userInterface.actionBtn.innerText="INITIALIZE"; GameEngine.flags.inMenu = true; document.body.classList.add('menu-mode');
+        setMode:(m)=>{Game.flags.subMode=m; document.getElementById("btn-mode-solo").classList.toggle('active',m==='SOLO'); document.getElementById("btn-mode-vs").classList.toggle('active',m==='COOP');},
+        attract:()=>{
+            Game.om.list=[]; Game.om.ids=0; Game.parts=[]; Game.vis.txt=[]; Game.vis.blood=[];
+            const a1 = Factory.bp('P1', Game.w*0.3, Game.h/2); a1.comps.input.dev='ai'; a1.add('ai', {behav:AiBehaviors.AGGRESSIVE, traits:["SPRINTER"], mem:{dmg:0}, tick:0, plan:null});
+            const a2 = Factory.bp('P2', Game.w*0.7, Game.h/2); a2.comps.input.dev='ai'; a2.add('ai', {behav:AiBehaviors.AGGRESSIVE, traits:["SPRINTER"], mem:{dmg:0}, tick:0, plan:null});
+            Game.ui.title.innerText="SYSTEM_IDLE"; Game.ui.btn.innerText="INITIALIZE"; Game.flags.menu=true; document.body.classList.add('menu-mode');
         },
-        startGameplay:()=>{ 
-            GameEngine.gameLoop.resize(); GameEngine.systems.input.controllerState.p1.axis=new Vector2D(0,0); GameEngine.systems.input.controllerState.p2.axis=new Vector2D(0,0); GameEngine.objectManager.objects=[]; GameEngine.objectManager.idCounter=0; GameEngine.activeParticles=[]; GameEngine.visualEntities.texts=[]; GameEngine.visualEntities.blood=[];
-            const p1=GameObjectFactory.instantiateFromBlueprint('PLAYER_ONE',GameEngine.screenWidth/2,GameEngine.screenHeight/2); if(GameEngine.flags.subMode==='COOP'){p1.components.transform.position.x-=100;GameObjectFactory.instantiateFromBlueprint('PLAYER_TWO',GameEngine.screenWidth/2+100,GameEngine.screenHeight/2);}
-            GameEngine.flags.score=0; GameEngine.flags.heat=0; GameEngine.userInterface.updateScore(); GameEngine.flags.killStreak=0; GameEngine.flags.shakeIntensity=0; GameEngine.flags.hitStopTimer=0; GameEngine.flags.waveTimer=0; GameEngine.flags.lootTimer=1800; 
-            GameEngine.userInterface.title.innerText="SYSTEM_ACTIVE"; GameEngine.userInterface.actionBtn.innerText="RESTART"; GameEngine.systems.input.setupTouchInterface(); 
+        play:()=>{ 
+            Game.loop.sz(); Game.sys.input.pads.p1.ax=new Vec2(0,0); Game.sys.input.pads.p2.ax=new Vec2(0,0); Game.om.list=[]; Game.om.ids=0; Game.parts=[]; Game.vis.txt=[]; Game.vis.blood=[];
+            const p1=Factory.bp('P1',Game.w/2,Game.h/2); if(Game.flags.subMode==='COOP'){p1.comps.pos.pos.x-=100;Factory.bp('P2',Game.w/2+100,Game.h/2);}
+            Game.flags.score=0; Game.flags.heat=0; Game.ui.upd(); Game.flags.kills=0; Game.flags.shake=0; Game.flags.stop=0; Game.flags.wT=0; Game.flags.lT=1800; 
+            Game.ui.title.innerText="SYSTEM_ACTIVE"; Game.ui.btn.innerText="RESTART"; Game.sys.input.setupTouch(); 
         },
-        spawnWave:()=>{ 
-            const ec=GameEngine.objectManager.queryTag('enemy').length; const target = 1 + Math.floor(GameEngine.flags.heat / 20); 
-            if(ec < target){
-                const r=Math.random();
-                let type = "NORMAL_RUSHER";
-                if(r < 0.05) type = "ENEMY_BOSS";
-                else if (r < 0.40) type = "NORMAL_DEFENDER";
-                else if (r < 0.70) type = "NORMAL_VULTURE";
-                const side=Math.floor(Math.random()*4),pos=[new Vector2D(Math.random()*GameEngine.screenWidth,-40),new Vector2D(GameEngine.screenWidth+40,Math.random()*GameEngine.screenHeight),new Vector2D(Math.random()*GameEngine.screenWidth,GameEngine.screenHeight+40),new Vector2D(-40,Math.random()*GameEngine.screenHeight)][side]; 
-                GameObjectFactory.instantiateEnemy(type,pos.x,pos.y);
+        wave:()=>{ 
+            const ec=Game.om.getByTag('enemy').length; const t = 1 + Math.floor(Game.flags.heat / 20); 
+            if(ec < t){
+                const r=Math.random(), type = r<0.05?"BOSS":(r<0.40?"DEFENDER":(r<0.70?"VULTURE":"RUSHER"));
+                const s=Math.floor(Math.random()*4),pos=[new Vec2(Math.random()*Game.w,-40),new Vec2(Game.w+40,Math.random()*Game.h),new Vec2(Math.random()*Game.w,Game.h+40),new Vec2(-40,Math.random()*Game.h)][s]; 
+                Factory.enemy(type,pos.x,pos.y);
             }
-            GameEngine.flags.lootTimer--; if(GameEngine.flags.lootTimer<=0){GameObjectFactory.instantiateLoot(Math.random()*(GameEngine.screenWidth-100)+50,Math.random()*(GameEngine.screenHeight-100)+50,Math.random()>0.8?"EXTRA_LIFE":(Math.random()>0.5?"INVINCIBILITY":"HEAL")); GameEngine.flags.lootTimer=1800+Math.random()*1800;} 
+            Game.flags.lT--; if(Game.flags.lT<=0){Factory.loot(Math.random()*(Game.w-100)+50,Math.random()*(Game.h-100)+50,Math.random()>0.8?"LIFE":(Math.random()>0.5?"GOD":"HEAL")); Game.flags.lT=1800+Math.random()*1800;} 
         },
-        triggerGameOver:()=>{ 
-            GameEngine.flags.inMenu = true; document.body.classList.add('menu-mode'); GameEngine.userInterface.menu.classList.remove("passive"); GameEngine.userInterface.menu.classList.add("active");
-            GameEngine.userInterface.title.innerText="SIGNAL_LOST"; GameEngine.userInterface.actionBtn.innerText="RESTART"; GameEngine.userInterface.initMenuFocus(); 
+        over:()=>{ 
+            Game.flags.menu=true; document.body.classList.add('menu-mode'); Game.ui.el.classList.remove("passive"); Game.ui.el.classList.add("active");
+            Game.ui.title.innerText="SIGNAL_LOST"; Game.ui.btn.innerText="RESTART"; Game.ui.init(); 
         }
     };
-    static initialize() {
-        this.particlePool = new MemoryPool(()=>({active:false, position:new Vector2D(0,0), velocity:new Vector2D(0,0), color:'#fff', life:0, size:1, type:'EXPLODE'}), 300);
-        this.systems.audio = new AudioSystem(); this.systems.input = new InputSystem(); this.systems.ai = new AiSystem();
-        this.systems.physics = new PhysicsSystem(); this.systems.combat = new CombatSystem(); this.systems.rules = new RuleSystem(); this.systems.render = new RenderSystem();
-        this.gameLoop={ id:null, lastTime:0, accumulator:0, step:1000/60, resize:()=>{GameEngine.screenWidth=document.getElementById("gameCanvas").width=window.innerWidth;GameEngine.screenHeight=document.getElementById("gameCanvas").height=window.innerHeight;}, run:(timestamp)=>{
-            if(!GameEngine.gameLoop.lastTime)GameEngine.gameLoop.lastTime=timestamp; let dt=timestamp-GameEngine.gameLoop.lastTime; GameEngine.gameLoop.lastTime=timestamp; if(dt>200) dt=GameEngine.gameLoop.step;
-            GameEngine.gameLoop.accumulator+=dt; 
-            while(GameEngine.gameLoop.accumulator>=GameEngine.gameLoop.step){
-                if(GameEngine.flags.hitStopTimer>0)GameEngine.flags.hitStopTimer--; 
+    static init() {
+        this.pool = new MemoryPool(()=>({active:false, pos:new Vec2(0,0), vel:new Vec2(0,0), col:'#fff', life:0, sz:1, type:'EXPLODE'}), 300);
+        this.sys.audio=new AudioSys(); this.sys.input=new InputSys(); this.sys.ai=new AiSys();
+        this.sys.phys=new PhysicsSys(); this.sys.combat=new CombatSys(); this.sys.rules=new Rules(); this.sys.render=new RenderSys();
+        this.loop={ id:null, lt:0, acc:0, step:1000/60, sz:()=>{Game.w=document.getElementById("gameCanvas").width=window.innerWidth;Game.h=document.getElementById("gameCanvas").height=window.innerHeight;}, run:(ts)=>{
+            if(!Game.loop.lt)Game.loop.lt=ts; let dt=ts-Game.loop.lt; Game.loop.lt=ts; if(dt>200) dt=Game.loop.step;
+            Game.loop.acc+=dt; 
+            while(Game.loop.acc>=Game.loop.step){
+                if(Game.flags.stop>0)Game.flags.stop--; 
                 else { 
-                    GameEngine.systems.input.process(); 
-                    if(!GameEngine.flags.inMenu) { GameEngine.flags.heat = Math.max(0, GameEngine.flags.heat - GameConfiguration.HEAT_SYSTEM.DECAY_RATE); GameEngine.userInterface.updateScore(); }
-                    else if(GameEngine.flags.inMenu && GameEngine.objectManager.queryTag('player').length === 0 && GameEngine.objectManager.idCounter > 0) {
-                          const ai1 = GameObjectFactory.instantiateFromBlueprint('PLAYER_ONE', GameEngine.screenWidth*0.3, GameEngine.screenHeight/2); ai1.components.input.deviceId = 'ai'; ai1.addComponent('ai', {behavior:AiBehaviorDatabase.AGGRESSIVE, traits:["SPRINTER"], memory:{damageTaken:0}, thinkTimer:0, activePlan:null});
-                          const ai2 = GameObjectFactory.instantiateFromBlueprint('PLAYER_TWO', GameEngine.screenWidth*0.7, GameEngine.screenHeight/2); ai2.components.input.deviceId = 'ai'; ai2.addComponent('ai', {behavior:AiBehaviorDatabase.AGGRESSIVE, traits:["SPRINTER"], memory:{damageTaken:0}, thinkTimer:0, activePlan:null});
+                    Game.sys.input.process(); 
+                    if(!Game.flags.menu) { Game.flags.heat = Math.max(0, Game.flags.heat - Config.HEAT.DECAY); Game.ui.upd(); }
+                    else if(Game.flags.menu && Game.om.getByTag('player').length === 0 && Game.om.ids > 0) {
+                          const a1 = Factory.bp('P1', Game.w*0.3, Game.h/2); a1.comps.input.dev='ai'; a1.add('ai', {behav:AiBehaviors.AGGRESSIVE, traits:["SPRINTER"], mem:{dmg:0}, tick:0, plan:null});
+                          const a2 = Factory.bp('P2', Game.w*0.7, Game.h/2); a2.comps.input.dev='ai'; a2.add('ai', {behav:AiBehaviors.AGGRESSIVE, traits:["SPRINTER"], mem:{dmg:0}, tick:0, plan:null});
                     }
-                    GameEngine.director.spawnWave(); 
-                    GameEngine.systems.ai.process(); GameEngine.systems.physics.process(); GameEngine.systems.combat.process(); GameEngine.objectManager.cleanUp(); 
-                    GameEngine.visualEntities.texts.forEach((t,i)=>{t.position.add(t.velocity);t.life-=0.02;if(t.life<=0)GameEngine.visualEntities.texts.splice(i,1)}); 
-                    GameEngine.visualEntities.blood.forEach(b=>{b.position.add(b.velocity);b.velocity.multiply(0.85);}); 
-                    for(let i=GameEngine.activeParticles.length-1; i>=0; i--) {
-                        let p = GameEngine.activeParticles[i]; p.position.add(p.velocity); p.velocity.multiply(0.9); p.life-=0.05;
-                        if(p.life<=0) { GameEngine.particlePool.release(p); GameEngine.activeParticles.splice(i,1); }
+                    Game.director.wave(); 
+                    Game.sys.ai.process(); Game.sys.phys.process(); Game.sys.combat.process(); Game.om.clean(); 
+                    Game.vis.txt.forEach((t,i)=>{t.pos.add(t.vel);t.life-=0.02;if(t.life<=0)Game.vis.txt.splice(i,1)}); 
+                    Game.vis.blood.forEach(b=>{b.pos.add(b.vel);b.vel.mul(0.85);}); 
+                    for(let i=Game.parts.length-1; i>=0; i--) {
+                        let p = Game.parts[i]; p.pos.add(p.vel); p.vel.mul(0.9); p.life-=0.05;
+                        if(p.life<=0) { Game.pool.free(p); Game.parts.splice(i,1); }
                     }
-                    GameEngine.activeShockwaves.forEach((s,i)=>{s.r+=4; s.alpha-=0.05; if(s.alpha<=0)GameEngine.activeShockwaves.splice(i,1)});
-                    if(GameEngine.objectManager.queryTag('player').length===0 && !GameEngine.flags.inMenu) GameEngine.director.triggerGameOver(); 
+                    Game.waves.forEach((s,i)=>{s.r+=4; s.a-=Config.GFX.FLASH_DEC; if(s.a<=0)Game.waves.splice(i,1)});
+                    if(Game.om.getByTag('player').length===0 && !Game.flags.menu) Game.director.over(); 
                 }
-                GameEngine.flags.shakeIntensity=Math.max(0,GameEngine.flags.shakeIntensity*0.9-0.1); GameEngine.flags.flashOpacity=Math.max(0,GameEngine.flags.flashOpacity-0.05); GameEngine.flags.chromaticAberration=Math.max(0,GameEngine.flags.chromaticAberration-0.5); GameEngine.flags.particleLimit=0; GameEngine.gameLoop.accumulator-=GameEngine.gameLoop.step; 
+                Game.flags.shake=Math.max(0,Game.flags.shake*0.9-0.1); Game.flags.flash=Math.max(0,Game.flags.flash-0.05); Game.flags.aberr=Math.max(0,Game.flags.aberr-0.5); Game.flags.pLim=0; Game.loop.acc-=Game.loop.step; 
             } 
-            GameEngine.systems.render.render(); GameEngine.flags.invertedFrame=false; GameEngine.gameLoop.id=requestAnimationFrame(GameEngine.gameLoop.run);
+            Game.sys.render.draw(); Game.flags.invert=false; Game.loop.id=requestAnimationFrame(Game.loop.run);
         }};
-        window.addEventListener("resize",this.gameLoop.resize); 
-        this.eventBus.subscribe('EVENT_SHAKE',amount=>{if(this.config.FX.SHAKE)this.flags.shakeIntensity+=amount;}); 
-        this.eventBus.subscribe('EVENT_FLASH',opacity=>{if(this.config.FX.FLASH)this.flags.flashOpacity=opacity;}); 
-        this.eventBus.subscribe('EVENT_PARTICLE_SPAWN',d=>{if(GameEngine.flags.particleLimit>GameConfiguration.RENDERING.MAX_PARTICLES)return;if(GameEngine.activeParticles.length>GameConfiguration.RENDERING.MAX_PARTICLES){GameEngine.particlePool.release(GameEngine.activeParticles.shift());}GameEngine.flags.particleLimit++;GameObjectFactory.instantiateParticle(d.x,d.y,d.col,d.speed, d.type);}); 
-        this.eventBus.subscribe('EVENT_PARTICLE_IMPLODE',d=>{ for(let i=0;i<d.count;i++){ let ang=Math.random()*6.28, dist=30+Math.random()*20; 
-            let hsl = ColorUtils.hexToHSL(d.target.components.render.baseColor); let col = `hsl(${hsl.h}, ${hsl.s}%, 90%)`; 
-            const p = GameEngine.particlePool.acquire(); p.active=true; p.type='IMPLODE'; p.position.x = d.target.components.transform.position.x+Math.cos(ang)*dist; p.position.y = d.target.components.transform.position.y+Math.sin(ang)*dist; p.velocity.x = -Math.cos(ang)*2; p.velocity.y = -Math.sin(ang)*2; p.color=col; p.life=1; p.size=3; GameEngine.activeParticles.push(p);
-        }});
-        this.eventBus.subscribe('EVENT_PARTICLE_BURST',d=>{if(!this.config.FX.BLOOD&&!this.config.FX.FLASH)return;for(let i=0;i<d.count;i++)this.eventBus.publish('EVENT_PARTICLE_SPAWN',{x:d.x,y:d.y,col:d.col,speed:Math.random()*10+5});}); 
-        this.eventBus.subscribe('EVENT_TEXT',d=>this.visualEntities.texts.push({position:new Vector2D(d.x,d.y),velocity:new Vector2D(Math.random()-0.5,-2),str:d.txt,color:d.col,life:1}));
-        this.gameLoop.resize(); this.director.startAttractMode(); this.gameLoop.id=requestAnimationFrame(this.gameLoop.run);
+        window.addEventListener("resize",this.loop.sz); 
+        this.bus.sub('SHAKE',v=>{if(this.cfg.FX.SHAKE)this.flags.shake+=v;}); 
+        this.bus.sub('FLASH',v=>{if(this.cfg.FX.FLASH)this.flags.flash=v;}); 
+        this.bus.sub('PART_SPAWN',d=>{if(Game.flags.pLim>Config.GFX.MAX_PARTICLES)return;if(Game.parts.length>Config.GFX.MAX_PARTICLES){Game.pool.free(Game.parts.shift());}Game.flags.pLim++;Factory.part(d.x,d.y,d.col,d.spd, d.type);}); 
+        this.bus.sub('PART_BURST',d=>{if(!this.cfg.FX.BLOOD&&!this.cfg.FX.FLASH)return;for(let i=0;i<d.c;i++)this.bus.pub('PART_SPAWN',{x:d.x,y:d.y,col:d.col,spd:Math.random()*10+5});}); 
+        this.bus.sub('FIZZLE',d=>{ for(let i=0;i<5;i++) Game.bus.pub('PART_SPAWN',{x:d.x, y:d.y, col:Palette.GREY, spd:0.5, type:'FIZZLE'}); });
+        this.loop.sz(); this.director.attract(); Game.loop.id=requestAnimationFrame(this.loop.run);
     }
 }
-GameEngine.initialize();
+Game.init();
 </script>
 </body>
 </html>
