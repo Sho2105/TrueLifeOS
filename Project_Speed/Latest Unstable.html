@@ -3,838 +3,383 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Project: Speed // VISUAL JUICE</title>
+<title>Project: Speed</title>
 <style>
     @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-    :root { --c-bg:#050505; --c-txt:#eee; --c-dim:#444; --c-hi:#fff; }
-    body { margin:0; overflow:hidden; background-color:var(--c-bg); color:var(--c-txt); font-family:'VT323',monospace; user-select:none; touch-action:none; }
-    body::after { content:" "; display:block; position:absolute; inset:0; background:linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%), linear-gradient(90deg, rgba(255,0,0,0.06), rgba(0,255,0,0.02), rgba(0,0,255,0.06)); z-index:100; background-size:100% 2px, 3px 100%; pointer-events:none; }
-    canvas { position:absolute; inset:0; z-index:10; cursor:crosshair; image-rendering:pixelated; filter:contrast(1.1) saturate(1.2); pointer-events:auto; }
-    body.menu-mode canvas { pointer-events:none; }
-    #ui-layer { position:absolute; inset:0; pointer-events:none; z-index:5; display:flex; justify-content:center; align-items:center; }
-    #floor-interface { text-align:center; pointer-events:auto; display:flex; flex-direction:column; gap:15px; transition:opacity 0.5s ease; will-change:transform; }
-    #floor-interface.active { opacity:1; filter:drop-shadow(0 0 10px rgba(255,255,255,0.2)); }
-    #floor-interface.passive { opacity:0.1; pointer-events:none; filter:blur(2px); }
-    h1 { font-size:80px; margin:0; line-height:0.8; letter-spacing:15px; font-weight:normal; text-shadow:0 0 20px rgba(255,255,255,0.1); }
-    .score-readout { font-size:100px; margin:0; line-height:0.9; color:var(--c-hi); }
-    .heat-readout { font-size:24px; color:var(--c-dim); letter-spacing:4px; font-weight:bold; }
-    .btn-group { display:flex; justify-content:center; gap:30px; margin:20px 0; }
-    .bare-btn { background:transparent; border:none; color:var(--c-dim); font-family:'VT323',monospace; font-size:24px; cursor:pointer; text-transform:uppercase; letter-spacing:3px; padding:5px 15px; transition:all 0.1s; }
-    #floor-interface.active .bare-btn:is(:hover,.active,:focus) { color:var(--c-hi); text-shadow:0 0 15px var(--c-hi); outline:none; transform:scale(1.1); }
-    #btn-main-action { font-size:48px; margin-top:30px; color:var(--c-hi); }
-    #btn-main-action:is(:hover,:focus) { text-shadow:0 0 30px var(--c-hi); letter-spacing:6px; }
+    :root { --c-bg: #050505; --c-txt: #eee; --c-dim: #333; --c-high: #fff; --c-shadow: rgba(0,0,0,0.5); --f-main: 'VT323', monospace; --z-bg: 100; --z-cvs: 10; --z-ui: 20; --z-modal: 50; 
+    }
+    body { margin:0; overflow:hidden; background-color:var(--c-bg); color:var(--c-txt); font-family:var(--f-main); user-select:none; touch-action:none; }
+    body::after { content:" "; display:block; position:absolute; inset:0; background:linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%), linear-gradient(90deg, rgba(255,0,0,0.06), rgba(0,255,0,0.02), rgba(0,0,255,0.06)); z-index:var(--z-bg); background-size:100% 2px, 3px 100%; pointer-events:none; }
+    canvas { position:absolute; inset:0; z-index:var(--z-cvs); cursor:crosshair; image-rendering:pixelated; filter:contrast(1.1) saturate(1.2); pointer-events:auto; }
+    #ui-layer { position:absolute; inset:0; pointer-events:none; z-index:var(--z-ui); display:flex; flex-direction:column; justify-content:center; align-items:center; overflow:hidden; }
+    #floor-menu { text-align:center; pointer-events:auto; transition: opacity 0.8s ease, filter 0.8s ease, color 0.8s ease; will-change: transform, opacity; }
+    #floor-menu.menu-active { opacity: 1; color: var(--c-txt); filter: drop-shadow(0 0 5px var(--c-shadow)); }
+    #floor-menu.menu-sunken { opacity: 0.25; color: white; pointer-events: none; filter: blur(2px); }
+    h1 { font-size:100px; margin:0; line-height:0.8; font-weight:normal; letter-spacing:10px; color:inherit; }
+    .score-readout { font-size:120px; margin:10px 0; line-height:0.8; color:var(--c-high); transition: all 0.8s; }
+    #floor-menu.menu-sunken .score-readout { opacity: 1; color: white; }
+    .menu-row { display:flex; justify-content:center; gap:20px; margin: 15px 0; font-size: 24px; letter-spacing: 2px; color:inherit; }
+    .opt-btn { cursor: pointer; transition: all 0.2s; text-transform: uppercase; color: #666; }
+    #floor-menu.menu-active .opt-btn:hover { color: #aaa; }
+    #floor-menu.menu-active .opt-btn.active { color: var(--c-high); text-shadow: 0 0 8px var(--c-high); }
+    .action-row { margin-top: 40px; display:flex; flex-direction:column; gap:15px; align-items:center; }
+    .btn-main { font-size: 42px; color: inherit; cursor: pointer; letter-spacing: 5px; transition: all 0.2s; }
+    #floor-menu.menu-active .btn-main { color: var(--c-high); }
+    #floor-menu.menu-active .btn-main:hover { text-shadow: 0 0 15px white; letter-spacing: 8px; }
+    .btn-sub { font-size: 20px; color: inherit; cursor: pointer; margin-top:10px; opacity: 0.5; }
+    #floor-menu.menu-active .btn-sub:hover { opacity: 1; color: var(--c-high); }
+    #guide-modal { position: absolute; top:50%; left:50%; transform:translate(-50%, -50%); width: 300px; padding: 20px; background: #050505; border: 1px solid var(--c-dim); color: #eee; z-index: var(--z-modal); display: none; pointer-events: auto; box-shadow: 0 0 50px rgba(0,0,0,0.9); }
+    #guide-modal.visible { display: block; }
+    #guide-modal h3 { margin-top:0; border-bottom: 1px solid var(--c-dim); padding-bottom:10px; }
+    .key-row { display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px; color:#aaa; }
+    .key-val { color: #fff; }
+    .close-guide { margin-top:15px; width:100%; background:#111; border:none; color:#fff; padding:5px; cursor:pointer; font-family:var(--f-main); font-size:18px; }
+    .close-guide:hover { background:var(--c-dim); }
     .touch-container { display:none; position:absolute; z-index:30; pointer-events:none; inset:0; }
     .touch-pad { position:absolute; border:1px solid rgba(255,255,255,0.1); border-radius:50%; pointer-events:auto; }
     .stick-base { width:120px; height:120px; background:rgba(255,255,255,0.05); }
-    .stick-nub { position:absolute; top:50%; left:50%; width:40px; height:40px; background:var(--c-hi); border-radius:50%; transform:translate(-50%,-50%); pointer-events:none; box-shadow:0 0 10px var(--c-hi); }
+    .stick-nub { position:absolute; top:50%; left:50%; width:40px; height:40px; background:var(--c-high); border-radius:50%; transform:translate(-50%,-50%); pointer-events:none; box-shadow:0 0 10px var(--c-high); }
     .btn-action { width:80px; height:80px; background:rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:center; color:#444; font-size:24px; }
-    .btn-action.active { background:var(--c-hi); color:#000; box-shadow:0 0 15px var(--c-hi); }
+    .btn-action.active { background:var(--c-high); color:#000; box-shadow:0 0 15px var(--c-high); }
 </style>
 </head>
 <body>
 <div id="ui-layer">
-    <div id="floor-interface" class="active">
-        <h1 id="menu-title">PROJECT_SPEED</h1>
+    <div id="floor-menu" class="menu-active">
+        <h1>PROJECT_SPEED</h1>
         <div id="score-val" class="score-readout">0</div>
-        <div id="heat-val" class="heat-readout">HEAT // 0%</div>
-        <div class="btn-group">
-            <button id="btn-mode-solo" class="bare-btn active" onclick="Game.director.setMode('SOLO')">SOLO</button>
-            <button id="btn-mode-vs" class="bare-btn" onclick="Game.director.setMode('COOP')">CO-OP</button>
+        <div class="menu-row" style="font-size: 18px; gap:15px;">
+            <span id="opt-in-mouse" class="opt-btn active" onclick="Game.systems.input.setScheme('MOUSE')">MOUSE</span><span id="opt-in-key" class="opt-btn" onclick="Game.systems.input.setScheme('KEYBOARD')">KEYS</span><span id="opt-in-touch" class="opt-btn" onclick="Game.systems.input.setScheme('TOUCH')">TOUCH</span><span id="opt-in-pad" class="opt-btn" onclick="Game.systems.input.setScheme('GAMEPAD')">PAD</span>
         </div>
-        <div class="btn-group">
-            <button id="btn-input-mouse" class="bare-btn active" onclick="Game.sys.input.setScheme('MOUSE')">MOUSE</button>
-            <button id="btn-input-key" class="bare-btn" onclick="Game.sys.input.setScheme('KEYBOARD')">KEYS</button>
-            <button id="btn-input-touch" class="bare-btn" onclick="Game.sys.input.setScheme('TOUCH')">TOUCH</button>
-            <button id="btn-input-pad" class="bare-btn" onclick="Game.sys.input.setScheme('GAMEPAD')">PAD</button>
-        </div>
-        <button id="btn-main-action" class="bare-btn" onclick="Game.ui.triggerStart()">INITIALIZE</button>
+        <div class="action-row"><div id="btn-start" class="btn-main" onclick="Game.ui.triggerStart()">INITIALIZE</div><div class="btn-sub" onclick="Game.ui.toggleGuide()">[ GUIDE ]</div></div>
     </div>
+</div>
+<div id="guide-modal">
+    <h3>CONTROLS</h3>
+    <div class="key-row"><span>MOVE</span> <span class="key-val">WASD / ARROWS</span></div>
+    <div class="key-row"><span>AIM</span> <span class="key-val">MOUSE / RIGHT STICK</span></div>
+    <div class="key-row"><span>DASH / SPRINT</span> <span class="key-val">L-CLICK / SPACE</span></div>
+    <div class="key-row"><span>PARRY / BRACE</span> <span class="key-val">R-CLICK / SHIFT</span></div>
+    <div class="key-row"><span>CHARGE</span> <span class="key-val">HOLD BOTH</span></div>
+    <br><div class="key-row" style="color:#666">GOAL: KILL TO COOL DOWN.</div>
+    <button class="close-guide" onclick="Game.ui.toggleGuide()">CLOSE</button>
 </div>
 <div id="touch-layer" class="touch-container"></div>
 <canvas id="gameCanvas"></canvas>
 <script>
-// --- CONFIGURATION ZONE ---
-const Palette = { 
-    CYAN:"#00bcd4", LIME:"#76ff03", PINK:"#d500f9", WHITE:"#ffffff", BLACK:"#000000", GREY:"#333", 
-    RED:"#d50000", ORANGE:"#ff6d00", INDIGO:"#304ffe", SLATE:"#37474f", PURPLE:"#aa00ff", GOLD:"#ffab00" 
-};
+    // 1. CONSTANTS & TUNING
+    // REFACTOR: Global Theme Palette reduced to 5 Generic Variables
+    const Palette = {
+        C1: "#08ss0808", // Main Background
+        C2: "#ffffff", // Main Light / Text / Flash
+        C3: "#000000", // Main Shadow / Structure
+        C4: "#444444", // Debris / Dust / Fizzle
+        C5: "#141414"  // Secondary Detail / Floor Noise
+    };
 
-const Config = {
-    PHYS: { FRICTION: 0.90, BASE_ACCEL: 1.5, DASH: 30, HIGH: 60, MAX: 100, RECOIL: 1.2, OD_A: 2.5, OD_B: 0.2, WALL_BOUNCE: -0.8, BOUNDS: 25 },
-    MASS: { HEAVY: 0.1, LIGHT: 2.0, STD: 1.0 }, 
-    SPEED: { STOP: 0, BRACE: 0.4, BASE: 1.0, SPRINT: 2.2 },
-    TIERS: { IDLE:0, MOVE: 1, SPRINT:2, DASH:2, CHG_3:3, CHG_4:4 },
-    DMG: { LV1:10, LV2:25, LV3:50, LV4:999, WALL: 25, AREA: 50, OD_DASH: 35, OD_BLAST: 40 },
-    TIME: { 
-        TAP: 15, CHG_THRESH: 180, CHG_LV3: 90, CHG_LV4: 180, MIN_CHG: 15, 
-        CD_DASH: 180, CD_PARRY: 45, CD_CHG: 60, CD_OD: 15,
-        PARRY_DUR: 20, INVULN: 30, AI_MIN: 10, AI_MAX: 30, OD_TRIG: 600, OD_DUR: 600 // 600 frames = 10s
-    },
-    STATE: { IDLE:0, MOVE:1, SPRINT:3, DASH:4, PARRY:5, DODGE:6, CHARGING:7, LV3_RDY:8, LV4_RDY:9, STUN:10, BRACE: 11 },
-    HEAT: { DECAY: 0.04, KILL: 10, PARRY: 15, CLASH: 5, HIT_PENALTY: 20 },
-    GFX: { MAX_PARTICLES: 400, SHAKE_BASE: 20, SHAKE_HIGH: 100, GRID_STEP: 50, FLASH_DEC: 0.05 },
-    AIM: { ANGLE: 0.90, DIST: 500, STR: 0.35, DEADZONE: 0.1 },
-    INPUT: { HOLD_THRESH: 300 }
-};
+    const GameConfig = {
+        PHYSICS: { FRICTION: 0.92, ACCEL_BASE: 1.5, DASH_IMPULSE: 30, HIGH_IMPULSE: 60, MAX_IMPULSE: 100, RECOIL_MOD: 1.2, OVERDRIVE_ACCEL_A: 2.5, OVERDRIVE_ACCEL_B: 0.2, WALL_BOUNCE: -0.8, BOUNDS_PADDING: 25 },
+        MASS: { HEAVY: 0.1, LIGHT: 2.0, STANDARD: 1.0 },
+        SPEED: { STOP: 0, BRACE: 0.4, BASE: 1.0, SPRINT: 2.2 },
+        TIERS: { IDLE: 0, MOVE: 1, SPRINT: 2, DASH: 2, CHARGE_3: 3, CHARGE_4: 4 },
+        DAMAGE: { LV1: 10, LV2: 25, LV3: 50, LV4: 999, WALL_SLAM: 25, AREA_BLAST: 50, OD_DASH: 35, OD_BLAST: 40 },
+        TIMING: { TAP_LIMIT: 15, CHARGE_THRESH: 180, CHARGE_LV3: 90, CHARGE_LV4: 180, CHARGE_MIN: 15, CD_DASH: 180, CD_PARRY: 45, CD_CHARGE: 60, CD_OD: 15, PARRY_WINDOW: 20, INVULN: 30, AI_MIN_TICK: 10, AI_MAX_TICK: 30, OD_TRIGGER: 600, OD_DURATION: 600 },
+        STATE: { IDLE: 0, MOVE: 1, SPRINT: 3, DASH: 4, PARRY: 5, DODGE: 6, CHARGING: 7, LV3_READY: 8, LV4_READY: 9, STUNNED: 10, BRACE: 11 },
+        HEAT: { DECAY: 0.04, GAIN_KILL: 10, GAIN_PARRY: 15, GAIN_CLASH: 5, PENALTY_HIT: 20 },
+        VISUALS: { PARTICLE_LIMIT: 400, SHAKE_BASE: 20, SHAKE_HIGH: 100, GRID_SIZE: 80, FLASH_DECAY: 0.05 },
+        AIM: { ASSIST_ANGLE: 0.90, ASSIST_DIST: 500, ASSIST_STR: 0.35, DEADZONE: 0.1 },
+        INPUT: { HOLD_THRESHOLD: 300 }
+    };
 
-const AudioDB = {
-    UI_HOVER:{v:0.2}, UI_CLICK:{v:0.5}, DASH:{v:0.4}, CHARGE:{v:0.3}, PARRY:{v:0.8}, 
-    HIT_L:{v:0.4}, HIT_H:{v:0.6}, DEATH:{v:0.7}, CLASH:{v:0.8}, LOOT:{v:0.5}, HEAT:{v:0.3}
-};
+    // 2. DATA DEFINITIONS
+    const AudioMap = { UI_HOVER: { vol: 0.2 }, UI_CLICK: { vol: 0.5 }, DASH: { vol: 0.4 }, CHARGE: { vol: 0.3 }, PARRY: { vol: 0.8 }, HIT_LIGHT: { vol: 0.4 }, HIT_HEAVY: { vol: 0.6 }, DEATH: { vol: 0.7 }, CLASH: { vol: 0.8 }, LOOT: { vol: 0.5 }, HEAT: { vol: 0.3 } };
 
-const EntityDB = {
-    P1: { tags:['player','p1'], stats:{hp:100, max:100, r:15}, col:Palette.CYAN, in:'p1' },
-    P2: { tags:['player','p2'], stats:{hp:100, max:100, r:15}, col:Palette.LIME, in:'p2' },
-    RUSHER: { stats:{hp:100, r:15}, ai:"AGGRESSIVE", traits:["SPRINTER"], col:Palette.RED },
-    DEFENDER: { stats:{hp:100, r:15}, ai:"DEFENSIVE", traits:["BRACER"], col:Palette.SLATE },
-    VULTURE: { stats:{hp:100, r:1}, ai:"OPPORTUNIST", traits:["TRICKY"], col:Palette.INDIGO },
-    BOSS: { stats:{hp:3000, r:20}, ai:"BOSS", traits:["BOSS"], col:Palette.PURPLE }
-};
+    // REFACTOR: Hardcoded colors for Entities
+    const EntityDefs = {
+        PLAYER_1: { tags: ['player', 'p1'], stats: { hp: 100, max: 100, radius: 15 }, color: "#0ff", inputId: 'p1' },
+        ENEMY_RUSHER: { stats: { hp: 100, radius: 15 }, ai: "AGGRESSIVE", traits: ["SPRINTER"], color: "#f00" },
+        ENEMY_DEFENDER: { stats: { hp: 100, radius: 15 }, ai: "DEFENSIVE", traits: ["BRACER"], color: "#567" },
+        ENEMY_VULTURE: { stats: { hp: 100, radius: 15 }, ai: "OPPORTUNIST", traits: ["TRICKY"], color: "#50f" },
+        ENEMY_BOSS: { stats: { hp: 3000, radius: 20 }, ai: "BOSS", traits: ["BOSS"], color: "#a0f" }
+    };
 
-const LootDB = {
-    HEAL: { col:Palette.LIME, txt:"HP UP", mod:{t:'STAT', k:'hp', v:50} },
-    GOD: { col:Palette.ORANGE, txt:"GOD MODE", mod:{t:'STATUS', k:'invuln', v:600} },
-    LIFE: { col:Palette.CYAN, txt:"LIFE-UP", mod:{t:'SPECIAL', k:'lives', v:1} }
-};
+    // REFACTOR: Hardcoded colors for Loot
+    const LootDefs = {
+        HEAL: { color: "#0f0", text: "HP UP", mod: { type: 'STAT', key: 'hp', val: 50 } },
+        GOD: { color: "#f80", text: "GOD MODE", mod: { type: 'STATUS', key: 'invuln', val: 600 } },
+        LIFE: { color: "#0ff", text: "LIFE-UP", mod: { type: 'SPECIAL', key: 'lives', val: 1 } }
+    };
 
-// --- UTILS & CLASSES ---
-class Vec2 {
-    constructor(x, y) { this.x=x; this.y=y; }
-    add(v) { this.x+=v.x; this.y+=v.y; return this; }
-    sub(v) { this.x-=v.x; this.y-=v.y; return this; }
-    mul(s) { this.x*=s; this.y*=s; return this; }
-    mag() { return Math.sqrt(this.x**2 + this.y**2); }
-    norm() { const m=this.mag(); if(m!==0) this.mul(1/m); return this; }
-    dot(v) { return this.x*v.x + this.y*v.y; }
-    clone() { return new Vec2(this.x, this.y); }
-    static dist(v1, v2) { return Math.sqrt((v1.x-v2.x)**2 + (v1.y-v2.y)**2); }
-    static sub(v1, v2) { return new Vec2(v1.x-v2.x, v1.y-v2.y); }
-}
+    // 3. UTILITIES & MATH
+    class Vector2 { constructor(x, y) { this.x = x; this.y = y; } add(v) { this.x += v.x; this.y += v.y; return this; } sub(v) { this.x -= v.x; this.y -= v.y; return this; } mul(s) { this.x *= s; this.y *= s; return this; } mag() { return Math.sqrt(this.x ** 2 + this.y ** 2); } normalize() { const m = this.mag(); if (m !== 0) this.mul(1 / m); return this; } dot(v) { return this.x * v.x + this.y * v.y; } clone() { return new Vector2(this.x, this.y); } static dist(v1, v2) { return Math.sqrt((v1.x - v2.x) ** 2 + (v1.y - v2.y) ** 2); } static sub(v1, v2) { return new Vector2(v1.x - v2.x, v1.y - v2.y); } }
+    class MemoryPool { constructor(fn, size = 100) { this.store = []; this.factory = fn; for (let i = 0; i < size; i++) this.store.push(this.factory()); } get() { return this.store.length > 0 ? this.store.pop() : this.factory(); } free(obj) { this.store.push(obj); } }
+    class EventBus { constructor() { this.subscribers = {}; } subscribe(event, callback) { (this.subscribers[event] = this.subscribers[event] || []).push(callback); } publish(event, data) { if (this.subscribers[event]) this.subscribers[event].forEach(cb => cb(data)); } }
+    const ColorHelper = { hexToHSL: (hex) => { let r = 0, g = 0, b = 0; if (hex.length == 4) { r = "0x" + hex[1] + hex[1]; g = "0x" + hex[2] + hex[2]; b = "0x" + hex[3] + hex[3]; } else { r = "0x" + hex[1] + hex[2]; g = "0x" + hex[3] + hex[4]; b = "0x" + hex[5] + hex[6]; } r /= 255; g /= 255; b /= 255; let cmin = Math.min(r, g, b), cmax = Math.max(r, g, b), delta = cmax - cmin, h = 0, s = 0, l = (cmax + cmin) / 2; if (delta == 0) h = 0; else h = cmax == r ? ((g - b) / delta) % 6 : (cmax == g ? (b - r) / delta + 2 : (r - g) / delta + 4); h = Math.round(h * 60); if (h < 0) h += 360; s = delta == 0 ? 0 : delta / (1 - Math.abs(2 * l - 1)); return { h, s: s * 100, l: l * 100 }; }, dynamicColor: (base, combatState, type = 'SHELL') => { const hsl = ColorHelper.hexToHSL(base); let h = hsl.h, s = hsl.s, l = hsl.l; if (combatState.state === GameConfig.STATE.LV4_READY || combatState.level === 4) return type === 'CORE' ? '#fff' : '#888'; if (combatState.overdriveType === 'A') { s = Math.max(0, s - 20); l = 90; } else if (combatState.overdriveType === 'B') { l = 15; } switch (combatState.state) { case GameConfig.STATE.STUNNED: s = 0; l = 40; break; case GameConfig.STATE.CHARGING: l += Math.sin(Date.now() / 50) * 20; break; case GameConfig.STATE.LV3_READY: s = 100; l = 85; break; case GameConfig.STATE.BRACE: s = 100; l = type === 'CORE' ? 90 : 40; break; case GameConfig.STATE.PARRY: return Palette.C2; } if (type === 'CORE') l = Math.min(95, l + 40); return `hsl(${h},${s}%,${l}%)`; } };
+    const ActionLogic = { vectorToTarget: (self, target) => Vector2.sub(target.components.position.vector, self.components.position.vector), smoothTurn: (self, targetDir) => { const current = self.components.input.lastDirection, dot = current.dot(targetDir); self.components.input.lastDirection = new Vector2(current.x + (targetDir.x - current.x) * (dot > 0.95 ? 0.5 : 1.5), current.y + (targetDir.y - current.y) * (dot > 0.95 ? 0.5 : 1.5)).normalize(); }, 'HOLD_SPRINT': (self, target) => { self.components.input.p1 = true; self.components.input.p2 = false; ActionLogic.smoothTurn(self, ActionLogic.vectorToTarget(self, target).normalize()); }, 'HOLD_BRACE': (self, target) => { self.components.input.p1 = false; self.components.input.p2 = true; ActionLogic.smoothTurn(self, ActionLogic.vectorToTarget(self, target).normalize()); }, 'HOLD_CHARGE': (self, target) => { self.components.input.p1 = true; self.components.input.p2 = true; ActionLogic.smoothTurn(self, ActionLogic.vectorToTarget(self, target).normalize()); }, 'RELEASE_ATTACK': (self) => { self.components.input.p1 = false; self.components.input.p2 = false; }, 'PARRY_BAIT': (self, target) => { ActionLogic.smoothTurn(self, ActionLogic.vectorToTarget(self, target).normalize().mul(-1)); if (Math.random() < 0.1) self.components.input.forceP2 = true; }, 'BOSS_LOGIC': (self, target) => { self.components.input.p1 = true; ActionLogic.smoothTurn(self, ActionLogic.vectorToTarget(self, target).normalize()); } };
+    const AiBehaviors = { AGGRESSIVE: [{ type: 'HOLD_SPRINT', weight: 5.0, range: [0, 3000], duration: 60 }, { type: 'RELEASE_ATTACK', weight: 3.0, cooldown: 'dash', range: [0, 300], duration: 5 }], DEFENSIVE: [{ type: 'HOLD_BRACE', weight: 5.0, range: [0, 3000], duration: 120 }, { type: 'RELEASE_ATTACK', weight: 2.0, cooldown: 'dash', range: [0, 150], duration: 5 }, { type: 'HOLD_SPRINT', weight: 1.0, range: [300, 1000], duration: 40 }], OPPORTUNIST: [{ type: 'HOLD_SPRINT', weight: 4.0, range: [200, 3000], duration: 40 }, { type: 'PARRY_BAIT', weight: 2.0, cooldown: 'parry', range: [0, 150], duration: 20 }, { type: 'RELEASE_ATTACK', weight: 4.0, cooldown: 'dash', range: [0, 250], duration: 5 }], BOSS: [{ type: 'HOLD_CHARGE', weight: 2.0, range: [0, 3000], duration: 90 }, { type: 'RELEASE_ATTACK', weight: 4.0, cooldown: 'dash', range: [0, 3000], duration: 5 }, { type: 'BOSS_LOGIC', weight: 1.0, range: [0, 3000], duration: 100 }] };
 
-const Actions = {
-    vec: (e, t) => Vec2.sub(t.comps.pos.pos, e.comps.pos.pos),
-    smooth: (e, tDir) => {
-        const cur = e.comps.input.lastDir, dot = cur.dot(tDir);
-        e.comps.input.lastDir = new Vec2(cur.x+(tDir.x-cur.x)*(dot>0.95?0.5:1.5), cur.y+(tDir.y-cur.y)*(dot>0.95?0.5:1.5)).norm();
-    },
-    'HOLD_SPRINT': (e, t) => { e.comps.input.p1=true; e.comps.input.p2=false; Actions.smooth(e, Actions.vec(e,t).norm()); },
-    'HOLD_BRACE': (e, t) => { e.comps.input.p1=false; e.comps.input.p2=true; Actions.smooth(e, Actions.vec(e,t).norm()); },
-    'HOLD_CHARGE': (e, t) => { e.comps.input.p1=true; e.comps.input.p2=true; Actions.smooth(e, Actions.vec(e,t).norm()); },
-    'REL_ATK': (e) => { e.comps.input.p1=false; e.comps.input.p2=false; },
-    'PARRY_BAIT': (e, t) => { Actions.smooth(e, Actions.vec(e,t).norm().mul(-1)); if(Math.random()<0.1) e.comps.input.forceP2=true; },
-    'BOSS_LOGIC': (e, t) => { e.comps.input.p1=true; Actions.smooth(e, Actions.vec(e,t).norm()); }
-};
+    // 4. CORE ENTITY COMPONENT SYSTEM
+    class GameObject { constructor(id) { this.id = id; this.components = {}; this.tags = new Set(); this.isActive = true; } addComponent(name, data) { this.components[name] = data; return this; } hasComponent(name) { return !!this.components[name]; } hasTag(tag) { return this.tags.has(tag); } }
+    class ObjectManager { constructor() { this.list = []; this.nextId = 0; } create() { const obj = new GameObject(++this.nextId); this.list.push(obj); return obj; } destroy(obj) { obj.isActive = false; } clean() { this.list = this.list.filter(e => e.isActive); } getWithComponents(compNames) { return this.list.filter(e => e.isActive && compNames.every(n => e.hasComponent(n))); } getByTag(tag) { return this.list.filter(e => e.isActive && e.hasTag(tag)); } }
+    const EntityFactory = {
+        createBlueprint: (type, x, y) => { const obj = Game.objectManager.create(), blueprint = EntityDefs[type]; if (!blueprint && type.includes('RUSHER')) return EntityFactory.createEnemy(type, x, y); obj.components.position = { vector: new Vector2(x, y), rotation: 0 }; obj.components.velocity = new Vector2(0, 0); if (blueprint.tags) blueprint.tags.forEach(t => obj.tags.add(t)); if (blueprint.stats) obj.addComponent('stats', { ...blueprint.stats, lives: 0 }); obj.addComponent('render', { color: blueprint.color || blueprint.render.color, trail: [] }); if (blueprint.inputId) obj.addComponent('input', { deviceId: blueprint.inputId, p1: false, p2: false, holdTime1: 0, holdTime2: 0, lastDirection: new Vector2(1, 0) }); obj.addComponent('combat', { state: GameConfig.STATE.IDLE, stateTimer: 0, sprintAccel: 0, braceAccel: 0, chargeTimer: 0, cooldowns: { parry: 0, dash: 0, turn: 0, overdrive: 0, charge: 0 }, invulnTimer: 0, intensity: 0, level: 0, overdriveType: null, overdriveTimer: 0 }); return obj; },
+        createEnemy: (key, x, y) => { const obj = Game.objectManager.create(), configKey = key.replace('NORMAL_', ''); const raw = EntityDefs[Object.keys(EntityDefs).find(k => key.includes(k))]; obj.tags.add('enemy'); obj.tags.add(key); obj.components.position = { vector: new Vector2(x, y), rotation: 0 }; obj.components.velocity = new Vector2(0, 0); obj.addComponent('stats', { ...raw.stats, max: raw.stats.hp, lives: 0 }); obj.addComponent('render', { color: raw.color, trail: [] }); obj.addComponent('input', { deviceId: 'ai', p1: false, p2: false, holdTime1: 0, holdTime2: 0, lastDirection: new Vector2(1, 0), forceP1: false, forceP2: false }); obj.addComponent('combat', { state: GameConfig.STATE.IDLE, stateTimer: 0, sprintAccel: 0, braceAccel: 0, chargeTimer: 0, cooldowns: { parry: 0, dash: 0, turn: 0, overdrive: 0, charge: 0 }, invulnTimer: 0, level: 0, overdriveType: null, overdriveTimer: 0 }); obj.addComponent('ai', { behavior: AiBehaviors[raw.ai], traits: raw.traits || [], memory: { damageTaken: 0 }, tick: 0, plan: null }); return obj; },
+        createLoot: (x, y, key) => { const obj = Game.objectManager.create(); obj.tags.add('loot'); obj.components.position = { vector: new Vector2(x, y), rotation: 0 }; obj.components.velocity = new Vector2(0, 0); obj.addComponent('loot', { type: key, life: 1200, data: LootDefs[key] }); obj.addComponent('render', { color: LootDefs[key].color }); return obj; },
+        spawnParticle: (x, y, color, speed, type = 'EXPLODE') => { const p = Game.pool.get(); p.isActive = true; p.type = type; p.position.x = x; p.position.y = y; p.color = color; p.life = 1; p.size = Math.random() * 4 + 2; p.rotation = Math.random() * 360; if (type === 'IMPLODE') { p.velocity.x = 0; p.velocity.y = 0; } else if (type === 'FIZZLE') { p.velocity.x = (Math.random() - 0.5); p.velocity.y = -2; p.color = Palette.C4; } else if (type === 'DATA') { p.velocity.x = 0; p.velocity.y = 0; p.life = 0.5; p.size = 3; } else { const a = Math.random() * 6.28; p.velocity.x = Math.cos(a) * speed; p.velocity.y = Math.sin(a) * speed; } Game.particles.push(p); },
+        spawnWave: (x, y, color) => { Game.waves.push({ x, y, r: 5, color, alpha: 1 }); }
+    };
 
-const AiBehaviors = {
-    AGGRESSIVE: [ { t:'HOLD_SPRINT', w:5.0, r:[0,3000], d:60 }, { t:'REL_ATK', w:3.0, cd:'dash', r:[0,300], d:5 } ],
-    DEFENSIVE: [ { t:'HOLD_BRACE', w:5.0, r:[0,3000], d:120 }, { t:'REL_ATK', w:2.0, cd:'dash', r:[0,150], d:5 }, { t:'HOLD_SPRINT', w:1.0, r:[300,1000], d:40 } ],
-    OPPORTUNIST: [ { t:'HOLD_SPRINT', w:4.0, r:[200,3000], d:40 }, { t:'PARRY_BAIT', w:2.0, cd:'parry', r:[0,150], d:20 }, { t:'REL_ATK', w:4.0, cd:'dash', r:[0,250], d:5 } ],
-    BOSS: [ { t:'HOLD_CHARGE', w:2.0, r:[0,3000], d:90 }, { t:'REL_ATK', w:4.0, cd:'dash', r:[0,3000], d:5 }, { t:'BOSS_LOGIC', w:1.0, r:[0,3000], d:100 } ]
-};
-
-class MemoryPool {
-    constructor(fn, sz=100) { this.store=[]; this.fn=fn; for(let i=0;i<sz;i++)this.store.push(this.fn()); }
-    get() { return this.store.length>0 ? this.store.pop() : this.fn(); }
-    free(o) { this.store.push(o); }
-}
-
-const ColorUtil = {
-    hexHSL: (hex) => {
-        let r=0,g=0,b=0; 
-        if(hex.length==4){r="0x"+hex[1]+hex[1];g="0x"+hex[2]+hex[2];b="0x"+hex[3]+hex[3];} else {r="0x"+hex[1]+hex[2];g="0x"+hex[3]+hex[4];b="0x"+hex[5]+hex[6];}
-        r/=255;g/=255;b/=255; let cmin=Math.min(r,g,b), cmax=Math.max(r,g,b), delta=cmax-cmin, h=0, s=0, l=(cmax+cmin)/2;
-        if(delta==0)h=0; else h=cmax==r ? ((g-b)/delta)%6 : (cmax==g ? (b-r)/delta+2 : (r-g)/delta+4);
-        h=Math.round(h*60); if(h<0)h+=360; s=delta==0?0:delta/(1-Math.abs(2*l-1)); return {h,s:s*100,l:l*100};
-    },
-    dynColor: (base, cmb) => {
-        const hsl = ColorUtil.hexHSL(base);
-        if(cmb.odType === 'A') return `hsl(${hsl.h}, ${Math.max(0, hsl.s-20)}%, 90%)`;
-        if(cmb.odType === 'B') return `hsl(${hsl.h}, 100%, 10%)`; 
-        switch(cmb.state) {
-            case Config.STATE.STUN: return `hsl(${hsl.h}, 10%, 30%)`; 
-            case Config.STATE.CHARGING: return `hsl(${hsl.h}, ${hsl.s}%, ${60 + Math.sin(Date.now()/50)*20}%)`; 
-            case Config.STATE.LV3_RDY: return `hsl(${hsl.h}, 100%, 85%)`; 
-            case Config.STATE.LV4_RDY: return `hsl(${(Date.now()/2)%360}, 100%, 90%)`; 
-            case Config.STATE.BRACE: return `hsl(${hsl.h}, ${hsl.s}%, 30%)`;
-            case Config.STATE.SPRINT: return `hsl(${hsl.h}, ${hsl.s}%, 70%)`;
-            case Config.STATE.PARRY: return Palette.WHITE; 
-            case Config.STATE.DASH: return `hsl(${hsl.h}, ${hsl.s}%, 85%)`; 
-            default: return base;
-        }
-    }
-};
-
-class EventBus { 
-    constructor() { this.subs={}; } 
-    sub(ev, cb) { (this.subs[ev]=this.subs[ev]||[]).push(cb); } 
-    pub(ev, data) { if(this.subs[ev]) this.subs[ev].forEach(cb=>cb(data)); } 
-}
-
-class GameObject { 
-    constructor(id) { this.id=id; this.comps={}; this.tags=new Set(); this.active=true; } 
-    add(n, d) { this.comps[n]=d; return this; } 
-    has(n) { return !!this.comps[n]; } 
-    tag(t) { return this.tags.has(t); } 
-}
-
-class ObjectMan {
-    constructor() { this.list=[]; this.ids=0; }
-    create() { const o=new GameObject(++this.ids); this.list.push(o); return o; }
-    kill(o) { o.active=false; }
-    clean() { this.list=this.list.filter(e=>e.active); }
-    get(comps) { return this.list.filter(e=>e.active && comps.every(n=>e.has(n))); }
-    getByTag(t) { return this.list.filter(e=>e.active && e.tag(t)); }
-}
-
-const Factory = {
-    bp: (type, x, y) => {
-        const obj = Game.om.create(), bp = EntityDB[type];
-        if(!bp && type.includes('RUSHER')) return Factory.enemy(type, x, y); 
-        obj.comps.pos={pos:new Vec2(x,y), rot:0}; obj.comps.vel=new Vec2(0,0);
-        if(bp.tags) bp.tags.forEach(t=>obj.tags.add(t));
-        if(bp.stats) obj.add('stats', {...bp.stats, lives:0});
-        obj.add('render', {col:bp.col||bp.render.color, trail:[]});
-        if(bp.in) obj.add('input', {dev:bp.in, p1:false, p2:false, hold1:0, hold2:0, lastDir:new Vec2(1,0)});
-        obj.add('combat', {state:Config.STATE.IDLE, sTimer:0, sprAcc:0, brcAcc:0, chgTimer:0, cd:{parry:0, dash:0, turn:0, od:0, chg:0}, invuln:0, intensity:0, lvl:0, odType:null, odTimer:0});
-        return obj;
-    },
-    enemy: (key, x, y) => {
-        const obj = Game.om.create(), cfg = EntityDB[key.replace('NORMAL_','')]; // fix key mapping
-        const raw = EntityDB[Object.keys(EntityDB).find(k=>key.includes(k))];
-        obj.tags.add('enemy'); obj.tags.add(key); obj.comps.pos={pos:new Vec2(x,y), rot:0}; obj.comps.vel=new Vec2(0,0);
-        obj.add('stats', {...raw.stats, max:raw.stats.hp, lives:0});
-        obj.add('render', {col:raw.col, trail:[]});
-        obj.add('input', {dev:'ai', p1:false, p2:false, hold1:0, hold2:0, lastDir:new Vec2(1,0), forceP1:false, forceP2:false});
-        obj.add('combat', {state:Config.STATE.IDLE, sTimer:0, sprAcc:0, brcAcc:0, chgTimer:0, cd:{parry:0, dash:0, turn:0, od:0, chg:0}, invuln:0, lvl:0, odType:null, odTimer:0});
-        obj.add('ai', {behav:AiBehaviors[raw.ai], traits:raw.traits||[], mem:{dmg:0}, tick:0, plan:null});
-        return obj;
-    },
-    loot: (x, y, key) => {
-        const obj = Game.om.create(); obj.tags.add('loot'); obj.comps.pos={pos:new Vec2(x,y), rot:0}; obj.comps.vel=new Vec2(0,0);
-        obj.add('loot', {type:key, life:1200, data:LootDB[key]}); obj.add('render', {col:LootDB[key].col}); return obj;
-    },
-    part: (x, y, col, spd, type='EXPLODE') => { 
-        const p = Game.pool.get();
-        p.active=true; p.type=type; p.pos.x=x; p.pos.y=y; p.col=col; p.life=1; p.sz=Math.random()*4+2; p.rot=Math.random()*360;
-        if(type==='IMPLODE') { p.vel.x=0; p.vel.y=0; } 
-        else if(type==='FIZZLE') { p.vel.x=(Math.random()-0.5); p.vel.y=-2; p.col=Palette.GREY; }
-        else if(type==='DATA') { p.vel.x=0; p.vel.y=0; p.life=0.5; p.sz=3; }
-        else { const a=Math.random()*6.28; p.vel.x=Math.cos(a)*spd; p.vel.y=Math.sin(a)*spd; }
-        Game.parts.push(p);
-    },
-    wave: (x, y, col) => { Game.waves.push({x, y, r:5, col, a:1}); }
-};
-
-class AudioSys {
-    constructor() { 
-        const b = (e,k) => Game.bus.sub(e, ()=>this.play(k));
-        b('HIT', 'HIT_L'); b('CLASH','CLASH'); b('PARRY','PARRY'); b('DEATH','DEATH'); b('DASH','DASH');
-        b('CHARGE','CHARGE'); b('UI_HOVER','UI_HOVER'); b('UI_CLICK','UI_CLICK'); b('LOOT','LOOT');
-    }
-    play(k) { /* Placeholder */ }
-}
-
-class InputSys {
-    constructor() {
-        this.mode="MOUSE"; this.pads={p1:{p1:0,p2:0,ax:new Vec2(0,0)}, p2:{p1:0,p2:0,ax:new Vec2(0,0)}};
-        this.keys={}; this.touches={}; this.mouse={x:0,y:0}; this.db=0; this.bind();
-    }
-    bind() {
-        const L=window.addEventListener;
-        L('keydown', e=>{ 
-            this.keys[e.code]=true;
-            if(Game.flags.menu){
-                if(['ArrowUp','KeyW'].includes(e.code)) { Game.ui.nav(-1); Game.bus.pub('UI_HOVER'); }
-                if(['ArrowDown','KeyS'].includes(e.code)) { Game.ui.nav(1); Game.bus.pub('UI_HOVER'); }
-                if(['Enter','Space'].includes(e.code)) { Game.ui.sel(); Game.bus.pub('UI_CLICK'); }
-            }
-        });
-        L('keyup', e=>this.keys[e.code]=false);
-        L('mousemove', e=>{if(this.mode==='MOUSE'){this.mouse.x=e.clientX;this.mouse.y=e.clientY;}});
-        L('mousedown', e=>{if(this.mode==='MOUSE'&&!Game.flags.menu){if(e.button===0)this.pads.p1.p1=true;if(e.button===2)this.pads.p1.p2=true;}});
-        L('mouseup', e=>{if(this.mode==='MOUSE'){if(e.button===0)this.pads.p1.p1=false;if(e.button===2)this.pads.p1.p2=false;}});
-        L('contextmenu', e=>e.preventDefault());
-    }
-    
-    aimAssist(src, vec) {
-        if(vec.mag()<Config.AIM.DEADZONE) return vec;
-        let tgs = src.tag('player') ? Game.om.getByTag('enemy') : Game.om.getByTag('player');
-        if(!tgs.length) return vec;
-        let best=null, max=-1;
-        tgs.forEach(t => {
-            const dist = Vec2.dist(src.comps.pos.pos, t.comps.pos.pos);
-            if(dist > Config.AIM.DIST) return;
-            const dir = Vec2.sub(t.comps.pos.pos, src.comps.pos.pos).norm(), dot = vec.dot(dir);
-            if(dot > Config.AIM.ANGLE) { const sc = dot + (1 - dist/1000); if(sc > max) { max=sc; best=dir; } }
-        });
-        return best ? new Vec2(vec.x*(1-Config.AIM.STR) + best.x*Config.AIM.STR, vec.y*(1-Config.AIM.STR) + best.y*Config.AIM.STR).norm() : vec;
-    }
-
-    process() {
-        this.poll();
-        if(Game.flags.menu && this.db<=0) {
-            const p = navigator.getGamepads()[0];
-            if(p) {
-                if(p.axes[1]<-0.5 || p.buttons[12].pressed) { Game.ui.nav(-1); this.db=10; Game.bus.pub('UI_HOVER'); }
-                else if(p.axes[1]>0.5 || p.buttons[13].pressed) { Game.ui.nav(1); this.db=10; Game.bus.pub('UI_HOVER'); }
-                else if(p.buttons[0].pressed || p.buttons[9].pressed) { Game.ui.sel(); this.db=20; Game.bus.pub('UI_CLICK'); }
+    // 5. SYSTEMS
+    class AudioSystem { constructor() { const bind = (ev, k) => Game.bus.subscribe(ev, () => this.play(k)); bind('HIT', 'HIT_LIGHT'); bind('CLASH', 'CLASH'); bind('PARRY', 'PARRY'); bind('DEATH', 'DEATH'); bind('DASH', 'DASH'); bind('CHARGE', 'CHARGE'); bind('UI_HOVER', 'UI_HOVER'); bind('UI_CLICK', 'UI_CLICK'); bind('LOOT', 'LOOT'); } play(key) { } }
+    class InputSystem { constructor() { this.mode = "MOUSE"; this.pads = { p1: { p1: 0, p2: 0, axis: new Vector2(0, 0) } }; this.keys = {}; this.touches = {}; this.mouse = { x: 0, y: 0 }; this.debounce = 0; this.bindEvents(); } bindEvents() { const L = window.addEventListener; L('keydown', e => { this.keys[e.code] = true; }); L('keyup', e => this.keys[e.code] = false); L('mousemove', e => { if (this.mode === 'MOUSE') { this.mouse.x = e.clientX; this.mouse.y = e.clientY; } }); L('mousedown', e => { if (this.mode === 'MOUSE' && !Game.state.isMenu) { if (e.button === 0) this.pads.p1.p1 = true; if (e.button === 2) this.pads.p1.p2 = true; } }); L('mouseup', e => { if (this.mode === 'MOUSE') { if (e.button === 0) this.pads.p1.p1 = false; if (e.button === 2) this.pads.p1.p2 = false; } }); L('contextmenu', e => e.preventDefault()); } aimAssist(source, vec) { if (vec.mag() < GameConfig.AIM.DEADZONE) return vec; let targets = source.hasTag('player') ? Game.objectManager.getByTag('enemy') : Game.objectManager.getByTag('player'); if (!targets.length) return vec; let best = null, maxScore = -1; targets.forEach(t => { const dist = Vector2.dist(source.components.position.vector, t.components.position.vector); if (dist > GameConfig.AIM.ASSIST_DIST) return; const dir = Vector2.sub(t.components.position.vector, source.components.position.vector).normalize(), dot = vec.dot(dir); if (dot > GameConfig.AIM.ASSIST_ANGLE) { const score = dot + (1 - dist / 1000); if (score > maxScore) { maxScore = score; best = dir; } } }); return best ? new Vector2(vec.x * (1 - GameConfig.AIM.ASSIST_STR) + best.x * GameConfig.AIM.ASSIST_STR, vec.y * (1 - GameConfig.AIM.ASSIST_STR) + best.y * GameConfig.AIM.ASSIST_STR).normalize() : vec; } process() { this.pollGamepads(); if (this.debounce > 0) this.debounce--; this.mapInputs(); Game.objectManager.getWithComponents(['input', 'combat', 'velocity']).forEach(obj => { if (Game.state.isMenu && obj.components.input.deviceId !== 'ai') return; const inp = obj.components.input, cmb = obj.components.combat, lastHold1 = inp.holdTime1, lastHold2 = inp.holdTime2; let btn1 = false, btn2 = false, rawAxis = new Vector2(0, 0); if (inp.deviceId === 'ai') { if (inp.forceP1) { btn1 = true; inp.forceP1 = false; } else btn1 = inp.p1; if (inp.forceP2) { btn2 = true; inp.forceP2 = false; } else btn2 = inp.p2; rawAxis = inp.lastDirection.clone(); } else { btn1 = this.pads[inp.deviceId].p1; btn2 = this.pads[inp.deviceId].p2; if (this.mode === 'MOUSE' && inp.deviceId === 'p1') { if (Vector2.dist(obj.components.position.vector, this.mouse) > 10) rawAxis = Vector2.sub(this.mouse, obj.components.position.vector).normalize(); } else { if (this.pads[inp.deviceId].axis.mag() > GameConfig.AIM.DEADZONE) rawAxis = this.pads[inp.deviceId].axis.clone(); } if (rawAxis.mag() > GameConfig.AIM.DEADZONE) rawAxis = this.aimAssist(obj, rawAxis.normalize()); } if (rawAxis.mag() > GameConfig.AIM.DEADZONE) inp.lastDirection = rawAxis.clone().normalize(); else if (inp.lastDirection.mag() === 0) inp.lastDirection = new Vector2(1, 0); const getAim = () => rawAxis.mag() > GameConfig.AIM.DEADZONE ? rawAxis.normalize() : inp.lastDirection; inp.holdTime1 = btn1 ? inp.holdTime1 + 1 : 0; inp.holdTime2 = btn2 ? inp.holdTime2 + 1 : 0; const h1 = inp.holdTime1 > 0, h2 = inp.holdTime2 > 0, tap1 = !h1 && lastHold1 > 0 && lastHold1 <= GameConfig.TIMING.TAP_LIMIT, tap2 = !h2 && lastHold2 > 0 && lastHold2 <= GameConfig.TIMING.TAP_LIMIT; if ([GameConfig.STATE.DASH, GameConfig.STATE.STUNNED, GameConfig.STATE.DODGE, GameConfig.STATE.PARRY].includes(cmb.state)) return; if (cmb.overdriveType) { cmb.overdriveTimer--; if (cmb.overdriveTimer <= 0) { cmb.overdriveType = null; cmb.overdriveTimer = 0; } else { if (cmb.overdriveType === 'A') { obj.components.velocity.add(rawAxis.mul(GameConfig.PHYSICS.ACCEL_BASE * GameConfig.PHYSICS.OVERDRIVE_ACCEL_A)); if (obj.components.velocity.mag() > 2 && Math.random() < 0.3) Game.bus.publish('PART_SPAWN', { x: obj.components.position.vector.x, y: obj.components.position.vector.y, color: Palette.C2, type: 'DATA' }); if (tap1 && cmb.cooldowns.overdrive <= 0) { cmb.state = GameConfig.STATE.DASH; cmb.stateTimer = 10; cmb.cooldowns.overdrive = GameConfig.TIMING.CD_OD; cmb.level = 3; obj.components.velocity = getAim().mul(GameConfig.PHYSICS.DASH_IMPULSE); Game.bus.publish('DASH'); Game.bus.publish('PART_BURST', { x: obj.components.position.vector.x, y: obj.components.position.vector.y, color: Palette.C2, count: 5 }); } } else if (cmb.overdriveType === 'B') { obj.components.velocity.add(rawAxis.mul(GameConfig.PHYSICS.ACCEL_BASE * GameConfig.PHYSICS.OVERDRIVE_ACCEL_B)); if (tap2 && cmb.cooldowns.overdrive <= 0) { cmb.cooldowns.overdrive = GameConfig.TIMING.CD_OD; Game.bus.publish('OD_BLAST', { source: obj }); } } if (cmb.state === GameConfig.STATE.IDLE && rawAxis.mag() > 0) cmb.state = GameConfig.STATE.MOVE; else if (cmb.state === GameConfig.STATE.MOVE && rawAxis.mag() === 0) cmb.state = GameConfig.STATE.IDLE; return; } } if (h1 && !h2 && inp.holdTime1 >= GameConfig.TIMING.OD_TRIGGER) { cmb.overdriveType = 'A'; cmb.overdriveTimer = GameConfig.TIMING.OD_DURATION; inp.holdTime1 = 0; Game.bus.publish('SHAKE', 20); return; } if (!h1 && h2 && inp.holdTime2 >= GameConfig.TIMING.OD_TRIGGER) { cmb.overdriveType = 'B'; cmb.overdriveTimer = GameConfig.TIMING.OD_DURATION; inp.holdTime2 = 0; Game.bus.publish('SHAKE', 20); return; } if ((h1 && inp.holdTime1 > GameConfig.INPUT.HOLD_THRESHOLD) || (h2 && inp.holdTime2 > GameConfig.INPUT.HOLD_THRESHOLD)) { if (Math.random() > 0.8) Game.bus.publish('PART_SPAWN', { x: obj.components.position.vector.x + (Math.random() - 0.5) * 20, y: obj.components.position.vector.y + (Math.random() - 0.5) * 20, color: obj.components.render.color, speed: 1, type: 'IMPLODE' }); } if (h1 && h2) { cmb.chargeTimer++; if (cmb.chargeTimer === 1) Game.bus.publish('CHARGE_INIT'); if (cmb.chargeTimer > GameConfig.TIMING.CHARGE_LV4) cmb.state = GameConfig.STATE.LV4_READY; else if (cmb.chargeTimer > GameConfig.TIMING.CHARGE_LV3) cmb.state = GameConfig.STATE.LV3_READY; else cmb.state = GameConfig.STATE.CHARGING; obj.components.velocity.mul(0.8); return; } if ((cmb.state >= GameConfig.STATE.CHARGING && cmb.state <= GameConfig.STATE.LV4_READY) && (!h1 || !h2)) { if (cmb.chargeTimer < GameConfig.TIMING.CHARGE_MIN || cmb.cooldowns.charge > 0) { cmb.state = GameConfig.STATE.IDLE; Game.bus.publish('FIZZLE', { x: obj.components.position.vector.x, y: obj.components.position.vector.y }); cmb.chargeTimer = 0; return; } let lvl = cmb.state === GameConfig.STATE.LV4_READY ? 4 : (cmb.state === GameConfig.STATE.LV3_READY ? 3 : 2); cmb.state = GameConfig.STATE.DASH; cmb.stateTimer = lvl === 4 ? 30 : 20; cmb.invulnTimer = cmb.stateTimer; cmb.level = lvl; cmb.cooldowns.charge = GameConfig.TIMING.CD_CHARGE; obj.components.velocity = getAim().mul(lvl === 4 ? GameConfig.PHYSICS.MAX_IMPULSE : (lvl === 3 ? GameConfig.PHYSICS.HIGH_IMPULSE : GameConfig.PHYSICS.DASH_IMPULSE)); Game.bus.publish('DASH'); Game.bus.publish('SHAKE', lvl === 4 ? 30 : 10); cmb.chargeTimer = 0; return; } if (!h1 || !h2) cmb.chargeTimer = 0; if (h1 && !h2) { if (inp.holdTime1 > GameConfig.TIMING.TAP_LIMIT) { cmb.state = GameConfig.STATE.SPRINT; cmb.sprintAccel++; obj.components.velocity.add(rawAxis.mul(GameConfig.PHYSICS.ACCEL_BASE * GameConfig.SPEED.SPRINT)); if (cmb.sprintAccel >= GameConfig.TIMING.CHARGE_THRESH && cmb.sprintAccel % 10 === 0) Game.bus.publish('PART_SPAWN', { x: obj.components.position.vector.x, y: obj.components.position.vector.y, color: obj.components.render.color, speed: 2, type: 'EXPLODE' }); return; } } else if (!h1 && lastHold1 > GameConfig.TIMING.TAP_LIMIT) { if (cmb.sprintAccel >= GameConfig.TIMING.CHARGE_THRESH) { cmb.state = GameConfig.STATE.DASH; cmb.stateTimer = 20; cmb.invulnTimer = 15; cmb.level = 3; obj.components.velocity = getAim().mul(GameConfig.PHYSICS.HIGH_IMPULSE); Game.bus.publish('DASH'); Game.bus.publish('SHAKE', 10); } else cmb.state = GameConfig.STATE.IDLE; cmb.sprintAccel = 0; return; } if (h2 && !h1) { if (inp.holdTime2 > GameConfig.TIMING.TAP_LIMIT) { cmb.state = GameConfig.STATE.BRACE; cmb.braceAccel++; obj.components.velocity.add(rawAxis.mul(GameConfig.PHYSICS.ACCEL_BASE * GameConfig.SPEED.BRACE)); if (cmb.braceAccel >= GameConfig.TIMING.CHARGE_THRESH && cmb.braceAccel % 10 === 0) Game.bus.publish('PART_SPAWN', { x: obj.components.position.vector.x, y: obj.components.position.vector.y, color: obj.components.render.color, speed: 1, type: 'IMPLODE' }); return; } } else if (!h2 && lastHold2 > GameConfig.TIMING.TAP_LIMIT) { if (cmb.braceAccel >= GameConfig.TIMING.CHARGE_THRESH) { Game.bus.publish('AREA_BLAST', { source: obj }); Game.bus.publish('SHAKE', 20); } cmb.state = GameConfig.STATE.IDLE; cmb.braceAccel = 0; return; } if (tap1 && cmb.cooldowns.dash <= 0 && !h2) { cmb.state = GameConfig.STATE.DASH; cmb.stateTimer = 10; cmb.cooldowns.dash = GameConfig.TIMING.CD_DASH; cmb.level = 2; obj.components.velocity = getAim().mul(GameConfig.PHYSICS.DASH_IMPULSE); Game.bus.publish('DASH'); return; } if (tap2 && cmb.cooldowns.parry <= 0 && !h1) { cmb.state = GameConfig.STATE.PARRY; cmb.stateTimer = GameConfig.TIMING.PARRY_WINDOW; cmb.cooldowns.parry = GameConfig.TIMING.CD_PARRY; obj.components.velocity.mul(0.1); return; } if (rawAxis.mag() > 0 && !h1 && !h2) { cmb.state = GameConfig.STATE.MOVE; obj.components.velocity.add(rawAxis.mul(GameConfig.PHYSICS.ACCEL_BASE * GameConfig.SPEED.BASE)); } else if (!h1 && !h2 && cmb.state !== GameConfig.STATE.PARRY) { cmb.state = GameConfig.STATE.IDLE; } }); } pollGamepads() { const pd = navigator.getGamepads ? navigator.getGamepads() : []; const map = (id, i) => { const g = pd[i]; if (g) { this.pads[id].axis.x = Math.abs(g.axes[0]) > 0.1 ? g.axes[0] : 0; this.pads[id].axis.y = Math.abs(g.axes[1]) > 0.1 ? g.axes[1] : 0; this.pads[id].p1 = g.buttons[0].pressed || g.buttons[2].pressed; this.pads[id].p2 = g.buttons[1].pressed || g.buttons[3].pressed; } else { this.pads[id].axis = new Vector2(0, 0); this.pads[id].p1 = false; this.pads[id].p2 = false; } }; if (this.mode === 'GAMEPAD') { map('p1', 0); } } mapInputs() { if (this.mode === 'KEYBOARD') { const mapKey = (id, u, d, l, r, a, b) => { this.pads[id].axis.x = (this.keys[r] ? 1 : 0) - (this.keys[l] ? 1 : 0); this.pads[id].axis.y = (this.keys[d] ? 1 : 0) - (this.keys[u] ? 1 : 0); this.pads[id].p1 = this.keys[a]; this.pads[id].p2 = this.keys[b]; }; mapKey('p1', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyZ', 'KeyX'); if (this.keys['Space']) this.pads.p1.p1 = true; if (this.keys['ShiftLeft']) this.pads.p1.p2 = true; } else if (this.mode === 'TOUCH') { ['p1'].forEach(id => { let s = this.touches[`stick-${id}`]; if (s) { this.pads[id].axis.x = s.x; this.pads[id].axis.y = s.y; } this.pads[id].p1 = this.touches[`btnA-${id}`]; this.pads[id].p2 = this.touches[`btnB-${id}`]; }); } } setScheme(s) { this.mode = s;['mouse', 'key', 'touch', 'pad'].forEach(k => document.getElementById(`opt-in-${k}`).classList.toggle('active', s.toUpperCase() === k.toUpperCase() || (k === 'pad' && s === 'GAMEPAD') || (k === 'key' && s === 'KEYBOARD'))); this.setupTouch(); } setupTouch() { const ui = document.getElementById("touch-layer"); ui.innerHTML = ''; ui.style.display = this.mode === 'TOUCH' ? 'block' : 'none'; if (this.mode !== 'TOUCH') return; const add = (id, type, r, rot) => { const b = document.createElement('div'); b.className = `touch-pad ${type === 'stick' ? 'stick-base' : 'btn-action'}`; if (type === 'stick') { b.style.left = '30px'; const n = document.createElement('div'); n.className = 'stick-nub'; b.appendChild(n); let origin = null; b.addEventListener('touchmove', e => { e.preventDefault(); for (let v of e.changedTouches) { if (origin && v.identifier === origin.id) { let dx = v.clientX - origin.x, dy = v.clientY - origin.y, d = Math.min(50, Math.sqrt(dx * dx + dy * dy)), a = Math.atan2(dy, dx); n.style.transform = `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d}px))`; let ox = Math.cos(a) * (d / 50), oy = Math.sin(a) * (d / 50); if (rot) { ox *= -1; oy *= -1; } this.touches[`stick-${id}`] = { x: ox, y: oy }; } } }); b.addEventListener('touchstart', e => { e.preventDefault(); let rect = b.getBoundingClientRect(); origin = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, id: e.changedTouches[0].identifier }; this.touches[`stick-${id}`] = { x: 0, y: 0 }; }); b.addEventListener('touchend', e => { origin = null; n.style.transform = `translate(-50%,-50%)`; this.touches[`stick-${id}`] = { x: 0, y: 0 }; }); } else { b.innerText = type === 'btnA' ? 'A' : 'B'; b.style.right = r + 'px'; b.addEventListener('touchstart', e => { e.preventDefault(); this.touches[`${type}-${id}`] = true; b.classList.add('active'); }); b.addEventListener('touchend', e => { e.preventDefault(); this.touches[`${type}-${id}`] = false; b.classList.remove('active'); }); } b.style[rot ? 'top' : 'bottom'] = '30px'; if (rot) b.style.transform = "rotate(180deg)"; ui.appendChild(b); }; add('p1', 'stick', 0, false); add('p1', 'btnA', 40, false); add('p1', 'btnB', 140, false); } }
+    class AiSystem { process() { const players = Game.objectManager.getByTag('player'), enemies = Game.objectManager.getByTag('enemy'), loot = Game.objectManager.getByTag('loot'); const targets = Game.state.isMenu ? enemies : players; Game.objectManager.getWithComponents(['ai', 'combat']).forEach(self => { const cmb = self.components.combat, ai = self.components.ai; if ([GameConfig.STATE.STUNNED, GameConfig.STATE.DASH, GameConfig.STATE.PARRY].includes(cmb.state)) return; ai.tick--; if (ai.tick > 0 && ai.plan) { let t = null; if (ai.plan.targetType === 'LOOT') t = loot.find(p => p.id === ai.plan.targetId); else if (ai.plan.targetType === 'PLAYER') t = players.find(p => p.id === ai.plan.targetId); else t = enemies.find(e => e.id === ai.plan.targetId); if (t && t.isActive && ActionLogic[ai.plan.type]) ActionLogic[ai.plan.type](self, t); else ai.tick = 0; return; } let potential = targets; if (Game.state.isMenu && self.hasTag('player')) potential = enemies; else if (!self.hasTag('player')) potential = players; if (potential.length === 0 && Game.state.isMenu) potential = Game.objectManager.getByTag('enemy').filter(e => e.id !== self.id); if (potential.length === 0) return; const primaryTarget = potential.reduce((p, c) => Vector2.dist(self.components.position.vector, p.components.position.vector) < Vector2.dist(self.components.position.vector, c.components.position.vector) ? p : c); let lootTarget = loot.length ? loot.reduce((p, c) => Vector2.dist(self.components.position.vector, p.components.position.vector) < Vector2.dist(self.components.position.vector, c.components.position.vector) ? p : c) : null; let bList = ai.behavior; const valid = bList.filter(b => { const t = b.type === 'ACQUIRE_LOOT' ? lootTarget : primaryTarget; if (!t) return false; const d = Vector2.dist(self.components.position.vector, t.components.position.vector); if (b.range && (d < b.range[0] || d > b.range[1])) return false; if (b.cooldown && cmb.cooldowns[b.cooldown] > 0) return false; return true; }); const total = valid.reduce((s, b) => s + b.weight, 0); let r = Math.random() * total, sel = null; for (const m of valid) { r -= m.weight; if (r <= 0) { sel = m; break; } } if (sel) { const final = sel.type === 'ACQUIRE_LOOT' ? lootTarget : primaryTarget; ai.plan = { type: sel.type, targetId: final.id, targetType: sel.type === 'ACQUIRE_LOOT' ? 'LOOT' : (final.hasTag('player') ? 'PLAYER' : 'ENEMY') }; ai.tick = sel.duration || Math.floor(Math.random() * (GameConfig.TIMING.AI_MAX_TICK - GameConfig.TIMING.AI_MIN_TICK) + GameConfig.TIMING.AI_MIN_TICK); } else { ai.plan = { type: 'HOLD_SPRINT', targetId: primaryTarget.id, targetType: 'PLAYER' }; ai.tick = 30; } }); } }
+    class PhysicsSystem { process() { Game.objectManager.getWithComponents(['velocity', 'position']).forEach(obj => { const c = obj.components; if (obj.hasComponent('combat')) { ['dash', 'parry', 'turn', 'overdrive', 'charge'].forEach(k => c.combat.cooldowns[k] = Math.max(0, c.combat.cooldowns[k] - 1)); c.combat.invulnTimer = Math.max(0, c.combat.invulnTimer - 1); c.combat.stateTimer = Math.max(0, c.combat.stateTimer - 1); const s = c.combat.state; if (s === GameConfig.STATE.STUNNED) { c.velocity.mul(0.85); if (c.combat.stateTimer <= 0) c.combat.state = GameConfig.STATE.IDLE; } else if (s === GameConfig.STATE.DASH) { c.combat.invulnTimer = 2; if (c.combat.stateTimer <= 0) { c.combat.state = GameConfig.STATE.IDLE; c.velocity.mul(0.5); c.combat.level = 0; } } else if (s === GameConfig.STATE.PARRY) { c.velocity.mul(1.0); if (c.combat.stateTimer <= 0) c.combat.state = GameConfig.STATE.IDLE; if (c.velocity.mag() > 1.0) EntityFactory.spawnParticle(c.position.vector.x, c.position.vector.y, Palette.C2, 2, 'SPARK'); } else if (s === GameConfig.STATE.DODGE) { c.velocity.mul(0.9); c.combat.invulnTimer = 2; if (c.combat.stateTimer <= 0) c.combat.state = GameConfig.STATE.IDLE; } else if (s >= GameConfig.STATE.CHARGING && s <= GameConfig.STATE.LV4_READY) { c.velocity.mul(0.5); } else { c.velocity.mul(GameConfig.PHYSICS.FRICTION); } } c.position.vector.add(c.velocity); const b = GameConfig.PHYSICS.BOUNDS_PADDING; let hit = false; if (c.position.vector.x < b) { c.position.vector.x = b; c.velocity.x *= GameConfig.PHYSICS.WALL_BOUNCE; hit = true; } if (c.position.vector.x > Game.width - b) { c.position.vector.x = Game.width - b; c.velocity.x *= GameConfig.PHYSICS.WALL_BOUNCE; hit = true; } if (c.position.vector.y < b) { c.position.vector.y = b; c.velocity.y *= GameConfig.PHYSICS.WALL_BOUNCE; hit = true; } if (c.position.vector.y > Game.height - b) { c.position.vector.y = Game.height - b; c.velocity.y *= GameConfig.PHYSICS.WALL_BOUNCE; hit = true; } if (hit && obj.components.combat.state === GameConfig.STATE.STUNNED) { Game.bus.publish('HIT', { attacker: obj, victim: obj, level: 0, wall: true }); Game.bus.publish('SHAKE', 20); } }); Game.objectManager.getByTag('loot').forEach(p => { p.components.position.rotation += 0.05; p.components.loot.life--; if (p.components.loot.life <= 0) Game.objectManager.destroy(p); }); } }
+    class CombatSystem { getLevel(obj) { if (!obj.hasComponent('combat')) return 0; if (obj.components.combat.level) return obj.components.combat.level; const s = obj.components.combat.state; if (s === GameConfig.STATE.DASH || s === GameConfig.STATE.SPRINT || s === GameConfig.STATE.BRACE) return GameConfig.TIERS.SPRINT; if (s === GameConfig.STATE.MOVE) return GameConfig.TIERS.MOVE; return GameConfig.TIERS.IDLE; } process() { const c = Game.objectManager.getWithComponents(['combat', 'stats']), l = Game.objectManager.getByTag('loot'); c.forEach(e => { c.forEach(o => { if (e !== o && Vector2.dist(e.components.position.vector, o.components.position.vector) < (e.components.stats.radius + o.components.stats.radius)) this.collide(e, o); }); for (let i = l.length - 1; i >= 0; i--) if (Vector2.dist(e.components.position.vector, l[i].components.position.vector) < 30) Game.bus.publish('LOOT', { target: e, item: l[i] }); }); } collide(e1, e2) { const dir = Vector2.sub(e1.components.position.vector, e2.components.position.vector).normalize(); let f1 = 1.2, f2 = 1.2; if (e1.components.combat.overdriveType === 'A') f1 *= GameConfig.MASS.LIGHT; if (e2.components.combat.overdriveType === 'A') f2 *= GameConfig.MASS.LIGHT; if (e1.components.combat.overdriveType === 'B') f1 *= GameConfig.MASS.HEAVY; if (e2.components.combat.overdriveType === 'B') f2 *= GameConfig.MASS.HEAVY; if (e1.components.combat.state === GameConfig.STATE.BRACE) f1 = 0.2; if (e2.components.combat.state === GameConfig.STATE.BRACE) f2 = 0.2; e1.components.velocity.add(dir.clone().mul(f1)); e2.components.velocity.sub(dir.clone().mul(f2)); if (e1.components.combat.state === GameConfig.STATE.STUNNED) { return Game.bus.publish('HIT', { attacker: e2, victim: e1, level: this.getLevel(e2) }); } if (e2.components.combat.state === GameConfig.STATE.STUNNED) { return Game.bus.publish('HIT', { attacker: e1, victim: e2, level: this.getLevel(e1) }); } const l1 = this.getLevel(e1), l2 = this.getLevel(e2); if (e1.components.combat.state === GameConfig.STATE.PARRY) { if (l2 > 3) Game.bus.publish('HIT', { attacker: e2, victim: e1, level: l2 }); else return Game.bus.publish('PARRY', { blocker: e1, attacker: e2, level: l2 }); } if (e2.components.combat.state === GameConfig.STATE.PARRY) { if (l1 > 3) Game.bus.publish('HIT', { attacker: e1, victim: e2, level: l1 }); else return Game.bus.publish('PARRY', { blocker: e2, attacker: e1, level: l1 }); } if (l1 >= 2 || l2 >= 2) { if (l1 > l2) Game.bus.publish('HIT', { attacker: e1, victim: e2, level: l1 }); else if (l2 > l1) Game.bus.publish('HIT', { attacker: e2, victim: e1, level: l2 }); else Game.bus.publish('CLASH', { e1, e2, level: Math.max(l1, l2) }); } } }
+    class Rules { constructor() { const B = Game.bus; B.subscribe('AREA_BLAST', ({ source }) => { Game.objectManager.getWithComponents(['combat', 'stats']).forEach(t => { if (t === source) return; if (Vector2.dist(source.components.position.vector, t.components.position.vector) < 150) { t.components.velocity = Vector2.sub(t.components.position.vector, source.components.position.vector).normalize().mul(50); t.components.stats.hp -= GameConfig.DAMAGE.AREA_BLAST; t.components.combat.state = GameConfig.STATE.STUNNED; t.components.combat.stateTimer = 60; EntityFactory.spawnWave(t.components.position.vector.x, t.components.position.vector.y, "#f80"); B.publish('SHAKE', 30); } }); EntityFactory.spawnWave(source.components.position.vector.x, source.components.position.vector.y, source.components.render.color); B.publish('PART_BURST', { x: source.components.position.vector.x, y: source.components.position.vector.y, color: source.components.render.color, count: 30 }); }); B.subscribe('OD_BLAST', ({ source }) => { Game.objectManager.getWithComponents(['combat', 'stats']).forEach(t => { if (t === source) return; if (Vector2.dist(source.components.position.vector, t.components.position.vector) < 250) { t.components.velocity = Vector2.sub(t.components.position.vector, source.components.position.vector).normalize().mul(80); t.components.stats.hp -= GameConfig.DAMAGE.OD_BLAST; t.components.combat.state = GameConfig.STATE.STUNNED; t.components.combat.stateTimer = 120; EntityFactory.spawnWave(t.components.position.vector.x, t.components.position.vector.y, Palette.C2); } }); EntityFactory.spawnWave(source.components.position.vector.x, source.components.position.vector.y, source.components.render.color); B.publish('SHAKE', 50); for (let i = 0; i < 15; i++) B.publish('PART_SPAWN', { x: source.components.position.vector.x + (Math.random() - 0.5) * 100, y: source.components.position.vector.y + (Math.random() - 0.5) * 100, color: source.components.render.color, speed: 0.5, type: 'IMPLODE' }); }); B.subscribe('HIT', ({ attacker, victim, level, wall }) => { if (wall) { victim.components.stats.hp -= GameConfig.DAMAGE.WALL_SLAM; return; } if (victim.components.combat.state !== GameConfig.STATE.STUNNED && victim.components.combat.invulnTimer > 0) return; if (victim.components.combat.state === GameConfig.STATE.DODGE) return; let dmg = level === 4 ? GameConfig.DAMAGE.LV4 : (level === 3 ? GameConfig.DAMAGE.LV3 : (level === 2 ? GameConfig.DAMAGE.LV2 : GameConfig.DAMAGE.LV1)); const brace = victim.components.combat.state === GameConfig.STATE.BRACE; if (brace) { dmg *= 0.5; B.publish('FLASH', 0.2); } victim.components.stats.hp -= dmg; if (victim.hasComponent('ai')) { victim.components.ai.memory.damageTaken++; if (victim.hasTag('BOSS') && victim.components.stats.hp < victim.components.stats.max * 0.5) B.publish('BOSS_PHASE', { boss: victim, phase: 2 }); } if (victim.hasTag('player')) Game.state.heat = Math.max(0, Game.state.heat - GameConfig.HEAT.PENALTY_HIT); const charging = (victim.components.combat.state >= GameConfig.STATE.CHARGING && victim.components.combat.state <= GameConfig.STATE.LV4_READY); if (!charging && victim.components.combat.state !== GameConfig.STATE.STUNNED) victim.components.combat.state = GameConfig.STATE.IDLE; let force = level === 4 ? 100 : (level === 3 ? 60 : (level === 2 ? 30 : 10)); if (brace) force *= 0.5; if (victim.components.combat.overdriveType === 'A') force *= GameConfig.MASS.LIGHT; if (victim.components.combat.overdriveType === 'B') force *= GameConfig.MASS.HEAVY; if (force > 0) { const k = Vector2.sub(victim.components.position.vector, attacker.components.position.vector).normalize().mul(force * GameConfig.PHYSICS.RECOIL_MOD); victim.components.velocity = k; attacker.components.velocity.add(k.clone().mul(0.2)); } victim.components.combat.invulnTimer = GameConfig.TIMING.INVULN; Game.state.stop = level >= 3 ? 3 : 0; const shake = level === 4 ? 50 : (level >= 2 ? 15 : 5); B.publish('SHAKE', shake); if (level >= 3) { Game.state.aberration = 20; if (level === 4 && Game.config.FX.FLASH) Game.state.invert = true; } if (level >= 2) EntityFactory.spawnWave(victim.components.position.vector.x, victim.components.position.vector.y, victim.components.render.color); B.publish('PART_BURST', { x: victim.components.position.vector.x, y: victim.components.position.vector.y, color: victim.components.render.color, count: 10 + shake }); if (victim.components.stats.hp <= 0) B.publish('DEATH', { victim, attacker }); else if (victim.hasTag('player') && !Game.state.isMenu) Game.state.combo = 0; }); B.subscribe('PARRY', ({ blocker, attacker, level }) => { const spd = blocker.components.velocity.mag(), recoil = 30 + (spd > 1.0 ? spd * 2.0 : 0); const r = Vector2.sub(attacker.components.position.vector, blocker.components.position.vector).normalize().mul(recoil); attacker.components.velocity = r; attacker.components.combat.state = GameConfig.STATE.STUNNED; attacker.components.combat.stateTimer = level >= 3 ? 120 : 60; attacker.components.combat.invulnTimer = 0; blocker.components.velocity = r.clone().mul(-0.2); blocker.components.combat.invulnTimer = 20; Game.state.stop = 3; if (blocker.hasTag('player')) Game.state.heat = Math.min(100, Game.state.heat + GameConfig.HEAT.GAIN_PARRY); EntityFactory.spawnWave(blocker.components.position.vector.x, blocker.components.position.vector.y, Palette.C2); B.publish('PART_BURST', { x: attacker.components.position.vector.x, y: attacker.components.position.vector.y, color: Palette.C2, count: 30 }); B.publish('FLASH', 0.3); B.publish('SHAKE', 30); }); B.subscribe('CLASH', ({ e1, e2, level }) => { Game.state.stop = 4; B.publish('SHAKE', 30); const d = Vector2.sub(e1.components.position.vector, e2.components.position.vector).normalize(); let f1 = 40, f2 = 40; if (e1.components.combat.overdriveType === 'A') f1 *= GameConfig.MASS.LIGHT; if (e1.components.combat.overdriveType === 'B') f1 *= GameConfig.MASS.HEAVY; if (e2.components.combat.overdriveType === 'A') f2 *= GameConfig.MASS.LIGHT; if (e2.components.combat.overdriveType === 'B') f2 *= GameConfig.MASS.HEAVY; e1.components.velocity = d.clone().mul(f1); e2.components.velocity = d.clone().mul(-f2); e1.components.combat.state = e2.components.combat.state = GameConfig.STATE.IDLE; e1.components.combat.invulnTimer = e2.components.combat.invulnTimer = 10; if (e1.hasTag('player') || e2.hasTag('player')) Game.state.heat = Math.min(100, Game.state.heat + GameConfig.HEAT.GAIN_CLASH); const m = Vector2.sub(e2.components.position.vector, e1.components.position.vector).mul(0.5).add(e1.components.position.vector); if (level >= 4) { Game.state.invert = true; Game.state.stop = 30; B.publish('SHAKE', 100); Game.particles = []; } EntityFactory.spawnWave(m.x, m.y, Palette.C2); B.publish('PART_BURST', { x: m.x, y: m.y, color: Palette.C2, count: level >= 3 ? 80 : 40 }); }); B.subscribe('LOOT', ({ target, item }) => { B.publish('PART_BURST', { x: item.components.position.vector.x, y: item.components.position.vector.y, color: item.components.render.color, count: 30 }); const mod = item.components.loot.data.mod; if (mod.type === 'STAT') target.components.stats[mod.key] = Math.min(target.components.stats[mod.key] + mod.val, target.components.stats.max); else if (mod.type === 'STATUS') target.components.combat[mod.key] = mod.val; else if (mod.type === 'SPECIAL' && target.hasTag('player')) { if (target.components.stats.lives < 1) target.components.stats.lives++; else target.components.stats.hp = target.components.stats.max; } Game.objectManager.destroy(item); }); B.subscribe('REVIVE', ({ ent }) => { ent.components.stats.lives--; ent.components.stats.hp = ent.components.stats.max; ent.components.combat.invulnTimer = 180; Game.state.stop = 30; B.publish('SHAKE', 50); B.publish('FLASH', 1); B.publish('PART_BURST', { x: ent.components.position.vector.x, y: ent.components.position.vector.y, color: LootDefs.LIFE.color, count: 50 }); }); B.subscribe('DEATH', ({ victim, attacker }) => { if (victim.components.stats.lives > 0) return B.publish('REVIVE', { ent: victim }); Game.objectManager.destroy(victim); Game.state.stop = 5; Game.state.kills++; Game.state.combo++; let s = 100; if (victim.hasTag('BOSS')) s = 5000; else if (victim.hasTag('ELITE')) s = 1000; if (attacker.hasTag('player')) Game.state.heat = Math.min(100, Game.state.heat + GameConfig.HEAT.GAIN_KILL * (victim.hasTag('BOSS') ? 5 : 1)); if (!Game.state.isMenu) { Game.state.score += s * (1 + Game.state.heat * 0.1); Game.ui.update(); } if (!victim.hasTag('RUSHER')) { Game.state.stop = 20; B.publish('SHAKE', 100); B.publish('FLASH', 0.8); } if (Game.config.FX.BLOOD) { for (let i = 0; i < 15; i++) Game.visuals.blood.push({ position: new Vector2(victim.components.position.vector.x, victim.components.position.vector.y), velocity: new Vector2(Math.cos(Math.random() * 6.28) * Math.random() * 10, Math.sin(Math.random() * 6.28) * Math.random() * 10), color: victim.components.render.color, size: Math.random() * 12 + 6, rotation: Math.random() * 6, life: 1000 }); if (Game.visuals.blood.length > 1000) Game.visuals.blood.splice(0, Game.visuals.blood.length - 100); } }); } }
+    class RenderSystem {
+        constructor() {
+            this.ctx = document.getElementById("gameCanvas").getContext("2d");
+            this.noiseCanvas = document.createElement('canvas');
+            this.noiseCanvas.width = 200;
+            this.noiseCanvas.height = 200;
+            const nCtx = this.noiseCanvas.getContext('2d');
+            // Generate static floor noise texture once for performance
+            nCtx.fillStyle = Palette.C1;
+            nCtx.fillRect(0, 0, 200, 200);
+            for (let i = 0; i < 1000; i++) {
+                nCtx.fillStyle = Math.random() > 0.5 ? '#222' : '#111';
+                nCtx.fillRect(Math.random() * 200, Math.random() * 200, 2, 2);
             }
         }
-        if(this.db>0) this.db--;
-        this.map();
-        
-        Game.om.get(['input','combat','vel']).forEach(o=>{
-            if(Game.flags.menu && o.comps.input.dev !== 'ai') return;
-            const inp=o.comps.input, cmb=o.comps.combat;
-            const last1 = inp.hold1, last2 = inp.hold2;
-            let r1=false, r2=false, rAx = new Vec2(0,0);
-            
-            if(inp.dev==='ai') {
-                if(inp.forceP1){ r1=true; inp.forceP1=false; } else r1 = inp.p1;
-                if(inp.forceP2){ r2=true; inp.forceP2=false; } else r2 = inp.p2;
-                rAx = inp.lastDir.clone(); 
-            } else {
-                r1 = this.pads[inp.dev].p1; r2 = this.pads[inp.dev].p2;
-                if(this.mode==='MOUSE' && inp.dev==='p1'){ 
-                    if(Vec2.dist(o.comps.pos.pos, this.mouse) > 10) rAx = Vec2.sub(this.mouse, o.comps.pos.pos).norm();
-                } else { if(this.pads[inp.dev].ax.mag() > Config.AIM.DEADZONE) rAx = this.pads[inp.dev].ax.clone(); }
-                if(rAx.mag() > Config.AIM.DEADZONE) rAx = this.aimAssist(o, rAx.norm());
-            }
 
-            if (rAx.mag() > Config.AIM.DEADZONE) inp.lastDir = rAx.clone().norm(); else if (inp.lastDir.mag()===0) inp.lastDir = new Vec2(1, 0);
-            const aim = () => rAx.mag() > Config.AIM.DEADZONE ? rAx.norm() : inp.lastDir;
+        draw() {
+            const w = Game.width, h = Game.height;
 
-            inp.hold1 = r1 ? inp.hold1 + 1 : 0; inp.hold2 = r2 ? inp.hold2 + 1 : 0;
-            const h1 = inp.hold1 > 0, h2 = inp.hold2 > 0;
-            const tap1 = !h1 && last1 > 0 && last1 <= Config.TIME.TAP;
-            const tap2 = !h2 && last2 > 0 && last2 <= Config.TIME.TAP;
+            // 1. Heat Reactive Background Logic
+            // Calculate Heat Level (0 to 1 scaling factor)
+            const heatFactor = Game.state.heat / 100;
+            const heatLevel = Math.ceil(heatFactor * 5); // 1-5
 
-            if([Config.STATE.DASH, Config.STATE.STUN, Config.STATE.DODGE, Config.STATE.PARRY].includes(cmb.state)) return;
-            
-            // OVERDRIVE
-            if (cmb.odType) {
-                cmb.odTimer--;
-                if (cmb.odTimer <= 0) { cmb.odType = null; cmb.odTimer = 0; }
-                else {
-                    if (cmb.odType === 'A') {
-                        o.comps.vel.add(rAx.mul(Config.PHYS.BASE_ACCEL * Config.PHYS.OD_A));
-                        if (o.comps.vel.mag() > 2 && Math.random() < 0.3) Game.bus.pub('PART_SPAWN', {x:o.comps.pos.pos.x, y:o.comps.pos.pos.y, col:Palette.WHITE, type:'DATA'});
-                        if (tap1 && cmb.cd.od <= 0) {
-                            cmb.state = Config.STATE.DASH; cmb.sTimer = 10; cmb.cd.od = Config.TIME.CD_OD; cmb.lvl = 3;
-                            o.comps.vel = aim().mul(Config.PHYS.DASH); Game.bus.pub('DASH'); Game.bus.pub('PART_BURST',{x:o.comps.pos.pos.x, y:o.comps.pos.pos.y, col:Palette.WHITE, c:5});
-                        }
-                    } else if (cmb.odType === 'B') {
-                        o.comps.vel.add(rAx.mul(Config.PHYS.BASE_ACCEL * Config.PHYS.OD_B));
-                         if (tap2 && cmb.cd.od <= 0) { cmb.cd.od = Config.TIME.CD_OD; Game.bus.pub('OD_BLAST', {src: o}); }
-                    }
-                    if (cmb.state === Config.STATE.IDLE && rAx.mag() > 0) cmb.state = Config.STATE.MOVE;
-                    else if (cmb.state === Config.STATE.MOVE && rAx.mag() === 0) cmb.state = Config.STATE.IDLE;
-                    return; 
+            this.ctx.save();
+
+            // Shake logic
+            const shakeMag = Math.min(Game.state.shake, 35) * 0.7;
+            const sx = (Math.random() - 0.5) * shakeMag;
+            const sy = (Math.random() - 0.5) * shakeMag;
+            this.ctx.translate(sx, sy);
+            if (Game.ui.el) Game.ui.el.style.transform = `translate(${sx}px,${sy}px)`;
+
+            // Draw Tiled Floor
+            const pat = this.ctx.createPattern(this.noiseCanvas, 'repeat');
+            this.ctx.fillStyle = pat;
+            this.ctx.fillRect(-sx, -sy, w, h);
+
+            // Draw "Wanted Level" Vignette
+            // As heat rises, the edges get darker and slightly reddish
+            const grad = this.ctx.createRadialGradient(w / 2, h / 2, h * 0.3, w / 2, h / 2, h * 0.8);
+            const vigColor = `rgba(${Math.floor(heatFactor * 50)}, 0, 0, ${0.4 + (heatFactor * 0.5)})`;
+            grad.addColorStop(0, "rgba(0,0,0,0)");
+            grad.addColorStop(1, vigColor);
+            this.ctx.fillStyle = grad;
+            this.ctx.fillRect(-sx, -sy, w, h);
+
+            // Grid (Subtle, darker)
+            if (Game.config.FX.GRID) {
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeStyle = "rgba(30,30,30,0.5)";
+                this.ctx.beginPath();
+                for (let x = 0; x < w; x += GameConfig.VISUALS.GRID_SIZE) {
+                    this.ctx.moveTo(x, 0); this.ctx.lineTo(x, h);
                 }
-            }
-
-            // TRIGGERS
-            if (h1 && !h2 && inp.hold1 >= Config.TIME.OD_TRIG) {
-                cmb.odType = 'A'; cmb.odTimer = Config.TIME.OD_DUR; inp.hold1 = 0; Game.bus.pub('SHAKE', 20); return;
-            }
-            if (!h1 && h2 && inp.hold2 >= Config.TIME.OD_TRIG) {
-                cmb.odType = 'B'; cmb.odTimer = Config.TIME.OD_DUR; inp.hold2 = 0; Game.bus.pub('SHAKE', 20); return;
-            }
-            
-            if ((h1 && inp.hold1 > Config.INPUT.HOLD_THRESH) || (h2 && inp.hold2 > Config.INPUT.HOLD_THRESH)) {
-                if (Math.random() > 0.8) Game.bus.pub('PART_SPAWN', {x:o.comps.pos.pos.x+(Math.random()-0.5)*20, y:o.comps.pos.pos.y+(Math.random()-0.5)*20, col:o.comps.render.col, spd:1, type:'IMPLODE'});
-            }
-
-            // CHARGE (A+B)
-            if (h1 && h2) {
-                cmb.chgTimer++; 
-                if(cmb.chgTimer===1) Game.bus.pub('CHARGE_INIT');
-                if(cmb.chgTimer > Config.TIME.CHG_LV4) cmb.state = Config.STATE.LV4_RDY;
-                else if(cmb.chgTimer > Config.TIME.CHG_LV3) cmb.state = Config.STATE.LV3_RDY;
-                else cmb.state = Config.STATE.CHARGING;
-                o.comps.vel.mul(0.8); return; 
-            }
-            
-            if ((cmb.state >= Config.STATE.CHARGING && cmb.state <= Config.STATE.LV4_RDY) && (!h1 || !h2)) {
-                if (cmb.chgTimer < Config.TIME.MIN_CHG || cmb.cd.chg > 0) {
-                    cmb.state = Config.STATE.IDLE; Game.bus.pub('FIZZLE', {x:o.comps.pos.pos.x, y:o.comps.pos.pos.y}); cmb.chgTimer = 0; return;
+                for (let y = 0; y < h; y += GameConfig.VISUALS.GRID_SIZE) {
+                    this.ctx.moveTo(0, y); this.ctx.lineTo(w, y);
                 }
-                let lvl = cmb.state === Config.STATE.LV4_RDY ? 4 : (cmb.state === Config.STATE.LV3_RDY ? 3 : 2);
-                cmb.state = Config.STATE.DASH; cmb.sTimer = lvl===4 ? 30 : 20; cmb.invuln = cmb.sTimer; cmb.lvl = lvl; cmb.cd.chg = Config.TIME.CD_CHG; 
-                o.comps.vel = aim().mul(lvl===4 ? Config.PHYS.MAX : (lvl===3 ? Config.PHYS.HIGH : Config.PHYS.DASH));
-                Game.bus.pub('DASH'); Game.bus.pub('SHAKE', lvl===4?30:10); cmb.chgTimer = 0; return;
-            }
-            if (!h1 || !h2) cmb.chgTimer = 0;
-
-            // SPRINT (A)
-            if (h1 && !h2) {
-                if (inp.hold1 > Config.TIME.TAP) {
-                    cmb.state = Config.STATE.SPRINT; cmb.sprAcc++;
-                    o.comps.vel.add(rAx.mul(Config.PHYS.BASE_ACCEL * Config.SPEED.SPRINT));
-                    if (cmb.sprAcc >= Config.TIME.CHG_THRESH && cmb.sprAcc % 10 === 0) Game.bus.pub('PART_SPAWN', {x:o.comps.pos.pos.x, y:o.comps.pos.pos.y, col:o.comps.render.col, spd:2, type:'EXPLODE'});
-                    return;
-                }
-            } else if (!h1 && last1 > Config.TIME.TAP) {
-                if (cmb.sprAcc >= Config.TIME.CHG_THRESH) {
-                    cmb.state = Config.STATE.DASH; cmb.sTimer = 20; cmb.invuln = 15; cmb.lvl = 3;
-                    o.comps.vel = aim().mul(Config.PHYS.HIGH); Game.bus.pub('DASH'); Game.bus.pub('SHAKE', 10);
-                } else cmb.state = Config.STATE.IDLE;
-                cmb.sprAcc = 0; return;
+                this.ctx.stroke();
             }
 
-            // BRACE (B)
-            if (h2 && !h1) {
-                if (inp.hold2 > Config.TIME.TAP) {
-                    cmb.state = Config.STATE.BRACE; cmb.brcAcc++;
-                    o.comps.vel.add(rAx.mul(Config.PHYS.BASE_ACCEL * Config.SPEED.BRACE));
-                    if (cmb.brcAcc >= Config.TIME.CHG_THRESH && cmb.brcAcc % 10 === 0) Game.bus.pub('PART_SPAWN', {x:o.comps.pos.pos.x, y:o.comps.pos.pos.y, col:o.comps.render.col, spd:1, type:'IMPLODE'});
-                    return;
-                }
-            } else if (!h2 && last2 > Config.TIME.TAP) {
-                if (cmb.brcAcc >= Config.TIME.CHG_THRESH) { Game.bus.pub('AREA_BLAST', {src: o}); Game.bus.pub('SHAKE', 20); }
-                cmb.state = Config.STATE.IDLE; cmb.brcAcc = 0; return;
-            }
-
-            // QUICK ACTS
-            if(tap1 && cmb.cd.dash <= 0 && !h2) {
-                cmb.state = Config.STATE.DASH; cmb.sTimer = 10; cmb.cd.dash = Config.TIME.CD_DASH; cmb.lvl = 2;
-                o.comps.vel = aim().mul(Config.PHYS.DASH); Game.bus.pub('DASH'); return;
-            }
-            if(tap2 && cmb.cd.parry <= 0 && !h1) {
-                cmb.state = Config.STATE.PARRY; cmb.sTimer = Config.TIME.PARRY_DUR; cmb.cd.parry = Config.TIME.CD_PARRY; o.comps.vel.mul(0.1); return;
-            }
-
-            if(rAx.mag() > 0 && !h1 && !h2){ cmb.state = Config.STATE.MOVE; o.comps.vel.add(rAx.mul(Config.PHYS.BASE_ACCEL * Config.SPEED.BASE)); } 
-            else if (!h1 && !h2 && cmb.state !== Config.STATE.PARRY) { cmb.state = Config.STATE.IDLE; }
-        });
-    }
-    poll() {
-        const pd=navigator.getGamepads?navigator.getGamepads():[];
-        const map=(id,i)=>{const g=pd[i]; if(g){this.pads[id].ax.x=Math.abs(g.axes[0])>0.1?g.axes[0]:0;this.pads[id].ax.y=Math.abs(g.axes[1])>0.1?g.axes[1]:0;this.pads[id].p1=g.buttons[0].pressed||g.buttons[2].pressed;this.pads[id].p2=g.buttons[1].pressed||g.buttons[3].pressed;}else{this.pads[id].ax=new Vec2(0,0);this.pads[id].p1=false;this.pads[id].p2=false;}};
-        if(this.mode==='GAMEPAD'){ map('p1',0); if(Game.flags.subMode==='COOP')map('p2',1); else if(pd[1])map('p1',1); }
-    }
-    map() {
-        if(this.mode==='KEYBOARD'){ const m=(id,u,d,l,r,a,b)=>{this.pads[id].ax.x=(this.keys[r]?1:0)-(this.keys[l]?1:0);this.pads[id].ax.y=(this.keys[d]?1:0)-(this.keys[u]?1:0);this.pads[id].p1=this.keys[a];this.pads[id].p2=this.keys[b];}; m('p1','KeyW','KeyS','KeyA','KeyD','KeyZ','KeyX'); m('p2','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyK','KeyL'); if(this.keys['Space'])this.pads.p1.p1=true; if(this.keys['ShiftLeft'])this.pads.p1.p2=true; }
-        else if(this.mode==='TOUCH'){ ['p1','p2'].forEach(id=>{let s=this.touches[`stick-${id}`];if(s){this.pads[id].ax.x=s.x;this.pads[id].ax.y=s.y;}this.pads[id].p1=this.touches[`btnA-${id}`];this.pads[id].p2=this.touches[`btnB-${id}`];}); }
-    }
-    setScheme(s) { this.mode=s; ['mouse','key','touch','pad'].forEach(k=>document.getElementById(`btn-input-${k}`).classList.toggle('active', s.toUpperCase()===k.toUpperCase()||(k==='pad'&&s==='GAMEPAD')||(k==='key'&&s==='KEYBOARD'))); this.setupTouch(); }
-    setupTouch() { 
-        const ui=document.getElementById("touch-layer"); ui.innerHTML=''; ui.style.display=this.mode==='TOUCH'?'block':'none'; if(this.mode!=='TOUCH')return; 
-        const add=(id,t,r,rot)=>{
-            const b=document.createElement('div'); b.className=`touch-pad ${t==='s'?'stick-base':(t==='a'?'btn-action':'btn-action')}`; 
-            if(t==='s'){
-                b.style.left='30px';const n=document.createElement('div');n.className='stick-nub';b.appendChild(n);let o=null;
-                b.addEventListener('touchmove',e=>{e.preventDefault();for(let v of e.changedTouches){if(o&&v.identifier===o.id){let dx=v.clientX-o.x,dy=v.clientY-o.y,d=Math.min(50,Math.sqrt(dx*dx+dy*dy)),a=Math.atan2(dy,dx);n.style.transform=`translate(calc(-50% + ${Math.cos(a)*d}px), calc(-50% + ${Math.sin(a)*d}px))`;let ox=Math.cos(a)*(d/50),oy=Math.sin(a)*(d/50);if(rot){ox*=-1;oy*=-1;}this.touches[`stick-${id}`]={x:ox,y:oy};}}});
-                b.addEventListener('touchstart',e=>{e.preventDefault();let rect=b.getBoundingClientRect();o={x:rect.left+rect.width/2,y:rect.top+rect.height/2,id:e.changedTouches[0].identifier};this.touches[`stick-${id}`]={x:0,y:0};});
-                b.addEventListener('touchend',e=>{o=null;n.style.transform=`translate(-50%,-50%)`;this.touches[`stick-${id}`]={x:0,y:0};});
-            } else {
-                b.innerText=t==='a'?'A':'B'; b.style.right=r+'px';
-                b.addEventListener('touchstart',e=>{e.preventDefault();this.touches[`${t==='a'?'btnA':'btnB'}-${id}`]=true;b.classList.add('active')});
-                b.addEventListener('touchend',e=>{e.preventDefault();this.touches[`${t==='a'?'btnA':'btnB'}-${id}`]=false;b.classList.remove('active')});
-            } 
-            b.style[rot?'top':'bottom']='30px'; if(rot)b.style.transform="rotate(180deg)"; ui.appendChild(b);
-        }; 
-        add('p1','s',0,false); add('p1','a',40,false); add('p1','b',140,false); 
-        if(Game.flags.subMode==='COOP'){ add('p2','s',0,true); add('p2','a',40,true); add('p2','b',140,true); } 
-    }
-}
-
-class AiSys {
-    process() {
-        const ps=Game.om.getByTag('player'), ens=Game.om.getByTag('enemy'), lts=Game.om.getByTag('loot'); 
-        const tgs = Game.flags.menu ? ens : ps;
-        Game.om.get(['ai','combat']).forEach(me=>{
-            const cmb=me.comps.combat, ai=me.comps.ai;
-            if([Config.STATE.STUN, Config.STATE.DASH, Config.STATE.PARRY].includes(cmb.state)) return;
-            ai.tick--;
-            
-            if(ai.tick > 0 && ai.plan) {
-                let t = null;
-                if(ai.plan.tType === 'LOOT') t = lts.find(p=>p.id===ai.plan.tid);
-                else if(ai.plan.tType === 'PLAYER') t = ps.find(p=>p.id===ai.plan.tid);
-                else t = ens.find(e=>e.id===ai.plan.tid);
-                if(t && t.active && Actions[ai.plan.type]) Actions[ai.plan.type](me, t); else ai.tick = 0;
-                return;
-            }
-
-            let pots = tgs;
-            if (Game.flags.menu && me.tag('player')) pots = ens; else if (!me.tag('player')) pots = ps;
-            if (pots.length === 0 && Game.flags.menu) pots = Game.om.getByTag('enemy').filter(e=>e.id!==me.id);
-            if(pots.length === 0) return; 
-            
-            const pTgt = pots.reduce((p,c)=>Vec2.dist(me.comps.pos.pos,p.comps.pos.pos)<Vec2.dist(me.comps.pos.pos,c.comps.pos.pos)?p:c);
-            let lTgt = lts.length ? lts.reduce((p,c)=>Vec2.dist(me.comps.pos.pos,p.comps.pos.pos)<Vec2.dist(me.comps.pos.pos,c.comps.pos.pos)?p:c) : null;
-            
-            let bList = ai.behav;
-            const valid = bList.filter(b=>{
-                const t = b.t==='ACQUIRE_LOOT'?lTgt:pTgt; if(!t)return false;
-                const d=Vec2.dist(me.comps.pos.pos, t.comps.pos.pos);
-                if(b.r && (d<b.r[0]||d>b.r[1])) return false; if(b.cd && cmb.cd[b.cd]>0) return false; return true;
+            // Blood
+            Game.visuals.blood.forEach(b => {
+                this.ctx.save();
+                this.ctx.translate(b.position.x, b.position.y);
+                this.ctx.rotate(b.rotation);
+                this.ctx.fillStyle = b.color;
+                this.ctx.globalAlpha = Math.min(0.8, b.life / 400);
+                this.ctx.fillRect(-b.size / 2, -b.size / 2, b.size, b.size);
+                this.ctx.restore();
             });
-            
-            const total = valid.reduce((s,b)=>s+b.w,0); let r=Math.random()*total, sel=null; for(const m of valid){r-=m.w; if(r<=0){sel=m; break;}}
-            
-            if(sel) {
-                const fin = sel.type==='ACQUIRE_LOOT'?lTgt:pTgt;
-                ai.plan = { type: sel.t, tid: fin.id, tType: sel.t==='ACQUIRE_LOOT'?'LOOT':(fin.tag('player')?'PLAYER':'ENEMY') };
-                ai.tick = sel.d || Math.floor(Math.random()*(Config.TIME.AI_MAX-Config.TIME.AI_MIN)+Config.TIME.AI_MIN);
-            } else { ai.plan = { type: 'HOLD_SPRINT', tid: pTgt.id, tType: 'PLAYER' }; ai.tick = 30; }
-        });
-    }
-}
 
-class PhysicsSys {
-    process() {
-        Game.om.get(['vel','pos']).forEach(o=>{
-            const c=o.comps;
-            if(o.has('combat')){
-                ['dash','parry','turn','od','chg'].forEach(k=>c.combat.cd[k]=Math.max(0,c.combat.cd[k]-1));
-                c.combat.invuln=Math.max(0,c.combat.invuln-1); c.combat.sTimer=Math.max(0,c.combat.sTimer-1);
-                const s=c.combat.state;
-                if(s===Config.STATE.STUN){ c.vel.mul(0.85); if(c.combat.sTimer<=0)c.combat.state=Config.STATE.IDLE; }
-                else if(s===Config.STATE.DASH){ c.combat.invuln=2; if(c.combat.sTimer<=0){c.combat.state=Config.STATE.IDLE;c.vel.mul(0.5);c.combat.lvl=0;} }
-                else if(s===Config.STATE.PARRY){ 
-                    c.vel.mul(1.0); if(c.combat.sTimer<=0)c.combat.state=Config.STATE.IDLE; 
-                    if(c.vel.mag() > 1.0) Factory.part(c.pos.pos.x, c.pos.pos.y, Palette.WHITE, 2, 'SPARK');
+            this.drawEntities();
+
+            // Shockwaves
+            this.ctx.lineWidth = 3;
+            Game.waves.forEach(s => {
+                this.ctx.globalAlpha = s.alpha * 0.8;
+                this.ctx.strokeStyle = s.color; // Use actual color
+                this.ctx.beginPath();
+                this.ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                this.ctx.stroke();
+            });
+            this.ctx.globalAlpha = 1;
+
+            // Flash
+            if (Game.state.flash > 0 && Game.config.FX.FLASH) {
+                this.ctx.fillStyle = 'rgba(255,255,255,' + (Game.state.flash * 0.2) + ')';
+                this.ctx.fillRect(-sx, -sy, w, h);
+            }
+
+            // Floating Text (Pixel style)
+            Game.visuals.text.forEach(t => {
+                this.ctx.globalAlpha = Math.max(0, t.life);
+                this.ctx.fillStyle = Palette.C2;
+                this.ctx.font = "30px VT323";
+                this.ctx.shadowColor = Palette.C3;
+                this.ctx.shadowBlur = 0;
+                // Manual text shadow for pixel art feel
+                this.ctx.fillText(t.str, t.position.x + 2, t.position.y + 2);
+                this.ctx.fillStyle = t.color;
+                this.ctx.fillText(t.str, t.position.x, t.position.y);
+            });
+
+            // Aim Line
+            if (Game.systems.input.mode === 'MOUSE' && !Game.state.isMenu) {
+                const p1 = Game.objectManager.getByTag('player')[0];
+                if (p1) {
+                    this.ctx.strokeStyle = "rgba(255,255,255,0.1)";
+                    this.ctx.setLineDash([2, 4]);
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(p1.components.position.vector.x, p1.components.position.vector.y);
+                    this.ctx.lineTo(Game.systems.input.mouse.x, Game.systems.input.mouse.y);
+                    this.ctx.stroke();
+                    this.ctx.setLineDash([]);
+
+                    // Cursor
+                    this.ctx.strokeStyle = Palette.C2;
+                    this.ctx.strokeRect(Game.systems.input.mouse.x - 4, Game.systems.input.mouse.y - 4, 8, 8);
                 }
-                else if(s===Config.STATE.DODGE){ c.vel.mul(0.9); c.combat.invuln=2; if(c.combat.sTimer<=0)c.combat.state=Config.STATE.IDLE; }
-                else if(s>=Config.STATE.CHARGING && s<=Config.STATE.LV4_RDY){ c.vel.mul(0.5); }
-                else { c.vel.mul(Config.PHYS.FRICTION); }
             }
-            c.pos.pos.add(c.vel);
-            const b=Config.PHYS.BOUNDS; let hit = false;
-            if(c.pos.pos.x<b){c.pos.pos.x=b;c.vel.x*=Config.PHYS.WALL_BOUNCE; hit=true;} 
-            if(c.pos.pos.x>Game.w-b){c.pos.pos.x=Game.w-b;c.vel.x*=Config.PHYS.WALL_BOUNCE; hit=true;}
-            if(c.pos.pos.y<b){c.pos.pos.y=b;c.vel.y*=Config.PHYS.WALL_BOUNCE; hit=true;} 
-            if(c.pos.pos.y>Game.h-b){c.pos.pos.y=Game.h-b;c.vel.y*=Config.PHYS.WALL_BOUNCE; hit=true;}
-            if(hit && o.comps.combat.state === Config.STATE.STUN) { Game.bus.pub('HIT', {atk:o, vic:o, lvl:0, wall:true}); Game.bus.pub('SHAKE', 20); }
-        });
-        Game.om.getByTag('loot').forEach(p=>{p.comps.pos.rot+=0.05; p.comps.loot.life--; if(p.comps.loot.life<=0)Game.om.kill(p);});
-        if(Game.flags.subMode==='COOP'){const ps=Game.om.getByTag('player'); if(ps.length>1 && Vec2.dist(ps[0].comps.pos.pos,ps[1].comps.pos.pos)<42){const push=Vec2.sub(ps[0].comps.pos.pos,ps[1].comps.pos.pos).norm().mul(3); ps[0].comps.vel.add(push); ps[1].comps.vel.sub(push);}}
-    }
-}
-
-class CombatSys {
-    getLvl(o) { 
-        if(!o.has('combat'))return 0; if(o.comps.combat.lvl)return o.comps.combat.lvl; 
-        const s=o.comps.combat.state; 
-        if(s===Config.STATE.DASH||s===Config.STATE.SPRINT||s===Config.STATE.BRACE)return Config.TIERS.SPRINT; 
-        if(s===Config.STATE.MOVE)return Config.TIERS.MOVE; return Config.TIERS.IDLE; 
-    }
-    
-    process() {
-        const c=Game.om.get(['combat','stats']), l=Game.om.getByTag('loot');
-        c.forEach(e=>{
-            c.forEach(o=>{ if(e!==o && Vec2.dist(e.comps.pos.pos, o.comps.pos.pos) < (e.comps.stats.r + o.comps.stats.r)) this.collide(e,o); });
-            for(let i=l.length-1;i>=0;i--) if(Vec2.dist(e.comps.pos.pos,l[i].comps.pos.pos)<30) Game.bus.pub('LOOT',{tgt:e,it:l[i]});
-        });
-    }
-    
-    collide(e1, e2) {
-        const dir = Vec2.sub(e1.comps.pos.pos, e2.comps.pos.pos).norm();
-        let f1 = 1.2, f2 = 1.2;
-        if (e1.comps.combat.odType === 'A') f1 *= Config.MASS.LIGHT; if (e2.comps.combat.odType === 'A') f2 *= Config.MASS.LIGHT;
-        if (e1.comps.combat.odType === 'B') f1 *= Config.MASS.HEAVY; if (e2.comps.combat.odType === 'B') f2 *= Config.MASS.HEAVY;
-        if (e1.comps.combat.state === Config.STATE.BRACE) f1 = 0.2; if (e2.comps.combat.state === Config.STATE.BRACE) f2 = 0.2; 
-        
-        e1.comps.vel.add(dir.clone().mul(f1)); e2.comps.vel.sub(dir.clone().mul(f2));
-        
-        if(e1.comps.combat.state===Config.STATE.STUN) { return Game.bus.pub('HIT',{atk:e2,vic:e1,lvl:this.getLvl(e2)}); }
-        if(e2.comps.combat.state===Config.STATE.STUN) { return Game.bus.pub('HIT',{atk:e1,vic:e2,lvl:this.getLvl(e1)}); }
-
-        const l1=this.getLvl(e1), l2=this.getLvl(e2);
-        
-        if(e1.comps.combat.state===Config.STATE.PARRY) { if (l2>3) Game.bus.pub('HIT',{atk:e2,vic:e1,lvl:l2}); else return Game.bus.pub('PARRY',{blk:e1,atk:e2,lvl:l2}); }
-        if(e2.comps.combat.state===Config.STATE.PARRY) { if (l1>3) Game.bus.pub('HIT',{atk:e1,vic:e2,lvl:l1}); else return Game.bus.pub('PARRY',{blk:e2,atk:e1,lvl:l1}); }
-
-        if(l1 >= 2 || l2 >= 2) {
-            if(l1 > l2) Game.bus.pub('HIT',{atk:e1,vic:e2,lvl:l1});
-            else if(l2 > l1) Game.bus.pub('HIT',{atk:e2,vic:e1,lvl:l2});
-            else Game.bus.pub('CLASH',{e1,e2,lvl:Math.max(l1,l2)}); 
-        }
-    }
-}
-
-class Rules {
-    constructor() {
-        const B = Game.bus;
-        B.sub('AREA_BLAST', ({src}) => {
-             Game.om.get(['combat','stats']).forEach(t => {
-                 if (t === src) return;
-                 if (Vec2.dist(src.comps.pos.pos, t.comps.pos.pos) < 150) { 
-                     t.comps.vel = Vec2.sub(t.comps.pos.pos, src.comps.pos.pos).norm().mul(50); t.comps.stats.hp -= Config.DMG.AREA;
-                     t.comps.combat.state = Config.STATE.STUN; t.comps.combat.sTimer = 60;
-                     Factory.wave(t.comps.pos.pos.x, t.comps.pos.pos.y, Palette.ORANGE); B.pub('SHAKE', 30);
-                 }
-             });
-             Factory.wave(src.comps.pos.pos.x, src.comps.pos.pos.y, src.comps.render.col); B.pub('PART_BURST',{x:src.comps.pos.pos.x, y:src.comps.pos.pos.y, col:src.comps.render.col, c:30});
-        });
-        B.sub('OD_BLAST', ({src}) => {
-             Game.om.get(['combat','stats']).forEach(t => {
-                 if (t === src) return;
-                 if (Vec2.dist(src.comps.pos.pos, t.comps.pos.pos) < 250) { 
-                     t.comps.vel = Vec2.sub(t.comps.pos.pos, src.comps.pos.pos).norm().mul(80); t.comps.stats.hp -= Config.DMG.OD_BLAST;
-                     t.comps.combat.state = Config.STATE.STUN; t.comps.combat.sTimer = 120; Factory.wave(t.comps.pos.pos.x, t.comps.pos.pos.y, Palette.WHITE); 
-                 }
-             });
-             Factory.wave(src.comps.pos.pos.x, src.comps.pos.pos.y, src.comps.render.col); B.pub('SHAKE', 50); 
-             for(let i=0; i<15; i++) B.pub('PART_SPAWN', {x:src.comps.pos.pos.x+(Math.random()-0.5)*100, y:src.comps.pos.pos.y+(Math.random()-0.5)*100, col:src.comps.render.col, spd:0.5, type:'IMPLODE'});
-        });
-        B.sub('HIT', ({atk,vic,lvl,wall})=>{
-            if(wall) { vic.comps.stats.hp -= Config.DMG.WALL; return; }
-            if(vic.comps.combat.state!==Config.STATE.STUN && vic.comps.combat.invuln>0) return;
-            if(vic.comps.combat.state===Config.STATE.DODGE) return;
-            let dmg = lvl===4?Config.DMG.LV4:(lvl===3?Config.DMG.LV3:(lvl===2?Config.DMG.LV2:Config.DMG.LV1));
-            const brace = vic.comps.combat.state === Config.STATE.BRACE;
-            if (brace) { dmg *= 0.5; B.pub('FLASH', 0.2); }
-            vic.comps.stats.hp-=dmg; 
-            if(vic.has('ai')){ vic.comps.ai.mem.dmg++; if(vic.tag('BOSS') && vic.comps.stats.hp<vic.comps.stats.max*0.5) B.pub('BOSS_PHASE',{boss:vic,p:2}); }
-            if(vic.tag('player')) Game.flags.heat = Math.max(0, Game.flags.heat - Config.HEAT.HIT_PENALTY);
-            const charging = (vic.comps.combat.state >= Config.STATE.CHARGING && vic.comps.combat.state <= Config.STATE.LV4_RDY);
-            if (!charging && vic.comps.combat.state !== Config.STATE.STUN) vic.comps.combat.state=Config.STATE.IDLE;
-            
-            let force = lvl===4?100:(lvl===3?60:(lvl===2?30:10)); if (brace) force *= 0.5;
-            if(vic.comps.combat.odType === 'A') force *= Config.MASS.LIGHT; if(vic.comps.combat.odType === 'B') force *= Config.MASS.HEAVY;
-            
-            if (force > 0) { const k=Vec2.sub(vic.comps.pos.pos,atk.comps.pos.pos).norm().mul(force*Config.PHYS.RECOIL); vic.comps.vel=k; atk.comps.vel.add(k.clone().mul(0.2)); }
-            vic.comps.combat.invuln = Config.TIME.INVULN; Game.flags.stop=lvl>=3?3:0; 
-            const shake = lvl===4?50:(lvl>=2?15:5); B.pub('SHAKE', shake);
-            if(lvl>=3){ Game.flags.aberr=20; if(lvl===4 && Game.cfg.FX.FLASH) Game.flags.invert=true; }
-            if(lvl>=2) Factory.wave(vic.comps.pos.pos.x, vic.comps.pos.pos.y, vic.comps.render.col);
-            B.pub('PART_BURST',{x:vic.comps.pos.pos.x,y:vic.comps.pos.pos.y,col:vic.comps.render.col,c:10+shake});
-            if(vic.comps.stats.hp<=0) B.pub('DEATH',{vic,atk}); else if(vic.tag('player') && !Game.flags.menu) Game.flags.combo=0;
-        });
-        B.sub('PARRY', ({blk,atk,lvl})=>{
-            const spd = blk.comps.vel.mag(), recoil = 30 + (spd > 1.0 ? spd * 2.0 : 0); 
-            const r=Vec2.sub(atk.comps.pos.pos,blk.comps.pos.pos).norm().mul(recoil);
-            atk.comps.vel=r; atk.comps.combat.state=Config.STATE.STUN; atk.comps.combat.sTimer = lvl>=3?120:60; atk.comps.combat.invuln=0;
-            blk.comps.vel=r.clone().mul(-0.2); blk.comps.combat.invuln=20; Game.flags.stop=3;
-            if(blk.tag('player')) Game.flags.heat = Math.min(100, Game.flags.heat + Config.HEAT.PARRY);
-            Factory.wave(blk.comps.pos.pos.x, blk.comps.pos.pos.y, Palette.WHITE);
-            B.pub('PART_BURST',{x:atk.comps.pos.pos.x,y:atk.comps.pos.pos.y,col:Palette.WHITE,c:30}); B.pub('FLASH',0.3); B.pub('SHAKE',30);
-        });
-        B.sub('CLASH', ({e1,e2,lvl})=>{
-            Game.flags.stop=4; B.pub('SHAKE',30); const d=Vec2.sub(e1.comps.pos.pos,e2.comps.pos.pos).norm();
-            let f1=40, f2=40;
-            if(e1.comps.combat.odType === 'A') f1 *= Config.MASS.LIGHT; if(e1.comps.combat.odType === 'B') f1 *= Config.MASS.HEAVY;
-            if(e2.comps.combat.odType === 'A') f2 *= Config.MASS.LIGHT; if(e2.comps.combat.odType === 'B') f2 *= Config.MASS.HEAVY;
-
-            e1.comps.vel=d.clone().mul(f1); e2.comps.vel=d.clone().mul(-f2); e1.comps.combat.state=e2.comps.combat.state=Config.STATE.IDLE; e1.comps.combat.invuln=e2.comps.combat.invuln=10;
-            if(e1.tag('player')||e2.tag('player')) Game.flags.heat = Math.min(100, Game.flags.heat + Config.HEAT.CLASH);
-            const m=Vec2.sub(e2.comps.pos.pos,e1.comps.pos.pos).mul(0.5).add(e1.comps.pos.pos); 
-            if (lvl>=4) { Game.flags.invert=true; Game.flags.stop=30; B.pub('SHAKE',100); Game.parts=[]; }
-            Factory.wave(m.x, m.y, Palette.WHITE); B.pub('PART_BURST',{x:m.x,y:m.y,col:Palette.WHITE,c:lvl>=3?80:40});
-        });
-        B.sub('LOOT', ({tgt,it})=>{
-            B.pub('PART_BURST',{x:it.comps.pos.pos.x,y:it.comps.pos.pos.y,col:it.comps.render.col,c:30});
-            const mod=it.comps.loot.data.mod;
-            if(mod.t==='STAT') tgt.comps.stats[mod.k]=Math.min(tgt.comps.stats[mod.k]+mod.v,tgt.comps.stats.max);
-            else if(mod.t==='STATUS') tgt.comps.combat[mod.k]=mod.v;
-            else if(mod.t==='SPECIAL' && tgt.tag('player')) { if(tgt.comps.stats.lives<1)tgt.comps.stats.lives++; else tgt.comps.stats.hp=tgt.comps.stats.max; }
-            Game.om.kill(it);
-        });
-        B.sub('REVIVE', ({ent})=>{
-            ent.comps.stats.lives--; ent.comps.stats.hp=ent.comps.stats.max; ent.comps.combat.invuln=180;
-            Game.flags.stop=30; B.pub('SHAKE',50); B.pub('FLASH',1); B.pub('PART_BURST',{x:ent.comps.pos.pos.x,y:ent.comps.pos.pos.y,col:LootDB.LIFE.col,c:50});
-        });
-        B.sub('DEATH', ({vic,atk})=>{
-            if(vic.comps.stats.lives>0) return B.pub('REVIVE',{ent:vic});
-            Game.om.kill(vic); Game.flags.stop=5; Game.flags.kills++; Game.flags.combo++;
-            let s=100; if(vic.tag('BOSS'))s=5000; else if(vic.tag('ELITE'))s=1000;
-            if(atk.tag('player')) Game.flags.heat = Math.min(100, Game.flags.heat + Config.HEAT.KILL * (vic.tag('BOSS')?5:1));
-            if(!Game.flags.menu) { Game.flags.score += s * (1 + Game.flags.heat * 0.1); Game.ui.upd(); }
-            if(!vic.tag('RUSHER')){ Game.flags.stop=20; B.pub('SHAKE',100); B.pub('FLASH',0.8); }
-            if(Game.cfg.FX.BLOOD) {
-                for(let i=0;i<15;i++) Game.vis.blood.push({
-                    pos:new Vec2(vic.comps.pos.pos.x,vic.comps.pos.pos.y),
-                    vel:new Vec2(Math.cos(Math.random()*6.28)*Math.random()*10,Math.sin(Math.random()*6.28)*Math.random()*10),
-                    col:vic.comps.render.col, sz:Math.random()*12+6, rot:Math.random()*6, life:1000
-                });
-                if(Game.vis.blood.length > 1000) Game.vis.blood.splice(0, Game.vis.blood.length - 100);
-            }
-        });
-    }
-}
-
-class RenderSys {
-    constructor() { this.ctx=document.getElementById("gameCanvas").getContext("2d"); }
-    draw() {
-        this.ctx.clearRect(0,0,Game.w,Game.h);
-        if(Game.flags.invert){this.ctx.fillStyle=Palette.WHITE;this.ctx.fillRect(0,0,Game.w,Game.h);return;}
-        this.ctx.save();
-        const sI=Game.flags.shake, sX=(Math.random()-0.5)*sI, sY=(Math.random()-0.5)*sI;
-        this.ctx.translate(sX,sY); 
-        if(Game.ui.el) Game.ui.el.style.transform = `translate(${sX}px, ${sY}px)`;
-        if(Game.cfg.FX.GRID) this.grid();
-        
-        Game.vis.blood.forEach(b=>{this.ctx.save();this.ctx.translate(b.pos.x,b.pos.y);this.ctx.rotate(b.rot);this.ctx.fillStyle=b.col;this.ctx.globalAlpha=0.6;this.ctx.fillRect(-b.sz/2,-b.sz/2,b.sz,b.sz);this.ctx.restore();});
-        this.all();
-
-        this.ctx.lineWidth=4; Game.waves.forEach(s=>{this.ctx.globalAlpha=s.a;this.ctx.strokeStyle=s.col;this.ctx.beginPath();this.ctx.arc(s.x,s.y,s.r,0,Math.PI*2);this.ctx.stroke();});this.ctx.globalAlpha=1;
-        if(Game.flags.flash>0&&Game.cfg.FX.FLASH){this.ctx.fillStyle=`rgba(255,255,255,${Game.flags.flash})`;this.ctx.fillRect(-sX,-sY,Game.w,Game.h);}
-        Game.vis.txt.forEach(t=>{this.ctx.globalAlpha=Math.max(0,t.life);this.ctx.fillStyle=t.col;this.ctx.font="30px VT323";this.ctx.shadowColor=t.col;this.ctx.shadowBlur=10;this.ctx.fillText(t.str,t.pos.x,t.pos.y);this.ctx.shadowBlur=0;});
-        if(Game.flags.subMode==='SOLO'&&Game.sys.input.mode==='MOUSE'&&!Game.flags.menu){
-            const p1=Game.om.getByTag('player')[0];
-            if(p1){ this.ctx.strokeStyle="rgba(255,255,255,0.1)";this.ctx.setLineDash([4,4]);this.ctx.beginPath();this.ctx.moveTo(p1.comps.pos.pos.x,p1.comps.pos.pos.y);this.ctx.lineTo(Game.sys.input.mouse.x,Game.sys.input.mouse.y);this.ctx.stroke();this.ctx.setLineDash([]);this.ctx.fillStyle=Palette.CYAN;this.ctx.fillRect(Game.sys.input.mouse.x-4,Game.sys.input.mouse.y-4,8,8); }
-        }
-        this.ctx.restore(); 
-    }
-    all() {
-        Game.om.getByTag('loot').forEach(p=>{this.ctx.save();this.ctx.translate(p.comps.pos.pos.x,p.comps.pos.pos.y);this.ctx.rotate(p.comps.pos.rot);this.ctx.fillStyle=p.comps.render.col;this.ctx.globalAlpha=Math.min(1,p.comps.loot.life/60);this.ctx.beginPath();this.ctx.moveTo(0,-10);this.ctx.lineTo(10,0);this.ctx.lineTo(0,10);this.ctx.lineTo(-10,0);this.ctx.fill();if(Game.cfg.FX.GLOW){this.ctx.shadowColor=p.comps.render.col;this.ctx.shadowBlur=30;this.ctx.stroke();}this.ctx.restore();});
-        Game.parts.forEach(p=>{
-            this.ctx.save(); this.ctx.translate(p.pos.x, p.pos.y); this.ctx.rotate(p.rot + Date.now()/100);
-            this.ctx.globalAlpha=p.life; this.ctx.fillStyle=p.col;
-            if(p.type==='IMPLODE'||p.type==='SPARK') this.ctx.fillRect(-1, -1, 2, 2); else this.ctx.fillRect(-p.sz/2,-p.sz/2,p.sz,p.sz);
             this.ctx.restore();
-        });
-        Game.om.getByTag('enemy').forEach(e=>this.ent(e,0)); Game.om.getByTag('player').forEach(p=>this.ent(p,0));
-    }
-    ent(o, off) {
-        let col=ColorUtil.dynColor(o.comps.render.col, o.comps.combat);
-        const lvl = Game.sys.combat.getLvl(o);
-        let scale=1.0, trail=false, blur=0, str=1.0;
-        const spd = o.comps.vel.mag();
-        const rdy = o.comps.combat.state === Config.STATE.LV3_RDY || o.comps.combat.state === Config.STATE.LV4_RDY;
-        
-        if (o.comps.combat.odType === 'A') { trail=true; str=1+Math.min(spd/40,1.5); scale=1.1; if(Math.floor(Date.now()/50)%2===0) col=Palette.WHITE; } 
-        else if (o.comps.combat.odType === 'B') { trail=false; str=1.0; scale=1.2; } 
-        else { if(lvl>=1&&!rdy)trail=true; if(lvl>=2)scale=1.1; if(lvl>=3){blur=20;scale=1.2;} if(lvl>=4){col=Palette.WHITE;blur=40;scale=1.3;} str=1+Math.min(spd/60,0.8); }
-
-        this.ctx.save(); 
-        if(o.comps.combat.state === Config.STATE.PARRY) { const g=(Math.random()-0.5)*6; this.ctx.translate(o.comps.pos.pos.x+off+g,o.comps.pos.pos.y+off+g); } 
-        else this.ctx.translate(o.comps.pos.pos.x+off,o.comps.pos.pos.y+off);
-        if(o.comps.combat.invuln > 0 && o.comps.combat.invuln % 4 < 2) this.ctx.globalAlpha = 0.4; 
-        if(Game.cfg.FX.GLOW){ this.ctx.shadowBlur = o.comps.combat.state===Config.STATE.CHARGING ? 60 : (30+blur); this.ctx.shadowColor = col; this.ctx.globalCompositeOperation = 'screen'; }
-        
-        if(Game.cfg.FX.GLOW && trail){
-            o.comps.render.trail.push({x:o.comps.pos.pos.x,y:o.comps.pos.pos.y}); if(o.comps.render.trail.length>(lvl>=3?10:5)) o.comps.render.trail.shift();
-            o.comps.render.trail.forEach((t,i)=>{this.ctx.globalAlpha=i/20;this.ctx.strokeStyle=col;this.ctx.lineWidth=2;this.ctx.beginPath();this.ctx.arc(t.x-o.comps.pos.pos.x,t.y-o.comps.pos.pos.y,o.comps.stats.r,0,2*Math.PI);this.ctx.stroke();}); this.ctx.globalAlpha=1;
-        } else if(o.comps.render.trail.length>0) o.comps.render.trail.shift();
-        
-        if(o.comps.combat.state>=Config.STATE.CHARGING && o.comps.combat.state<=Config.STATE.LV4_RDY) {
-             const t=o.comps.combat.chgTimer, b=Math.max(o.comps.stats.r+5, 60-(t%30));
-             this.ctx.strokeStyle=(t>Config.TIME.CHG_LV3)?Palette.WHITE:col; this.ctx.lineWidth=3;
-             this.ctx.beginPath(); this.ctx.moveTo(-b,-10);this.ctx.lineTo(-b,10);this.ctx.moveTo(-b-5,-10);this.ctx.lineTo(-b,-10);this.ctx.moveTo(-b-5,10);this.ctx.lineTo(-b,10);this.ctx.stroke();
-             this.ctx.beginPath(); this.ctx.moveTo(b,-10);this.ctx.lineTo(b,10);this.ctx.moveTo(b+5,-10);this.ctx.lineTo(b,-10);this.ctx.moveTo(b+5,10);this.ctx.lineTo(b,10);this.ctx.stroke();
         }
 
-        if(o.comps.combat.odType === 'B') {
-            this.ctx.fillStyle=col; for(let i=0;i<4;i++) { const a=(Date.now()/200)+(i*Math.PI/2), d=25+Math.sin(Date.now()/100+i)*5; this.ctx.fillRect(Math.cos(a)*d,Math.sin(a)*d,6,6); }
+        drawEntities() {
+            Game.objectManager.getByTag('loot').forEach(p => {
+                this.ctx.save();
+                this.ctx.translate(p.components.position.vector.x, p.components.position.vector.y);
+
+                // Loot Glow
+                const glow = this.ctx.createRadialGradient(0, 0, 5, 0, 0, 40);
+                glow.addColorStop(0, p.components.render.color);
+                glow.addColorStop(1, "transparent");
+                this.ctx.fillStyle = glow;
+                this.ctx.globalAlpha = 0.3;
+                this.ctx.beginPath(); this.ctx.arc(0, 0, 40, 0, Math.PI * 2); this.ctx.fill();
+
+                this.ctx.rotate(p.components.position.rotation);
+                this.ctx.strokeStyle = p.components.render.color;
+                this.ctx.shadowColor = p.components.render.color;
+                this.ctx.shadowBlur = 0;
+                this.ctx.lineWidth = 3;
+                this.ctx.strokeRect(-8, -8, 16, 16);
+                this.ctx.fillStyle = Palette.C2;
+                this.ctx.fillRect(-3, -3, 6, 6);
+                this.ctx.restore();
+            });
+
+            Game.particles.forEach(p => {
+                this.ctx.save();
+                this.ctx.translate(p.position.x, p.position.y);
+                this.ctx.rotate(p.rotation);
+                this.ctx.fillStyle = p.color;
+                this.ctx.globalAlpha = p.life;
+                this.ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                this.ctx.restore();
+            });
+
+            Game.objectManager.getByTag('enemy').forEach(e => this.drawEntity(e));
+            Game.objectManager.getByTag('player').forEach(p => this.drawEntity(p));
         }
 
-        if(o.comps.combat.state === Config.STATE.PARRY) {
-             this.ctx.shadowBlur=50; this.ctx.shadowColor='#fff';
-             for(let i=0;i<5;i++) {
-                 const h=o.comps.stats.r*0.4, y=-o.comps.stats.r+(i*h), of=(Math.random()-0.5)*15;
-                 this.ctx.fillStyle=i%2===0?Palette.WHITE:col; this.ctx.fillRect(-o.comps.stats.r+of,y,o.comps.stats.r*2,h);
-             }
-        } else {
-            if(o.comps.stats.hp<30&&Math.floor(Date.now()/50)%2==0)this.ctx.globalAlpha=0.4;
-            this.ctx.rotate(Math.atan2(o.comps.vel.y,o.comps.vel.x)); this.ctx.scale(str*scale, (1/str)*scale);
-            this.ctx.fillStyle=col;this.ctx.beginPath();this.ctx.arc(0,0,o.comps.stats.r,0,2*Math.PI);this.ctx.fill();
-            this.ctx.fillStyle=Palette.WHITE;this.ctx.globalAlpha=0.4;this.ctx.beginPath();this.ctx.arc(0,0,o.comps.stats.r*0.6,0,2*Math.PI);this.ctx.fill();
-        }
-        this.ctx.restore();
-    }
-    grid() { 
-        const h = Game.flags.heat/100, step=Config.GFX.GRID_STEP, c=h>0.5?`rgba(255,${Math.floor(100-(h*100))},50,${0.1+(h*0.4)})`:`rgba(30,30,30,0.3)`;
-        this.ctx.fillStyle=c;
-        for(let x=0;x<Game.w;x+=step) for(let y=0;y<Game.h;y+=step) {
-            if((Math.floor(x/step)+Math.floor(y/step))%2!==0) continue; const s=h>0.5?20:12;
-            this.ctx.fillRect(x-s/2,y-2,s,4); this.ctx.fillRect(x-2,y-s/2,4,s);
-        }
-        this.ctx.fillStyle="rgba(255,255,255,0.02)"; this.ctx.fillRect(0,(Date.now()/5)%Game.h,Game.w,10);
-    }
-}
+        drawEntity(obj) {
+            const c = obj.components, s = c.stats, p = c.position.vector, l = Game.systems.combat.getLevel(obj), col = ColorHelper.dynamicColor(c.render.color, c.combat);
+            this.ctx.save();
+            this.ctx.translate(p.x, p.y);
 
-class Game {
-    static om=new ObjectMan(); static vis={blood:[],txt:[]}; static parts=[]; static waves=[]; static pool=null;
-    static flags={menu:true, subMode:"SOLO",score:0,kills:0,heat:0,shake:0,stop:0,flash:0,wT:0,lT:1800,aberr:0,invert:false,pLim:0,combo:0};
-    static cfg={ FX:{BLOOD:true,SHAKE:true,FLASH:true,GLOW:true,GRID:true} };
-    static bus=new EventBus(); static w=window.innerWidth; static h=window.innerHeight; static sys={}; 
-    
-    static ui={
-        el:document.getElementById("floor-interface"), title:document.getElementById("menu-title"), sc:document.getElementById("score-val"), ht:document.getElementById("heat-val"), btn:document.getElementById("btn-main-action"), idx:0, list:[],
-        triggerStart:()=>{ 
-            if(Game.flags.menu){ Game.flags.menu=false; document.body.classList.remove('menu-mode'); Game.ui.el.classList.remove("active"); Game.ui.el.classList.add("passive"); Game.director.play(); } 
-            else { Game.flags.menu=true; document.body.classList.add('menu-mode'); Game.ui.el.classList.remove("passive"); Game.ui.el.classList.add("active"); }
-        },
-        init:()=>{ Game.ui.list=Array.from(document.querySelectorAll('#floor-interface button')); Game.ui.idx=Game.ui.list.length-1; Game.ui.ref(); },
-        ref:()=>{ Game.ui.list.forEach((e,i)=>{const a=i===Game.ui.idx;e.classList.toggle('focused',a);if(a)e.scrollIntoView({block:'nearest'});}); },
-        nav:(d)=>{ if(!Game.ui.list.length)Game.ui.init(); Game.ui.idx=(Game.ui.idx+d+Game.ui.list.length)%Game.ui.list.length; Game.ui.ref(); },
-        sel:()=>{ if(!Game.ui.list.length)return; Game.ui.list[Game.ui.idx].click(); },
-        upd:()=>{ Game.ui.sc.innerText=Math.floor(Game.flags.score); Game.ui.ht.innerText=`HEAT // ${Math.floor(Game.flags.heat)}%`; }
-    };
-    
-    static director={
-        setMode:(m)=>{Game.flags.subMode=m; document.getElementById("btn-mode-solo").classList.toggle('active',m==='SOLO'); document.getElementById("btn-mode-vs").classList.toggle('active',m==='COOP');},
-        attract:()=>{
-            Game.om.list=[]; Game.om.ids=0; Game.parts=[]; Game.vis.txt=[]; Game.vis.blood=[];
-            const a1 = Factory.bp('P1', Game.w*0.3, Game.h/2); a1.comps.input.dev='ai'; a1.add('ai', {behav:AiBehaviors.AGGRESSIVE, traits:["SPRINTER"], mem:{dmg:0}, tick:0, plan:null});
-            const a2 = Factory.bp('P2', Game.w*0.7, Game.h/2); a2.comps.input.dev='ai'; a2.add('ai', {behav:AiBehaviors.AGGRESSIVE, traits:["SPRINTER"], mem:{dmg:0}, tick:0, plan:null});
-            Game.ui.title.innerText="SYSTEM_IDLE"; Game.ui.btn.innerText="INITIALIZE"; Game.flags.menu=true; document.body.classList.add('menu-mode');
-        },
-        play:()=>{ 
-            Game.loop.sz(); Game.sys.input.pads.p1.ax=new Vec2(0,0); Game.sys.input.pads.p2.ax=new Vec2(0,0); Game.om.list=[]; Game.om.ids=0; Game.parts=[]; Game.vis.txt=[]; Game.vis.blood=[];
-            const p1=Factory.bp('P1',Game.w/2,Game.h/2); if(Game.flags.subMode==='COOP'){p1.comps.pos.pos.x-=100;Factory.bp('P2',Game.w/2+100,Game.h/2);}
-            Game.flags.score=0; Game.flags.heat=0; Game.ui.upd(); Game.flags.kills=0; Game.flags.shake=0; Game.flags.stop=0; Game.flags.wT=0; Game.flags.lT=1800; 
-            Game.ui.title.innerText="SYSTEM_ACTIVE"; Game.ui.btn.innerText="RESTART"; Game.sys.input.setupTouch(); 
-        },
-        wave:()=>{ 
-            const ec=Game.om.getByTag('enemy').length; const t = 1 + Math.floor(Game.flags.heat / 20); 
-            if(ec < t){
-                const r=Math.random(), type = r<0.05?"BOSS":(r<0.40?"DEFENDER":(r<0.70?"VULTURE":"RUSHER"));
-                const s=Math.floor(Math.random()*4),pos=[new Vec2(Math.random()*Game.w,-40),new Vec2(Game.w+40,Math.random()*Game.h),new Vec2(Math.random()*Game.w,Game.h+40),new Vec2(-40,Math.random()*Game.h)][s]; 
-                Factory.enemy(type,pos.x,pos.y);
+            // 1. IMPROVED LIGHTING (The "Shine into ground")
+            // Larger radius, very low opacity, creates "atmosphere"
+            const light = this.ctx.createRadialGradient(0, 0, s.radius, 0, 0, s.radius * 8);
+            light.addColorStop(0, c.render.color);
+            light.addColorStop(1, "transparent");
+            this.ctx.globalAlpha = 0.15;
+            this.ctx.fillStyle = light;
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, s.radius * 8, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // 2. AFTER-IMAGES (Replaces Trails)
+            // We draw the entity shape at previous positions
+            if (c.render.trail.length > 0) {
+                c.render.trail.forEach((t, i) => {
+                    this.ctx.save();
+                    // We need to inverse translate to draw at world coordinates relative to current local
+                    this.ctx.translate(t.x - p.x, t.y - p.y);
+                    this.ctx.rotate(t.rot);
+                    this.ctx.strokeStyle = col;
+                    this.ctx.globalAlpha = (i / c.render.trail.length) * 0.3; // Low opacity ghost
+                    this.ctx.lineWidth = 2;
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, s.radius, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                    this.ctx.restore();
+                });
             }
-            Game.flags.lT--; if(Game.flags.lT<=0){Factory.loot(Math.random()*(Game.w-100)+50,Math.random()*(Game.h-100)+50,Math.random()>0.8?"LIFE":(Math.random()>0.5?"GOD":"HEAL")); Game.flags.lT=1800+Math.random()*1800;} 
-        },
-        over:()=>{ 
-            Game.flags.menu=true; document.body.classList.add('menu-mode'); Game.ui.el.classList.remove("passive"); Game.ui.el.classList.add("active");
-            Game.ui.title.innerText="SIGNAL_LOST"; Game.ui.btn.innerText="RESTART"; Game.ui.init(); 
+
+            // 3. MAIN ENTITY BODY
+            this.ctx.rotate(Math.atan2(c.velocity.y, c.velocity.x));
+            const str = 1 + Math.min(c.velocity.mag() / 80, 0.6);
+            this.ctx.scale(str, 1 / str);
+
+            // Jitter effect for high level / charge
+            if (l >= 3 || c.combat.state === GameConfig.STATE.CHARGING) {
+                this.ctx.translate((Math.random() - 0.5) * 4, (Math.random() - 0.5) * 2);
+            }
+
+            // Setup Noir Style Shadow/Glow
+            this.ctx.shadowColor = col;
+            this.ctx.shadowBlur = l >= 3 ? 20 : 0; // Only glow heavily at high power
+            this.ctx.strokeStyle = col;
+            this.ctx.lineWidth = 3;
+            this.ctx.globalAlpha = 1;
+
+            // Draw Circle
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, s.radius, 0, Math.PI * 2);
+            this.ctx.stroke();
+
+            // Inner Fill (Darker)
+            this.ctx.fillStyle = Palette.C3;
+            this.ctx.globalAlpha = 0.8;
+            this.ctx.fill();
+
+            // Center Core (The eye)
+            this.ctx.fillStyle = Palette.C2;
+            this.ctx.globalAlpha = 0.8;
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, s.radius * 0.4, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // Charge Indicator Ring
+            if (c.combat.state >= GameConfig.STATE.CHARGING && c.combat.state <= GameConfig.STATE.LV4_READY) {
+                const g = 30 - (c.combat.chargeTimer % 30);
+                this.ctx.strokeStyle = Palette.C2;
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, s.radius + g, 0, Math.PI * 2);
+                this.ctx.stroke();
+            }
+            this.ctx.restore();
         }
-    };
-    static init() {
-        this.pool = new MemoryPool(()=>({active:false, pos:new Vec2(0,0), vel:new Vec2(0,0), col:'#fff', life:0, sz:1, type:'EXPLODE'}), 300);
-        this.sys.audio=new AudioSys(); this.sys.input=new InputSys(); this.sys.ai=new AiSys();
-        this.sys.phys=new PhysicsSys(); this.sys.combat=new CombatSys(); this.sys.rules=new Rules(); this.sys.render=new RenderSys();
-        this.loop={ id:null, lt:0, acc:0, step:1000/60, sz:()=>{Game.w=document.getElementById("gameCanvas").width=window.innerWidth;Game.h=document.getElementById("gameCanvas").height=window.innerHeight;}, run:(ts)=>{
-            if(!Game.loop.lt)Game.loop.lt=ts; let dt=ts-Game.loop.lt; Game.loop.lt=ts; if(dt>200) dt=Game.loop.step;
-            Game.loop.acc+=dt; 
-            while(Game.loop.acc>=Game.loop.step){
-                if(Game.flags.stop>0)Game.flags.stop--; 
-                else { 
-                    Game.sys.input.process(); 
-                    if(!Game.flags.menu) { Game.flags.heat = Math.max(0, Game.flags.heat - Config.HEAT.DECAY); Game.ui.upd(); }
-                    else if(Game.flags.menu && Game.om.getByTag('player').length === 0 && Game.om.ids > 0) {
-                          const a1 = Factory.bp('P1', Game.w*0.3, Game.h/2); a1.comps.input.dev='ai'; a1.add('ai', {behav:AiBehaviors.AGGRESSIVE, traits:["SPRINTER"], mem:{dmg:0}, tick:0, plan:null});
-                          const a2 = Factory.bp('P2', Game.w*0.7, Game.h/2); a2.comps.input.dev='ai'; a2.add('ai', {behav:AiBehaviors.AGGRESSIVE, traits:["SPRINTER"], mem:{dmg:0}, tick:0, plan:null});
-                    }
-                    Game.director.wave(); 
-                    Game.sys.ai.process(); Game.sys.phys.process(); Game.sys.combat.process(); Game.om.clean(); 
-                    Game.vis.txt.forEach((t,i)=>{t.pos.add(t.vel);t.life-=0.02;if(t.life<=0)Game.vis.txt.splice(i,1)}); 
-                    Game.vis.blood.forEach(b=>{b.pos.add(b.vel);b.vel.mul(0.85);}); 
-                    for(let i=Game.parts.length-1; i>=0; i--) {
-                        let p = Game.parts[i]; p.pos.add(p.vel); p.vel.mul(0.9); p.life-=0.05;
-                        if(p.life<=0) { Game.pool.free(p); Game.parts.splice(i,1); }
-                    }
-                    Game.waves.forEach((s,i)=>{s.r+=4; s.a-=Config.GFX.FLASH_DEC; if(s.a<=0)Game.waves.splice(i,1)});
-                    if(Game.om.getByTag('player').length===0 && !Game.flags.menu) Game.director.over(); 
-                }
-                Game.flags.shake=Math.max(0,Game.flags.shake*0.9-0.1); Game.flags.flash=Math.max(0,Game.flags.flash-0.05); Game.flags.aberr=Math.max(0,Game.flags.aberr-0.5); Game.flags.pLim=0; Game.loop.acc-=Game.loop.step; 
-            } 
-            Game.sys.render.draw(); Game.flags.invert=false; Game.loop.id=requestAnimationFrame(Game.loop.run);
-        }};
-        window.addEventListener("resize",this.loop.sz); 
-        this.bus.sub('SHAKE',v=>{if(this.cfg.FX.SHAKE)this.flags.shake+=v;}); 
-        this.bus.sub('FLASH',v=>{if(this.cfg.FX.FLASH)this.flags.flash=v;}); 
-        this.bus.sub('PART_SPAWN',d=>{if(Game.flags.pLim>Config.GFX.MAX_PARTICLES)return;if(Game.parts.length>Config.GFX.MAX_PARTICLES){Game.pool.free(Game.parts.shift());}Game.flags.pLim++;Factory.part(d.x,d.y,d.col,d.spd, d.type);}); 
-        this.bus.sub('PART_BURST',d=>{if(!this.cfg.FX.BLOOD&&!this.cfg.FX.FLASH)return;for(let i=0;i<d.c;i++)this.bus.pub('PART_SPAWN',{x:d.x,y:d.y,col:d.col,spd:Math.random()*10+5});}); 
-        this.bus.sub('FIZZLE',d=>{ for(let i=0;i<5;i++) Game.bus.pub('PART_SPAWN',{x:d.x, y:d.y, col:Palette.GREY, spd:0.5, type:'FIZZLE'}); });
-        this.loop.sz(); this.director.attract(); Game.loop.id=requestAnimationFrame(this.loop.run);
     }
-}
-Game.init();
+    // 6. MAIN GAME DIRECTOR
+    class Game { static objectManager = new ObjectManager(); static visuals = { blood: [], text: [] }; static particles = []; static waves = []; static pool = null; static state = { isMenu: true, score: 0, kills: 0, heat: 0, shake: 0, stop: 0, flash: 0, waveTimer: 0, lootTimer: 1800, aberration: 0, invert: false, partLimit: 0, combo: 0 }; static config = { FX: { BLOOD: true, SHAKE: true, FLASH: true, GLOW: true, GRID: true } }; static bus = new EventBus(); static width = window.innerWidth; static height = window.innerHeight; static systems = {}; static ui = { el: document.getElementById("floor-menu"), scoreEl: document.getElementById("score-val"), triggerStart: () => { if (Game.state.isMenu) { Game.state.isMenu = false; Game.ui.el.classList.remove("menu-active"); Game.ui.el.classList.add("menu-sunken"); Game.director.play(); } else { Game.state.isMenu = true; Game.ui.el.classList.add("menu-active"); Game.ui.el.classList.remove("menu-sunken"); } }, toggleGuide: () => { document.getElementById('guide-modal').classList.toggle('visible'); }, update: () => { Game.ui.scoreEl.innerText = Math.floor(Game.state.score); } }; static director = { attract: () => { Game.objectManager.list = []; Game.objectManager.nextId = 0; Game.particles = []; Game.visuals.text = []; Game.visuals.blood = []; const a1 = EntityFactory.createBlueprint('PLAYER_1', Game.width * 0.5, Game.height / 2); a1.components.input.deviceId = 'ai'; a1.addComponent('ai', { behavior: AiBehaviors.AGGRESSIVE, traits: ["SPRINTER"], memory: { damageTaken: 0 }, tick: 0, plan: null }); Game.state.isMenu = true; Game.ui.el.classList.add("menu-active"); Game.ui.el.classList.remove("menu-sunken"); }, play: () => { Game.loop.resize(); Game.systems.input.pads.p1.axis = new Vector2(0, 0); Game.objectManager.list = []; Game.objectManager.nextId = 0; Game.particles = []; Game.visuals.text = []; Game.visuals.blood = []; const p1 = EntityFactory.createBlueprint('PLAYER_1', Game.width / 2, Game.height / 2); Game.state.score = 0; Game.state.heat = 0; Game.ui.update(); Game.state.kills = 0; Game.state.shake = 0; Game.state.stop = 0; Game.state.waveTimer = 0; Game.state.lootTimer = 1800; Game.systems.input.setupTouch(); }, spawnWave: () => { const enemyCount = Game.objectManager.getByTag('enemy').length; const threshold = 1 + Math.floor(Game.state.heat / 20); if (enemyCount < threshold) { const r = Math.random(), type = r < 0.05 ? "ENEMY_BOSS" : (r < 0.40 ? "ENEMY_DEFENDER" : (r < 0.70 ? "ENEMY_VULTURE" : "ENEMY_RUSHER")); const s = Math.floor(Math.random() * 4), pos = [new Vector2(Math.random() * Game.width, -40), new Vector2(Game.width + 40, Math.random() * Game.height), new Vector2(Math.random() * Game.width, Game.height + 40), new Vector2(-40, Math.random() * Game.height)][s]; EntityFactory.createEnemy(type, pos.x, pos.y); } Game.state.lootTimer--; if (Game.state.lootTimer <= 0) { EntityFactory.createLoot(Math.random() * (Game.width - 100) + 50, Math.random() * (Game.height - 100) + 50, Math.random() > 0.8 ? "LIFE" : (Math.random() > 0.5 ? "GOD" : "HEAL")); Game.state.lootTimer = 1800 + Math.random() * 1800; } }, gameOver: () => { Game.state.isMenu = true; Game.ui.el.classList.add("menu-active"); Game.ui.el.classList.remove("menu-sunken"); } }; static init() { this.pool = new MemoryPool(() => ({ isActive: false, position: new Vector2(0, 0), velocity: new Vector2(0, 0), color: Palette.C2, life: 0, size: 1, type: 'EXPLODE' }), 300); this.systems.audio = new AudioSystem(); this.systems.input = new InputSystem(); this.systems.ai = new AiSystem(); this.systems.physics = new PhysicsSystem(); this.systems.combat = new CombatSystem(); this.systems.rules = new Rules(); this.systems.render = new RenderSystem(); this.loop = { id: null, lastTime: 0, accumulator: 0, step: 1000 / 60, resize: () => { Game.width = document.getElementById("gameCanvas").width = window.innerWidth; Game.height = document.getElementById("gameCanvas").height = window.innerHeight; }, run: (ts) => { if (!Game.loop.lastTime) Game.loop.lastTime = ts; let dt = ts - Game.loop.lastTime; Game.loop.lastTime = ts; if (dt > 200) dt = Game.loop.step; Game.loop.accumulator += dt; while (Game.loop.accumulator >= Game.loop.step) { if (Game.state.stop > 0) Game.state.stop--; else { Game.systems.input.process(); if (!Game.state.isMenu) { Game.state.heat = Math.max(0, Game.state.heat - GameConfig.HEAT.DECAY); Game.ui.update(); } else if (Game.state.isMenu && Game.objectManager.getByTag('player').length === 0 && Game.objectManager.nextId > 0) { const a1 = EntityFactory.createBlueprint('PLAYER_1', Game.width * 0.5, Game.height / 2); a1.components.input.deviceId = 'ai'; a1.addComponent('ai', { behavior: AiBehaviors.AGGRESSIVE, traits: ["SPRINTER"], memory: { damageTaken: 0 }, tick: 0, plan: null }); } Game.director.spawnWave(); Game.systems.ai.process(); Game.systems.physics.process(); Game.systems.combat.process(); Game.objectManager.clean(); Game.visuals.text.forEach((t, i) => { t.position.add(t.velocity); t.life -= 0.02; if (t.life <= 0) Game.visuals.text.splice(i, 1); }); Game.visuals.blood.forEach(b => { b.position.add(b.velocity); b.velocity.mul(0.85); }); for (let i = Game.particles.length - 1; i >= 0; i--) { let p = Game.particles[i]; p.position.add(p.velocity); p.velocity.mul(0.9); p.life -= 0.05; if (p.life <= 0) { Game.pool.free(p); Game.particles.splice(i, 1); } } Game.waves.forEach((s, i) => { s.r += 4; s.alpha -= GameConfig.VISUALS.FLASH_DECAY; if (s.alpha <= 0) Game.waves.splice(i, 1); }); if (Game.objectManager.getByTag('player').length === 0 && !Game.state.isMenu) Game.director.gameOver(); } Game.state.shake = Math.max(0, Game.state.shake * 0.9 - 0.1); Game.state.flash = Math.max(0, Game.state.flash - 0.05); Game.state.aberration = Math.max(0, Game.state.aberration - 0.5); Game.state.partLimit = 0; Game.loop.accumulator -= Game.loop.step; } Game.systems.render.draw(); Game.state.invert = false; Game.loop.id = requestAnimationFrame(Game.loop.run); } }; window.addEventListener("resize", this.loop.resize); this.bus.subscribe('SHAKE', v => { if (this.config.FX.SHAKE) this.state.shake += v; }); this.bus.subscribe('FLASH', v => { if (this.config.FX.FLASH) this.state.flash = v; }); this.bus.subscribe('PART_SPAWN', d => { if (Game.state.partLimit > GameConfig.VISUALS.PARTICLE_LIMIT) return; if (Game.particles.length > GameConfig.VISUALS.PARTICLE_LIMIT) { Game.pool.free(Game.particles.shift()); } Game.state.partLimit++; EntityFactory.spawnParticle(d.x, d.y, d.color, d.speed, d.type); }); this.bus.subscribe('PART_BURST', d => { if (!this.config.FX.BLOOD && !this.config.FX.FLASH) return; for (let i = 0; i < d.count; i++) this.bus.publish('PART_SPAWN', { x: d.x, y: d.y, color: d.color, speed: Math.random() * 10 + 5 }); }); this.bus.subscribe('FIZZLE', d => { for (let i = 0; i < 5; i++) Game.bus.publish('PART_SPAWN', { x: d.x, y: d.y, color: Palette.C4, speed: 0.5, type: 'FIZZLE' }); }); this.loop.resize(); this.director.attract(); Game.loop.id = requestAnimationFrame(this.loop.run); } }; Game.init();
 </script>
 </body>
 </html>
