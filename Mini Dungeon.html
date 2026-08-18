@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neon City</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #000;
+  overflow: hidden;
+  font-family: 'Courier New', Courier, monospace;
+}
+#gameCanvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  image-rendering: pixelated;
+  cursor: crosshair;
+}
+.crt {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+.crt::before {
+  content: " ";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+              linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+  z-index: 10;
+  animation: flicker 0.15s infinite;
+}
+.crt::after {
+  content: " ";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.5) 100%);
+  pointer-events: none;
+  z-index: 11;
+}
+@keyframes flicker {
+  0% { opacity: 0.97; }
+  50% { opacity: 1; }
+  100% { opacity: 0.98; }
+}
+</style>
+<base target="_blank">
+</head>
+<body>
+<div class="crt">
+<canvas id="gameCanvas"></canvas>
+</div>
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const TILE = 24;
+const GW = 80;
+const GH = 60;
+
+const PALETTE = {
+  bg: '#06060a',
+  grid: '#0f0f18',
+  road: '#1e1e28',
+  roadLine: '#3a3a50',
+  roadEdge: '#2a2a38',
+  res: '#00ff88',
+  com: '#00ccff',
+  ind: '#ffaa22',
+  park: '#ff5599',
+  demo: '#ff3333',
+  sphere: '#e8e8ff',
+  ui: '#00ff88',
+  uiDim: 'rgba(0,255,136,0.2)',
+  water: '#112244'
+};
+
+let cam = { x: (GW*TILE)/2 - window.innerWidth/2, y: (GH*TILE)/2 - window.innerHeight/2, tx: 0, ty: 0 };
+let money = 1500;
+let pop = 0;
+let tool = 'road';
+let grid = [];
+let citizens = [];
+let particles = [];
+let floaters = [];
+let mouse = { x: 0, y: 0, tx: 0, ty: 0, down: false };
+let keys = {};
+let tick = 0;
+let secondTimer = 0;
+let dayNight = 0; // 0-1 cycle
+
+const TOOLS = {
+  '1': { id: 'road', name: 'ROAD', cost: 8, color: PALETTE.roadLine, sym: '═' },
+  '2': { id: 'residential', name: 'RES', cost: 100, color: PALETTE.res, sym: '▣' },
+  '3': { id: 'commercial', name: 'COM', cost: 150, color: PALETTE.com, sym: '▣' },
+  '4': { id: 'industrial', name: 'IND', cost: 200, color: PALETTE.ind, sym: '▣' },
+  '5': { id: 'park', name: 'PARK', cost: 50, color: PALETTE.park, sym: '▣' },
+  '6': { id: 'demolish', name: 'DEM', cost: 5, color: PALETTE.demo, sym: '×' }
+};
+
+function getTool(id) {
+  return TOOLS[Object.keys(TOOLS).find(k => TOOLS[k].id === id)];
+}
+
+for(let y=0; y<GH; y++) {
+  grid[y] = [];
+  for(let x=0; x<GW; x++) grid[y][x] = { type: 'empty', age: 0, level: 0 };
+}
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+canvas.addEventListener('mousemove', e => {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+  mouse.tx = Math.floor((e.clientX + cam.x) / TILE);
+  mouse.ty = Math.floor((e.clientY + cam.y) / TILE);
+});
+
+canvas.addEventListener('mousedown', () => { mouse.down = true; build(); });
+canvas.addEventListener('mouseup', () => mouse.down = false);
+canvas.addEventListener('mouseleave', () => mouse.down = false);
+
+window.addEventListener('keydown', e => {
+  if(TOOLS[e.key]) {
+    tool = TOOLS[e.key].id;
+    addFloater(mouse.x, mouse.y - 20, TOOLS[e.key].name, TOOLS[e.key].color);
+  }
+  keys[e.key.toLowerCase()] = true;
+});
+window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+function hasRoadNeighbor(x, y) {
+  const dirs = [[0,-1],[0,1],[-1,0],[1,0]];
+  for(const [dx,dy] of dirs) {
+    const nx=x+dx, ny=y+dy;
+    if(nx>=0 && nx<GW && ny>=0 && ny<GH && grid[ny][nx].type==='road') return true;
+  }
+  return false;
+}
+
+function build() {
+  if(mouse.tx < 0 || mouse.tx >= GW || mouse.ty < 0 || mouse.ty >= GH) return;
+  const cell = grid[mouse.ty][mouse.tx];
+  const t = getTool(tool);
+
+  if(tool === 'demolish') {
+    if(cell.type !== 'empty') {
+      money += Math.floor(t.cost * 0.8);
+      cell.type = 'empty';
+      cell.age = 0;
+      cell.level = 0;
+      spawnParticles(mouse.tx*TILE + TILE/2, mouse.ty*TILE + TILE/2, PALETTE.demo, 12);
+      addFloater(mouse.x, mouse.y, '+REFUND', PALETTE.demo);
+      citizens = citizens.filter(c => Math.floor(c.x/TILE)!==mouse.tx || Math.floor(c.y/TILE)!==mouse.ty);
+    }
+    return;
+  }
+
+  if(cell.type !== 'empty') return;
+  if(money < t.cost) {
+    addFloater(mouse.x, mouse.y, 'NO FUNDS', PALETTE.demo);
+    return;
+  }
+
+  // Buildings need road access
+  if(tool !== 'road' && tool !== 'park' && !hasRoadNeighbor(mouse.tx, mouse.ty)) {
+    addFloater(mouse.x, mouse.y, 'NEEDS ROAD', PALETTE.demo);
+    return;
+  }
+
+  money -= t.cost;
+  cell.type = tool;
+  cell.age = 0;
+  cell.level = 1;
+  spawnParticles(mouse.tx*TILE + TILE/2, mouse.ty*TILE + TILE/2, t.color, 10);
+}
+
+function spawnParticles(wx, wy, color, count) {
+  for(let i=0; i<count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const spd = 1 + Math.random() * 4;
+    particles.push({
+      x: wx, y: wy,
+      vx: Math.cos(angle) * spd,
+      vy: Math.sin(angle) * spd - 2,
+      life: 1, color, size: 1.5 + Math.random() * 2
+    });
+  }
+}
+
+function addFloater(sx, sy, text, color) {
+  floaters.push({ x: sx, y: sy, text, color, life: 1.5, vy: -25 });
+}
+
+// A* pathfinding on road grid
+function findRoadPath(sx, sy, tx, ty) {
+  // Find nearest road to start and target
+  let startRoad = null, endRoad = null;
+  const dirs = [[0,0],[0,-1],[0,1],[-1,0],[1,0]];
+
+  for(const [dx,dy] of dirs) {
+    const nx=sx+dx, ny=sy+dy;
+    if(nx>=0 && nx<GW && ny>=0 && ny<GH && grid[ny][nx].type==='road' && !startRoad) startRoad={x:nx,y:ny};
+  }
+  for(const [dx,dy] of dirs) {
+    const nx=tx+dx, ny=ty+dy;
+    if(nx>=0 && nx<GW && ny>=0 && ny<GH && grid[ny][nx].type==='road' && !endRoad) endRoad={x:nx,y:ny};
+  }
+
+  if(!startRoad || !endRoad) return null;
+
+  const open = [];
+  const closed = new Set();
+  const cameFrom = new Map();
+  const gScore = new Map();
+  const fScore = new Map();
+
+  const key = (x,y) => x + ',' + y;
+
+  open.push(startRoad);
+  gScore.set(key(startRoad.x, startRoad.y), 0);
+  fScore.set(key(startRoad.x, startRoad.y), Math.abs(startRoad.x - endRoad.x) + Math.abs(startRoad.y - endRoad.y));
+
+  while(open.length > 0) {
+    // Get lowest fScore
+    let bestIdx = 0;
+    for(let i=1; i<open.length; i++) {
+      if(fScore.get(key(open[i].x, open[i].y)) < fScore.get(key(open[bestIdx].x, open[bestIdx].y))) bestIdx = i;
+    }
+    const current = open[bestIdx];
+    open.splice(bestIdx, 1);
+
+    if(current.x === endRoad.x && current.y === endRoad.y) {
+      // Reconstruct path
+      const path = [];
+      let cur = current;
+      while(cur) {
+        path.unshift({x: cur.x, y: cur.y});
+        cur = cameFrom.get(key(cur.x, cur.y));
+      }
+      // Add building entrances
+      path.unshift({x: sx, y: sy});
+      path.push({x: tx, y: ty});
+      return path;
+    }
+
+    closed.add(key(current.x, current.y));
+
+    const neighbors = [[0,-1],[0,1],[-1,0],[1,0]];
+    for(const [dx,dy] of neighbors) {
+      const nx = current.x + dx, ny = current.y + dy;
+      if(nx < 0 || nx >= GW || ny < 0 || ny >= GH) continue;
+      if(grid[ny][nx].type !== 'road') continue;
+
+      const nKey = key(nx, ny);
+      if(closed.has(nKey)) continue;
+
+      const tentativeG = gScore.get(key(current.x, current.y)) + 1;
+
+      if(!open.find(n => n.x===nx && n.y===ny)) {
+        open.push({x: nx, y: ny});
+      } else if(tentativeG >= (gScore.get(nKey) || Infinity)) {
+        continue;
+      }
+
+      cameFrom.set(nKey, current);
+      gScore.set(nKey, tentativeG);
+      fScore.set(nKey, tentativeG + Math.abs(nx - endRoad.x) + Math.abs(ny - endRoad.y));
+    }
+  }
+
+  return null;
+}
+
+function spawnCitizen() {
+  const homes = [];
+  for(let y=0; y<GH; y++) for(let x=0; x<GW; x++) {
+    if(grid[y][x].type === 'residential' && hasRoadNeighbor(x,y)) homes.push({x,y});
+  }
+  if(!homes.length) return;
+  const h = homes[Math.random()*homes.length|0];
+  citizens.push({
+    x: h.x*TILE + TILE/2, y: h.y*TILE + TILE/2,
+    home: {x:h.x, y:h.y},
+    target: null,
+    path: null,
+    pathIdx: 0,
+    color: PALETTE.sphere,
+    trail: [],
+    state: 'idle',
+    timer: 0,
+    speed: 35 + Math.random() * 15
+  });
+  pop++;
+}
+
+function findTargetType(type) {
+  const arr = [];
+  for(let y=0; y<GH; y++) for(let x=0; x<GW; x++) {
+    if(grid[y][x].type === type && hasRoadNeighbor(x,y)) arr.push({x,y});
+  }
+  return arr.length ? arr[Math.random()*arr.length|0] : null;
+}
+
+function update(dt) {
+  tick += dt;
+  secondTimer += dt;
+  dayNight = (dayNight + dt * 0.02) % 1;
+
+  // Smooth camera
+  const targetCamX = cam.tx;
+  const targetCamY = cam.ty;
+  cam.x += (targetCamX - cam.x) * 8 * dt;
+  cam.y += (targetCamY - cam.y) * 8 * dt;
+
+  // Camera pan
+  const spd = 400 * dt;
+  if(keys['w'] || keys['arrowup']) cam.ty -= spd;
+  if(keys['s'] || keys['arrowdown']) cam.ty += spd;
+  if(keys['a'] || keys['arrowleft']) cam.tx -= spd;
+  if(keys['d'] || keys['arrowright']) cam.tx += spd;
+  cam.tx = Math.max(0, Math.min(cam.tx, GW*TILE - canvas.width));
+  cam.ty = Math.max(0, Math.min(cam.ty, GH*TILE - canvas.height));
+
+  // Economy every second
+  if(secondTimer >= 1) {
+    secondTimer -= 1;
+    let income = 0;
+    let resCount = 0;
+    for(let y=0; y<GH; y++) {
+      for(let x=0; x<GW; x++) {
+        const c = grid[y][x];
+        if(c.type === 'residential' && hasRoadNeighbor(x,y)) { income += 2; resCount++; }
+        if(c.type === 'commercial' && hasRoadNeighbor(x,y)) income += 5;
+        if(c.type === 'industrial' && hasRoadNeighbor(x,y)) income += 8;
+        if(c.type === 'park') income += 1;
+        c.age++;
+        if(c.age > 40 && c.level < 3 && c.type !== 'road' && c.type !== 'park' && c.type !== 'empty') {
+          if(Math.random() < 0.04) c.level++;
+        }
+      }
+    }
+    money += income;
+    if(resCount > pop && Math.random() < 0.6) spawnCitizen();
+  }
+
+  // Citizens AI
+  citizens.forEach(c => {
+    c.timer += dt;
+
+    if(c.state === 'idle') {
+      if(!c.target) {
+        const targetType = Math.random() < 0.5 ? 'commercial' : 'industrial';
+        c.target = findTargetType(targetType);
+      }
+      if(c.target) {
+        const path = findRoadPath(c.home.x, c.home.y, c.target.x, c.target.y);
+        if(path && path.length > 0) {
+          c.path = path;
+          c.pathIdx = 0;
+          c.state = 'moving';
+        } else {
+          c.target = null; // No path, try again later
+        }
+      }
+    }
+    else if(c.state === 'moving') {
+      if(!c.path || c.pathIdx >= c.path.length) {
+        // Arrived at target
+        money += 4;
+        addFloater(c.x - cam.x, c.y - cam.y, '+4', '#00ff88');
+        c.state = 'returning';
+        const path = findRoadPath(c.target.x, c.target.y, c.home.x, c.home.y);
+        if(path && path.length > 0) {
+          c.path = path;
+          c.pathIdx = 0;
+        } else {
+          c.state = 'idle';
+          c.target = null;
+        }
+        return;
+      }
+
+      const node = c.path[c.pathIdx];
+      const tx = node.x * TILE + TILE/2;
+      const ty = node.y * TILE + TILE/2;
+      const dx = tx - c.x;
+      const dy = ty - c.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+
+      if(dist < 2) {
+        c.pathIdx++;
+      } else {
+        c.x += (dx/dist) * c.speed * dt;
+        c.y += (dy/dist) * c.speed * dt;
+      }
+    }
+    else if(c.state === 'returning') {
+      if(!c.path || c.pathIdx >= c.path.length) {
+        c.state = 'idle';
+        c.target = null;
+        c.path = null;
+        return;
+      }
+
+      const node = c.path[c.pathIdx];
+      const tx = node.x * TILE + TILE/2;
+      const ty = node.y * TILE + TILE/2;
+      const dx = tx - c.x;
+      const dy = ty - c.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+
+      if(dist < 2) {
+        c.pathIdx++;
+      } else {
+        c.x += (dx/dist) * (c.speed * 0.8) * dt;
+        c.y += (dy/dist) * (c.speed * 0.8) * dt;
+      }
+    }
+
+    // Trail
+    c.trail.push({x:c.x, y:c.y});
+    if(c.trail.length > 14) c.trail.shift();
+  });
+
+  // Particles
+  particles = particles.filter(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.12;
+    p.vx *= 0.98;
+    p.life -= dt * 2;
+    return p.life > 0;
+  });
+
+  // Floaters
+  floaters = floaters.filter(f => {
+    f.y += f.vy * dt;
+    f.life -= dt;
+    return f.life > 0;
+  });
+
+  if(mouse.down) build();
+}
+
+function drawRoad(x, y, px, py) {
+  ctx.fillStyle = PALETTE.road;
+  ctx.fillRect(px, py, TILE, TILE);
+
+  const n = y>0 && grid[y-1][x].type === 'road';
+  const s = y<GH-1 && grid[y+1][x].type === 'road';
+  const w = x>0 && grid[y][x-1].type === 'road';
+  const e = x<GW-1 && grid[y][x+1].type === 'road';
+
+  const cx = px + TILE/2;
+  const cy = py + TILE/2;
+  const hw = TILE/2 - 1;
+
+  // Road edges
+  ctx.fillStyle = PALETTE.roadEdge;
+  if(!n) ctx.fillRect(px+1, py, TILE-2, 2);
+  if(!s) ctx.fillRect(px+1, py+TILE-2, TILE-2, 2);
+  if(!w) ctx.fillRect(px, py+1, 2, TILE-2);
+  if(!e) ctx.fillRect(px+TILE-2, py+1, 2, TILE-2);
+
+  // Center line
+  ctx.fillStyle = PALETTE.roadLine;
+  ctx.globalAlpha = 0.6;
+  if(n || s || w || e) {
+    ctx.fillRect(cx-1.5, cy-1.5, 3, 3);
+    if(n) ctx.fillRect(cx-1.5, py, 3, hw);
+    if(s) ctx.fillRect(cx-1.5, cy, 3, hw);
+    if(w) ctx.fillRect(px, cy-1.5, hw, 3);
+    if(e) ctx.fillRect(cx, cy-1.5, hw, 3);
+  } else {
+    ctx.fillRect(cx-3, cy-3, 6, 6);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawBuilding(x, y, px, py, type, level) {
+  const col = type === 'residential' ? PALETTE.res :
+             type === 'commercial' ? PALETTE.com :
+             type === 'industrial' ? PALETTE.ind : PALETTE.park;
+
+  const size = TILE - 2;
+  const inset = (TILE - size) / 2;
+  const shrink = level * 2;
+
+  // Glow
+  ctx.shadowColor = col;
+  ctx.shadowBlur = 10 + level * 3;
+  ctx.fillStyle = col;
+  ctx.fillRect(px + inset + shrink, py + inset + shrink, size - shrink*2, size - shrink*2);
+  ctx.shadowBlur = 0;
+
+  // Inner
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(px + inset + shrink + 3, py + inset + shrink + 3, size - shrink*2 - 6, size - shrink*2 - 6);
+
+  // Pulsing sphere
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  const pulse = 2.5 + Math.sin(tick * 3 + x * 0.7 + y * 0.7) * 1.2;
+  ctx.arc(px + TILE/2, py + TILE/2, pulse, 0, Math.PI*2);
+  ctx.fill();
+
+  // Level dots
+  if(level > 1) {
+    ctx.fillStyle = col;
+    for(let i=0; i<level-1; i++) {
+      ctx.beginPath();
+      ctx.arc(px + 5 + i*5, py + 5, 1.5, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  // Window lights (commercial/industrial)
+  if((type === 'commercial' || type === 'industrial') && level >= 2) {
+    ctx.fillStyle = 'rgba(255,255,200,0.3)';
+    ctx.fillRect(px + 6, py + 6, 3, 3);
+    ctx.fillRect(px + TILE - 9, py + 6, 3, 3);
+  }
+}
+
+function drawSphere(c, screenX, screenY) {
+  // Trail
+  c.trail.forEach((t, i) => {
+    const sx = t.x - cam.x;
+    const sy = t.y - cam.y;
+    ctx.globalAlpha = (i / c.trail.length) * 0.2;
+    ctx.fillStyle = c.color;
+    ctx.beginPath();
+    ctx.arc(sx, sy, 2.5, 0, Math.PI*2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  // Outer glow
+  ctx.shadowColor = c.color;
+  ctx.shadowBlur = 14;
+  ctx.fillStyle = c.color;
+  ctx.beginPath();
+  ctx.arc(screenX, screenY, 4, 0, Math.PI*2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Core
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(screenX, screenY, 2.2, 0, Math.PI*2);
+  ctx.fill();
+
+  // Highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.beginPath();
+  ctx.arc(screenX - 1.2, screenY - 1.2, 1, 0, Math.PI*2);
+  ctx.fill();
+}
+
+function draw() {
+  ctx.fillStyle = PALETTE.bg;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.save();
+  ctx.translate(-(cam.x|0), -(cam.y|0));
+
+  const sx = Math.max(0, (cam.x/TILE)|0);
+  const sy = Math.max(0, (cam.y/TILE)|0);
+  const ex = Math.min(GW, sx + (canvas.width/TILE|0) + 3);
+  const ey = Math.min(GH, sy + (canvas.height/TILE|0) + 3);
+
+  // Grid dots
+  ctx.fillStyle = PALETTE.grid;
+  for(let y=sy; y<ey; y++) {
+    for(let x=sx; x<ex; x++) {
+      ctx.fillRect(x*TILE + TILE/2 - 0.5, y*TILE + TILE/2 - 0.5, 1, 1);
+    }
+  }
+
+  // Tiles
+  for(let y=sy; y<ey; y++) {
+    for(let x=sx; x<ex; x++) {
+      const cell = grid[y][x];
+      const px = x*TILE, py = y*TILE;
+
+      if(cell.type === 'road') {
+        drawRoad(x, y, px, py);
+      } else if(cell.type !== 'empty') {
+        drawBuilding(x, y, px, py, cell.type, cell.level);
+      }
+    }
+  }
+
+  // Citizens (world space)
+  citizens.forEach(c => {
+    drawSphere(c, c.x, c.y);
+  });
+
+  // Particles (world space)
+  particles.forEach(p => {
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  ctx.restore();
+
+  // Ghost cursor
+  if(mouse.tx >= 0 && mouse.tx < GW && mouse.ty >= 0 && mouse.ty < GH) {
+    const gx = mouse.tx*TILE - cam.x;
+    const gy = mouse.ty*TILE - cam.y;
+    const t = getTool(tool);
+
+    ctx.globalAlpha = 0.5;
+    if(tool === 'demolish') {
+      ctx.strokeStyle = PALETTE.demo;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(gx+2, gy+2, TILE-4, TILE-4);
+      ctx.setLineDash([]);
+      ctx.fillStyle = PALETTE.demo;
+      ctx.fillRect(gx+TILE/2-5, gy+TILE/2-1, 10, 2);
+      ctx.fillRect(gx+TILE/2-1, gy+TILE/2-5, 2, 10);
+    } else {
+      ctx.fillStyle = t.color;
+      ctx.shadowColor = t.color;
+      ctx.shadowBlur = 20;
+      ctx.fillRect(gx+2, gy+2, TILE-4, TILE-4);
+      ctx.shadowBlur = 0;
+
+      // Road requirement indicator
+      if(tool !== 'road' && tool !== 'park' && !hasRoadNeighbor(mouse.tx, mouse.ty)) {
+        ctx.fillStyle = PALETTE.demo;
+        ctx.globalAlpha = 0.7;
+        ctx.font = '9px monospace';
+        ctx.fillText('NEEDS ROAD', gx, gy - 4);
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Diegetic UI: City Link Monitor
+  const uiX = 15, uiY = 15, uiW = 210, uiH = 110;
+  ctx.fillStyle = 'rgba(6,6,10,0.88)';
+  ctx.strokeStyle = PALETTE.uiDim;
+  ctx.lineWidth = 1;
+  ctx.fillRect(uiX, uiY, uiW, uiH);
+  ctx.strokeRect(uiX, uiY, uiW, uiH);
+
+  // Corner brackets
+  ctx.strokeStyle = PALETTE.ui;
+  ctx.lineWidth = 2;
+  const b = 6;
+  ctx.beginPath();
+  ctx.moveTo(uiX, uiY+b); ctx.lineTo(uiX, uiY); ctx.lineTo(uiX+b, uiY);
+  ctx.moveTo(uiX+uiW, uiY+b); ctx.lineTo(uiX+uiW, uiY); ctx.lineTo(uiX+uiW-b, uiY);
+  ctx.moveTo(uiX, uiY+uiH-b); ctx.lineTo(uiX, uiY+uiH); ctx.lineTo(uiX+b, uiY+uiH);
+  ctx.moveTo(uiX+uiW, uiY+uiH-b); ctx.lineTo(uiX+uiW, uiY+uiH); ctx.lineTo(uiX+uiW-b, uiY+uiH);
+  ctx.stroke();
+
+  // Scanline
+  ctx.fillStyle = 'rgba(0,255,136,0.04)';
+  ctx.fillRect(uiX, uiY + 32, uiW, 2);
+
+  ctx.fillStyle = PALETTE.ui;
+  ctx.shadowColor = PALETTE.ui;
+  ctx.shadowBlur = 6;
+  ctx.font = 'bold 11px monospace';
+  ctx.fillText('CITY LINK // v0.9', uiX + 10, uiY + 22);
+  ctx.font = '12px monospace';
+  ctx.fillText('◉ ' + money + ' CR', uiX + 10, uiY + 50);
+  ctx.fillText('● ' + pop + ' UNITS', uiX + 10, uiY + 72);
+  ctx.fillText('▣ ' + tool.toUpperCase(), uiX + 10, uiY + 94);
+  ctx.shadowBlur = 0;
+
+  // Screen-space floaters
+  floaters.forEach(f => {
+    ctx.globalAlpha = Math.max(0, f.life);
+    ctx.fillStyle = f.color;
+    ctx.shadowColor = f.color;
+    ctx.shadowBlur = 4;
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText(f.text, f.x, f.y);
+    ctx.shadowBlur = 0;
+  });
+  ctx.globalAlpha = 1;
+
+  // Bottom help bar
+  ctx.fillStyle = 'rgba(6,6,10,0.75)';
+  ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
+  ctx.fillStyle = PALETTE.uiDim;
+  ctx.font = '10px monospace';
+  const help = '[1] ROAD  [2] RES  [3] COM  [4] IND  [5] PARK  [6] DEMOLISH     WASD: PAN  |  CLICK: PLACE  |  HOLD: PAINT';
+  ctx.fillText(help, canvas.width/2 - ctx.measureText(help).width/2, canvas.height - 10);
+}
+
+let last = performance.now();
+function loop() {
+  const now = performance.now();
+  const dt = Math.min((now - last)/1000, 0.1);
+  last = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>

@@ -70,3 +70,4 @@ Berserker:pure respect, he won't back down no matter what, he mainly charges eve
 Also, standardize the naming, don't use names that no one will understand, be more "systemic" and uniform....with prefix, suffix, don't abreviate, etc...basically try to standardize the naming.
 Also please fix the code to have no "magic numbers", i want to have everything configurable to be in the config zone.
 ALso please get rid of the small and verbose comments  
+

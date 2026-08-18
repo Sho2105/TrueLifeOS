@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cosmic Catalog</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;width:100vw;height:100vh;font-family:'Courier New',monospace}
+canvas{display:block;position:fixed;top:0;left:0;width:100vw;height:100vh;image-rendering:pixelated;image-rendering:crisp-edges}
+#hud{position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:10}
+#seed-label{position:fixed;top:16px;left:16px;font-size:10px;letter-spacing:2px;color:#fff;opacity:.6;text-transform:uppercase}
+#stats{position:fixed;top:50%;right:20px;transform:translateY(-50%);width:210px;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.15);padding:14px 16px;pointer-events:none}
+#stats .pt{font-size:9px;letter-spacing:4px;color:#fff;opacity:.45;margin-bottom:12px;text-transform:uppercase}
+#stats .pc{font-size:13px;letter-spacing:2px;color:#fff;margin-bottom:8px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:10px}
+.sr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+.sl{font-size:8px;letter-spacing:1.5px;color:rgba(255,255,255,.4);text-transform:uppercase}
+.sv{font-size:10px;color:rgba(255,255,255,.85);letter-spacing:.5px}
+.ss{margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.07)}
+.hazard{color:#ff6b35}.safe{color:#7fffb0}.neutral{color:#fff89a}
+#eb{font-size:8px;letter-spacing:3px;color:#ff9f43;border:1px solid rgba(255,159,67,.5);padding:2px 8px;margin-bottom:10px;text-transform:uppercase;display:none;width:fit-content}
+#scanlines{position:fixed;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);pointer-events:none;z-index:5}
+#rand{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:20;padding:9px 32px;font-size:9px;font-family:'Courier New',monospace;cursor:pointer;background:rgba(0,0,0,.8);color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:4px;transition:all .2s;pointer-events:all}
+#rand:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.7);color:#fff}
+#flash{position:fixed;top:0;left:0;width:100%;height:100%;background:#fff;opacity:0;pointer-events:none;z-index:30;transition:opacity .08s}
+@media(max-width:600px){#stats{right:8px;width:170px;padding:10px 12px}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="scanlines"></div>
+<div id="hud">
+  <div id="seed-label">COSMIC CATALOG · EXOPLANET DATABASE</div>
+  <div id="stats">
+    <div class="pt">Observational Data</div>
+    <div id="eb">EXOTIC VARIANT</div>
+    <div class="pc" id="s-class">—</div>
+    <div class="sr"><span class="sl">Seed</span><span class="sv" id="s-seed">—</span></div>
+    <div class="ss">
+      <div class="sr"><span class="sl">Radius</span><span class="sv" id="s-radius">—</span></div>
+      <div class="sr"><span class="sl">Mass</span><span class="sv" id="s-mass">—</span></div>
+      <div class="sr"><span class="sl">Gravity</span><span class="sv" id="s-gravity">—</span></div>
+      <div class="sr"><span class="sl">Escape vel.</span><span class="sv" id="s-escape">—</span></div>
+    </div>
+    <div class="ss">
+      <div class="sr"><span class="sl">Surface temp</span><span class="sv" id="s-temp">—</span></div>
+      <div class="sr"><span class="sl">Atm. pressure</span><span class="sv" id="s-pressure">—</span></div>
+      <div class="sr"><span class="sl">Atm. comp.</span><span class="sv" id="s-atm">—</span></div>
+      <div class="sr"><span class="sl">Wind speed</span><span class="sv" id="s-wind">—</span></div>
+    </div>
+    <div class="ss">
+      <div class="sr"><span class="sl">Orbital period</span><span class="sv" id="s-orbit">—</span></div>
+      <div class="sr"><span class="sl">Day length</span><span class="sv" id="s-day">—</span></div>
+      <div class="sr"><span class="sl">Axial tilt</span><span class="sv" id="s-tilt">—</span></div>
+      <div class="sr"><span class="sl">Moons</span><span class="sv" id="s-moons">—</span></div>
+      <div class="sr"><span class="sl">Rings</span><span class="sv" id="s-rings">—</span></div>
+    </div>
+    <div class="ss">
+      <div class="sr"><span class="sl">Magnetic field</span><span class="sv" id="s-mag">—</span></div>
+      <div class="sr"><span class="sl">Radiation</span><span class="sv" id="s-rad">—</span></div>
+      <div class="sr"><span class="sl">Habitability</span><span class="sv" id="s-hab">—</span></div>
+    </div>
+    <div class="ss">
+      <div class="sr"><span class="sl">Age</span><span class="sv" id="s-age">—</span></div>
+      <div class="sr"><span class="sl">Star type</span><span class="sv" id="s-star">—</span></div>
+      <div class="sr"><span class="sl">Distance</span><span class="sv" id="s-dist">—</span></div>
+    </div>
+  </div>
+</div>
+<div id="flash"></div>
+<button id="rand">[ Randomize ]</button>
+
+<script>
+const M=Math,PI=M.PI,fl=M.floor,sq=M.sqrt,rnd=M.round,ABS=M.abs,MIN=M.min,MAX=M.max,SIN=M.sin,COS=M.cos,POW=M.pow;
+
+let _s=0,_rng=M.random;
+const mulberry=(a)=>()=>{let t=a+=0x6D2B79F5;t=M.imul(t^t>>>15,t|1);t^=t+M.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296};
+const setSeed=(s)=>{_s=s>>>0;_rng=mulberry(_s)};
+const r01=()=>_rng();
+const ri=(a,b)=>a+fl(r01()*(b-a+1));
+const rf=(a,b)=>a+r01()*(b-a);
+const pick=(a)=>a[fl(r01()*a.length)];
+
+const EXOTIC_CHANCE=0.05;
+
+const BAYER=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+const bayer=(x,y)=>BAYER[y&3][x&3]/16;
+
+function hsl(h,s,l){
+  s/=100;l/=100;
+  const k=n=>(n+h/30)%12,a=s*MIN(l,1-l),
+    f=n=>{const v=l-a*MAX(-1,MIN(k(n)-3,MIN(9-k(n),1)));return rnd(v*255).toString(16).padStart(2,'0')};
+  return`#${f(0)}${f(8)}${f(4)}`
+}
+
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+ctx.imageSmoothingEnabled=false;
+const W=()=>canvas.width,H=()=>canvas.height,CX=()=>W()>>1,CY=()=>H()>>1;
+const resize=()=>{canvas.width=innerWidth;canvas.height=innerHeight};
+window.addEventListener('resize',()=>{resize();scene&&scene.init()});
+resize();
+
+let PAL=['#000','#333','#888','#fff'];
+
+function sLit(nx,ny,nz,sAz,sEl){
+  const lx=COS(sEl)*COS(sAz),ly=COS(sEl)*SIN(sAz),lz=SIN(sEl);
+  const diff=MAX(0,nx*lx+ny*ly+nz*lz);
+  const amb=0.08;
+  return MIN(1,diff+amb);
+}
+
+function litIdx(lit,sx,sy,bias=0){
+  const q=lit*2.8+bias;
+  const f=fl(q),fr=q-f;
+  return MAX(1,MIN(3,1+(fr>bayer(sx,sy)?f+1:f)));
+}
+
+function renderSphere(r,px,py,sAz,sEl,surfFn,atmFn,lp=2.2){
+  const r2=r*r;
+  for(let dy=-r;dy<=r;dy++){
+    const sy=py+dy;if(sy<0||sy>=H())continue;
+    const hw=fl(sq(MAX(0,r2-dy*dy)));
+    for(let dx=-hw;dx<=hw;dx++){
+      const sx=px+dx;if(sx<0||sx>=W())continue;
+      const dz=sq(MAX(0,r2-dx*dx-dy*dy));
+      const nx=dx/r,ny=dy/r,nz=dz/r;
+      const lit=sLit(nx,ny,nz,sAz,sEl);
+      const u=(M.atan2(dx,dz)/PI+1)/2;
+      const v=(M.asin(MAX(-1,MIN(1,-ny)))/PI)+0.5;
+      let idx=surfFn(nx,ny,nz,u,v,sx,sy,lit);
+      if(atmFn)idx=atmFn(idx,nx,ny,nz,lit,sx,sy);
+      ctx.fillStyle=PAL[MAX(0,MIN(3,idx))];
+      ctx.fillRect(sx,sy,1,1);
+    }
+  }
+  if(atmFn){
+    const rim=MAX(2,fl(r*.055)),ro=r+rim;
+    for(let dy=-ro;dy<=ro;dy++){
+      const sy=py+dy;if(sy<0||sy>=H())continue;
+      const wO=sq(MAX(0,ro*ro-dy*dy));
+      for(let dx=fl(-wO);dx<=fl(wO);dx++){
+        const d=sq(dx*dx+dy*dy);if(d<=r||d>ro)continue;
+        const sx=px+dx;if(sx<0||sx>=W())continue;
+        const t=(d-r)/rim;
+        const nx2=dx/ro,ny2=dy/ro;
+        const gL=sLit(nx2,ny2,sq(MAX(0,1-nx2*nx2-ny2*ny2)),sAz,sEl);
+        if(bayer(sx,sy)<(1-t*t*1.5)*(0.3+gL*.7)){ctx.fillStyle=PAL[3];ctx.fillRect(sx,sy,1,1)}
+      }
+    }
+  }
+}
+
+const Noise={
+  white(w,h){const n=[];for(let x=0;x<w;x++){n[x]=[];for(let y=0;y<h;y++)n[x][y]=r01()}return n},
+  smooth(b,oct){const w=b.length,h=b[0].length,s=[],p=1<<oct,f=1/p;
+    for(let x=0;x<w;x++){s[x]=[];const x0=fl(x/p)*p,x1=(x0+p)%w,hb=(x-x0)*f;
+      for(let y=0;y<h;y++){const y0=fl(y/p)*p,y1=(y0+p)%h,vb=(y-y0)*f,
+        t=b[x0][y0]*(1-hb)+b[x1][y0]*hb,bt=b[x0][y1]*(1-hb)+b[x1][y1]*hb;
+        s[x][y]=t*(1-vb)+bt*vb}}return s},
+  perlin(b,oct){const w=b.length,h=b[0].length,sm=[];
+    for(let i=0;i<oct;i++)sm[i]=this.smooth(b,i);
+    const o=Array.from({length:w},()=>new Float32Array(h));
+    let amp=1,tot=0,p=0.5;
+    for(let k=oct-1;k>=0;k--){amp*=p;tot+=amp;for(let x=0;x<w;x++)for(let y=0;y<h;y++)o[x][y]+=sm[k][x][y]*amp}
+    for(let x=0;x<w;x++)for(let y=0;y<h;y++)o[x][y]/=tot;return o}
+};
+
+function makeNoise(ms=64,oct=6){if(ms%2!==0)ms++;const m=Noise.perlin(Noise.white(ms,ms),oct);return{map:m,ms}}
+function sampleN({map,ms},u,v,off=0){
+  const x=((fl(u*ms)+fl(off))%ms+ms)%ms,y=MAX(0,MIN(ms-1,fl(v*ms)));
+  return map[x][y];
+}
+
+function makeRocky(cfg){
+  const nm=makeNoise(64,cfg.oct||6);
+  const nm2=cfg.dual?makeNoise(64,4):null;
+  const craters=Array.from({length:cfg.craters||0},()=>({u:r01(),v:r01(),r:.025+r01()*.1,d:.3+r01()*.5}));
+  const scarps=Array.from({length:cfg.scarps||0},()=>({u:r01(),v:r01(),l:.1+r01()*.2,a:r01()*PI}));
+  const lights=[];
+  if(cfg.lights){const{map,ms}=nm;for(let x=0;x<ms;x++)for(let y=0;y<ms;y++)if(map[x][y]>cfg.sea&&map[x][y]<cfg.sea+.05&&r01()<.06)lights.push([x/ms,y/ms])}
+  let rot=0;
+  const rd=r01()>.5?1:-1, rs=cfg.rotSpeed||rf(.004,.012);
+  return{
+    update(dt){rot=(rot+rs*dt*60)%64},
+    render(r,px,py,sAz,sEl){
+      renderSphere(r,px,py,sAz,sEl,(nx,ny,nz,u,v,sx,sy,lit)=>{
+        let val=sampleN(nm,u,v,rot*rd);
+        if(nm2)val=val*.7+sampleN(nm2,u,v,rot*rd*.6)*.3;
+        for(const c of craters){const du=u-c.u,dv=v-c.v,d=sq(du*du+dv*dv);if(d<c.r){const t=d/c.r;val=val*(1-c.d*(1-t*(2-t)))}}
+        for(const s of scarps){const du=u-s.u,dv=v-s.v,proj=du*COS(s.a)+dv*SIN(s.a),perp=ABS(-du*SIN(s.a)+dv*COS(s.a));if(proj>0&&proj<s.l&&perp<.005)val*=.68}
+        const lat=ABS(ny);
+        let mat=val<cfg.sea?0:val<(cfg.land||cfg.sea+.2)?1:2;
+        if(cfg.iceLat&&lat>cfg.iceLat)mat=2;
+        if(cfg.cracks){const ms2=64,vx=nm.map[((fl(u*ms2)+fl(rot)+4)%ms2+ms2)%ms2][MAX(0,MIN(ms2-1,fl(v*ms2)))];if(vx>cfg.cracks&&vx<cfg.cracks+.06)mat=0}
+        const idx=litIdx(lit,sx,sy,mat);
+        if(cfg.lights&&mat===1&&lit<.15){for(const[lu,lv]of lights)if(ABS(u-lu)<.04&&ABS(v-lv)<.04&&bayer(sx,sy)>.4)return 3}
+        return idx;
+      },cfg.atm?((idx)=>idx):null);
+    }
+  };
+}
+
+function makeBanded(cfg){
+  const nB=ri(cfg.bands[0],cfg.bands[1]);
+  const bands=Array.from({length:nB},()=>({lat:-1+r01()*2,hw:cfg.bw*(0.5+r01()*1.2),col:1+fl(r01()*2),warp:rf(.02,.08)}));
+  const storms=cfg.storms?Array.from({length:1+fl(r01()*3)},()=>({lat:rf(-.5,.5),phase:r01()*PI*2,wu:rf(.12,.32),hu:rf(.06,.14),dir:r01()>.5?1:-1})):[];
+  const aurPh={v:r01()*PI*2};
+  let rot=0;const rs=cfg.rotSpeed||rf(.008,.02),lp=cfg.limbPow||1.8;
+  return{
+    update(dt){rot=(rot+rs*dt*60)%(PI*2);storms.forEach(s=>s.phase+=dt*(.04+r01()*.04));aurPh.v+=dt*.45},
+    render(r,px,py,sAz,sEl){
+      renderSphere(r,px,py,sAz,sEl,(nx,ny,nz,u,v,sx,sy,lit)=>{
+        const lat=ny;let mat=1,edgeT=1;
+        for(const b of bands){const wv=lat+SIN(u*8+rot)*b.warp,d=ABS(wv-b.lat);if(d<b.hw){mat=b.col;edgeT=0;break}if(d<b.hw+.04)edgeT=MIN(edgeT,(d-b.hw)/.04)}
+        if(edgeT>0&&edgeT<1&&bayer(sx,sy)<edgeT)mat=1;
+        for(const s of storms){const dx=(u-.5)-SIN(s.phase)*.22*s.dir,dy=lat-s.lat;if(dx*dx/(s.wu*s.wu)+dy*dy/(s.hu*s.hu)<1)mat=2}
+        let idx=litIdx(lit,sx,sy,mat-1);
+        if(ABS(lat)>.82&&SIN(aurPh.v+sx*.16)>.55&&bayer(sx,sy)>.48)idx=3;
+        return idx;
+      },null,lp);
+    }
+  };
+}
+
+/*
+  ╔══════════════════════════════════════════════════╗
+  ║  PLANET REGISTRY — add a planet:                ║
+  ║   label, size[], moons[], rings[],              ║
+  ║   palette(), render(), stats()                  ║
+  ║  stats() keys: [min,max] or ['a','b'] for picks ║
+  ║  exotic:{key:[min,max]} overrides at 5% chance  ║
+  ╚══════════════════════════════════════════════════╝
+*/
+const DEFS={
+  terrestrial:{
+    label:'TERRESTRIAL',
+    size:[.08,.16],exotic:{size:[.17,.25]},
+    moons:[0,3],rings:[0,1],
+    palette(){
+      const hRanges=[[190,250],[140,180],[160,220]];
+      const[lo,hi]=pick(hRanges);
+      const h=rf(lo,hi),s=rf(35,65);
+      return['#000',hsl(h,s,10),hsl(h,s,32),hsl(h,s,68)];
+    },
+    render(){return makeRocky({sea:rf(.3,.45),land:rf(.5,.62),iceLat:rf(.78,.88),lights:true,craters:ri(1,4),dual:true,atm:true})},
+    stats(){return{
+      radius:[0.6,1.4],
+      mass:[0.4,1.8],
+      tempK:[230,360],
+      pressAtm:[0.1,3.0],
+      windKph:[0,300],
+      orbDays:[200,900],
+      rotHours:[10,120],
+      axialTilt:[0,45],
+      magG:[0.1,2.0],
+      atm:['N₂/O₂','N₂/CO₂','N₂/Ar','CO₂/N₂'],
+      radiation:'LOW',
+      ageGyr:[0.5,10],
+      exotic:{radius:[1.4,3.0],tempK:[360,800],axialTilt:[45,180]}
+    }}
+  },
+  superearth:{
+    label:'SUPER-EARTH',
+    size:[.12,.20],exotic:{size:[.20,.30]},
+    moons:[0,4],rings:[0,2],
+    palette(){
+      const specs=[[170,60],[10,30],[230,30]];
+      const[hb,hr]=pick(specs);
+      const h=rf(hb,hb+hr),s=rf(40,65);
+      return['#000',hsl(h,s,10),hsl(h,s,30),hsl(h,s,66)];
+    },
+    render(){return makeRocky({sea:rf(.35,.48),land:rf(.55,.65),iceLat:rf(.76,.86),lights:true,craters:ri(1,3),dual:true,atm:true})},
+    stats(){return{
+      radius:[1.4,2.8],
+      mass:[2,10],
+      tempK:[240,400],
+      pressAtm:[1,50],
+      windKph:[0,500],
+      orbDays:[100,800],
+      rotHours:[8,200],
+      axialTilt:[0,50],
+      magG:[0.5,8],
+      atm:['N₂/O₂','H₂/He','CO₂/N₂','H₂O/CO₂'],
+      radiation:'LOW',
+      ageGyr:[0.3,10],
+      exotic:{radius:[2.8,5.0],mass:[10,40],pressAtm:[50,500]}
+    }}
+  },
+  ocean:{
+    label:'OCEAN WORLD',
+    size:[.08,.15],exotic:{size:[.15,.22]},
+    moons:[0,2],rings:[0,1],
+    palette(){
+      const h=rf(195,225),s=rf(55,80);
+      return['#000',hsl(h,s,8),hsl(h,s,28),hsl(h,s,70)];
+    },
+    render(){
+      const nm=makeNoise();
+      const storms=Array.from({length:ri(2,5)},()=>({u:r01(),v:r01(),r:rf(.05,.12),ph:r01()*PI*2}));
+      let rot=0;const sp=rf(.005,.01);
+      return{
+        update(dt){rot=(rot+sp*dt*60)%64;storms.forEach(s=>s.ph+=dt*.85)},
+        render(r,px,py,sAz,sEl){
+          renderSphere(r,px,py,sAz,sEl,(nx,ny,nz,u,v,sx,sy,lit)=>{
+            const val=sampleN(nm,u,v,rot),mat=val<.72?0:val<.84?1:2;
+            let cloud=ABS(ny)>.84;
+            for(const s of storms){const du=u-s.u,dv=v-s.v,d=sq(du*du+dv*dv);if(d<s.r&&SIN(d*9-s.ph)>.25)cloud=true}
+            if(cloud)return litIdx(lit,sx,sy,2);
+            if(mat===0&&lit>.72&&bayer(sx,sy)<(lit-.71)*9)return 3;
+            return litIdx(lit,sx,sy,mat);
+          },(idx)=>idx);
+        }
+      };
+    },
+    stats(){return{
+      radius:[0.8,1.6],
+      mass:[0.6,2.5],
+      tempK:[260,340],
+      pressAtm:[5,200],
+      windKph:[0,250],
+      orbDays:[200,600],
+      rotHours:[12,100],
+      axialTilt:[0,30],
+      magG:[0.2,2],
+      atm:['N₂/H₂O','CO₂/H₂O','N₂/O₂'],
+      radiation:'LOW',
+      ageGyr:[1,8],
+      exotic:{tempK:[340,500]}
+    }}
+  },
+  iceworld:{
+    label:'ICE WORLD',
+    size:[.08,.14],
+    moons:[0,2],rings:[0,2],
+    palette(){
+      const h=rf(185,220),s=rf(20,40);
+      return['#000',hsl(h,s,18),hsl(h,s,50),hsl(h,s,90)];
+    },
+    render(){return makeRocky({sea:rf(.45,.58),land:rf(.65,.78),iceLat:rf(.22,.38),craters:ri(4,8),cracks:rf(.3,.42)})},
+    stats(){return{
+      radius:[0.4,1.2],
+      mass:[0.05,1.2],
+      tempK:[40,200],
+      pressAtm:[0,.1],
+      windKph:[0,600],
+      orbDays:[300,5000],
+      rotHours:[20,600],
+      axialTilt:[0,60],
+      magG:[0,0.4],
+      atm:['N₂','CO₂','CH₄','None'],
+      radiation:'MODERATE',
+      ageGyr:[1,13],
+      exotic:{mass:[1.2,4],tempK:[10,40],axialTilt:[60,180]}
+    }}
+  },
+  desert:{
+    label:'DESERT WORLD',
+    size:[.08,.14],
+    moons:[0,2],rings:[0,1],
+    palette(){
+      const specs=[[22,18],[35,15],[10,15],[40,20]];
+      const[hb,hr]=pick(specs);
+      const h=rf(hb,hb+hr),s=rf(40,70);
+      return['#000',hsl(h,s,12),hsl(h,s,36),hsl(h,s,66)];
+    },
+    render(){return makeRocky({sea:rf(.55,.68),land:rf(.72,.82),iceLat:rf(.84,.92),craters:ri(4,9),scarps:ri(2,5),dual:true})},
+    stats(){return{
+      radius:[0.6,1.3],
+      mass:[0.3,1.5],
+      tempK:[300,700],
+      pressAtm:[0.001,0.5],
+      windKph:[0,150],
+      orbDays:[150,700],
+      rotHours:[8,800],
+      axialTilt:[0,60],
+      magG:[0,1],
+      atm:['CO₂','N₂/CO₂','None'],
+      radiation:'MODERATE',
+      ageGyr:[0.5,10],
+      exotic:{tempK:[700,1400]}
+    }}
+  },
+  lavaworld:{
+    label:'LAVA WORLD',
+    size:[.08,.14],exotic:{size:[.14,.20]},
+    moons:[0,1],rings:[0,0],
+    palette(){
+      const h=rf(0,20),s=rf(80,98);
+      return['#000',hsl(h,s,8),hsl(h,s,24),hsl(h,s,62)];
+    },
+    render(){
+      const nm=makeNoise();let rot=0,flowPh=0,pTimer=0;
+      const sp=rf(.008,.014);const plumes=[];
+      return{
+        update(dt){
+          rot=(rot+sp*dt*60)%64;flowPh+=dt*1.4;pTimer-=dt;
+          if(pTimer<=0){const a=r01()*PI*2,rd=r01()*.8;plumes.push({x:CX()+COS(a)*rd*60,y:CY()+SIN(a)*rd*60,life:1,vy:-.6-r01()*.8});pTimer=.25+r01()*.5}
+          for(let i=plumes.length-1;i>=0;i--){plumes[i].y+=plumes[i].vy;plumes[i].life-=dt*.65;if(plumes[i].life<=0)plumes.splice(i,1)}
+        },
+        render(r,px,py,sAz,sEl){
+          renderSphere(r,px,py,sAz,sEl,(nx,ny,nz,u,v,sx,sy,lit)=>{
+            let val=sampleN(nm,u,v,rot),mat=val<.4?0:val<.54?1:2;
+            if(mat===1&&SIN(flowPh+u*64*.14)>.7)mat=2;
+            if(mat===2&&lit<.12)return 2;
+            return litIdx(lit,sx,sy,mat);
+          },null);
+          for(const p of plumes){const sx=fl(p.x),sy=fl(p.y);if(sx>=0&&sx<W()&&sy>=0&&sy<H()&&bayer(sx,sy)<p.life){ctx.fillStyle=PAL[2];ctx.fillRect(sx,sy,1,1)}}
+        }
+      };
+    },
+    stats(){return{
+      radius:[0.7,1.6],
+      mass:[0.5,3],
+      tempK:[900,2200],
+      pressAtm:[10,500],
+      windKph:[0,800],
+      orbDays:[50,400],
+      rotHours:[10,300],
+      axialTilt:[0,40],
+      magG:[0,0.5],
+      atm:['SO₂/CO₂','CO₂','SO₂'],
+      radiation:'HIGH',
+      ageGyr:[0.1,5],
+      exotic:{mass:[3,15],tempK:[2200,5000],orbDays:[1,50]}
+    }}
+  },
+  iron:{
+    label:'IRON WORLD',
+    size:[.06,.12],
+    moons:[0,1],rings:[0,0],
+    palette(){
+      const v=ri(0,2);
+      if(v===0){const b=rf(16,28);return['#000',hsl(0,0,b),hsl(0,0,b+24),hsl(0,0,b+50)]}
+      if(v===1){const h=rf(8,18),s=rf(25,40),b=rf(14,22);return['#000',hsl(h,s,b),hsl(h,s,b+22),hsl(h,s,b+50)]}
+      const h=rf(220,240),s=rf(15,25),b=rf(12,20);return['#000',hsl(h,s,b),hsl(h,s,b+25),hsl(h,s,b+52)];
+    },
+    render(){return makeRocky({sea:rf(.44,.54),land:rf(.64,.74),craters:ri(3,7),scarps:ri(3,6)})},
+    stats(){return{
+      radius:[0.3,0.9],
+      mass:[0.05,0.7],
+      tempK:[100,600],
+      pressAtm:[0,0.001],
+      windKph:[0,0],
+      orbDays:[30,300],
+      rotHours:[20,800],
+      axialTilt:[0,30],
+      magG:[0.5,5],
+      atm:['None','Na vapor'],
+      radiation:'MODERATE',
+      ageGyr:[1,13],
+      exotic:{orbDays:[1,30],magG:[5,50]}
+    }}
+  },
+  carbon:{
+    label:'CARBON WORLD',
+    size:[.07,.13],
+    moons:[0,2],rings:[0,1],
+    palette(){
+      const h=rf(25,45),s=rf(15,33);
+      return['#000',hsl(h,s,5),hsl(h,s,16),hsl(h,s,42)];
+    },
+    render(){return makeRocky({sea:rf(.48,.58),land:rf(.68,.78),craters:ri(4,8),dual:true})},
+    stats(){return{
+      radius:[0.5,1.4],
+      mass:[0.2,2],
+      tempK:[200,800],
+      pressAtm:[0,2],
+      windKph:[0,50],
+      orbDays:[80,500],
+      rotHours:[12,400],
+      axialTilt:[0,50],
+      magG:[0,1],
+      atm:['CO/CO₂','CH₄','None'],
+      radiation:'LOW',
+      ageGyr:[2,13],
+      exotic:{tempK:[800,2000]}
+    }}
+  },
+  rogue:{
+    label:'ROGUE PLANET',
+    size:[.08,.15],
+    moons:[0,2],rings:[0,0],
+    palette(){
+      const h=rf(215,245),s=rf(15,30);
+      return['#000',hsl(h,s,4),hsl(h,s,12),hsl(h,s,28)];
+    },
+    render(){
+      const base=makeRocky({sea:rf(.5,.6),land:rf(.7,.8)});
+      const vents=Array.from({length:ri(3,7)},()=>({u:r01(),v:r01(),ph:r01()*PI*2}));
+      return{
+        update(dt){base.update(dt);vents.forEach(v=>v.ph+=dt*1.4)},
+        render(r,px,py){
+          base.render(r,px,py,PI*.75,-.42);
+          for(const v of vents){
+            if(SIN(v.ph)<.55)continue;
+            const vx=fl(px+(v.u-.5)*r*1.5),vy=fl(py+(v.v-.5)*r*1.5);
+            if(vx>=0&&vx<W()&&vy>=0&&vy<H()){ctx.fillStyle=PAL[2];ctx.fillRect(vx,vy,2,2)}
+          }
+        }
+      };
+    },
+    stats(){return{
+      radius:[0.5,2.0],
+      mass:[0.2,5],
+      tempK:[10,80],
+      pressAtm:[0,0.01],
+      windKph:[0,0],
+      orbDays:null,
+      rotHours:[10,1000],
+      axialTilt:[0,180],
+      magG:[0,2],
+      atm:['H₂/He','None'],
+      radiation:'VERY LOW',
+      ageGyr:[1,13],
+      exotic:{radius:[2.0,6.0]}
+    }}
+  },
+  tidallylocked:{
+    label:'EYEBALL PLANET',
+    size:[.08,.14],
+    moons:[0,1],rings:[0,0],
+    palette(){
+      const h=rf(20,45),s=rf(50,75);
+      return['#000',hsl(h,s,6),hsl(h,s,24),hsl(h,s,56)];
+    },
+    render(){
+      const nm=makeNoise();let rot=0;const sp=rf(.002,.005);
+      return{
+        update(dt){rot=(rot+sp*dt*60)%64},
+        render(r,px,py,sAz,sEl){
+          renderSphere(r,px,py,sAz,sEl,(nx,ny,nz,u,v,sx,sy,lit)=>{
+            const day=(nx+1)/2;
+            let mat=day>.88?2:day>.55?1:0;
+            const val=sampleN(nm,u,v,rot);
+            if(day>.2&&day<.88&&val>.58)mat=MIN(2,mat+1);
+            return litIdx(lit,sx,sy,mat);
+          },(idx,nx,ny,nz,lit)=>{
+            if(nz<.14&&lit>.05&&bayer(0,0)<.38)return 3;
+            return idx;
+          });
+        }
+      };
+    },
+    stats(){return{
+      radius:[0.6,1.5],
+      mass:[0.3,2],
+      tempK:[200,1800],
+      pressAtm:[0.01,10],
+      windKph:[0,1200],
+      orbDays:[10,200],
+      rotHours:null,
+      axialTilt:[0,5],
+      magG:[0,1.5],
+      atm:['CO₂','N₂/CO₂','H₂O/CO₂'],
+      radiation:'HIGH',
+      ageGyr:[0.5,8],
+      exotic:{tempK:[1800,4000],windKph:[1200,5000]}
+    }}
+  },
+  gasgiant:{
+    label:'GAS GIANT',
+    size:[.13,.22],exotic:{size:[.22,.32]},
+    moons:[0,6],rings:[0,4],
+    palette(){
+      const v=ri(0,4);
+      const specs=[[25,50,55,25],[200,40,40,20],[280,40,50,25],[15,30,70,20],[170,30,45,20]];
+      const[hb,hr,sb,sr]=specs[v];
+      const h=rf(hb,hb+hr),s=rf(sb,sb+sr);
+      return['#000',hsl(h,s,14),hsl(h,s,38),hsl(h,s,72)];
+    },
+    render(){return makeBanded({bands:[ri(4,9),ri(9,14)],bw:rf(.10,.18),storms:r01()>.3,rotSpeed:rf(.010,.016)})},
+    stats(){return{
+      radius:[4,12],
+      mass:[15,600],
+      tempK:[100,200],
+      pressAtm:[1e4,1e7],
+      windKph:[0,2000],
+      orbDays:[1000,50000],
+      rotHours:[6,20],
+      axialTilt:[0,40],
+      magG:[5,50],
+      atm:['H₂/He','H₂/He/CH₄'],
+      radiation:'EXTREME',
+      ageGyr:[0.5,10],
+      exotic:{radius:[12,20],mass:[600,3000],windKph:[2000,10000],axialTilt:[40,120]}
+    }}
+  },
+  hotjupiter:{
+    label:'HOT JUPITER',
+    size:[.13,.21],exotic:{size:[.21,.32]},
+    moons:[0,2],rings:[0,1],
+    palette(){
+      const h=r01()>.5?rf(0,30):rf(350,380)%360,s=rf(75,97);
+      return['#000',hsl(h,s,12),hsl(h,s,38),hsl(h,s,80)];
+    },
+    render(){
+      const base=makeBanded({bands:[ri(3,6),ri(6,9)],bw:rf(.14,.20),storms:false,rotSpeed:rf(.016,.024),limbPow:rf(1.5,1.9)});
+      const tail=[];let tTimer=0;
+      return{
+        update(dt){
+          base.update(dt);tTimer-=dt;
+          if(tTimer<=0){const a=r01()*PI*2,d=45+r01()*35;tail.push({x:CX()+COS(a)*d,y:CY()+SIN(a)*d*.28,vx:-.35-r01()*.65,vy:(r01()-.5)*.18,life:2+r01()*2});tTimer=.05+r01()*.1}
+          for(let i=tail.length-1;i>=0;i--){const t=tail[i];t.x+=t.vx;t.y+=t.vy;t.life-=dt*.38;if(t.life<=0)tail.splice(i,1)}
+        },
+        render(r,px,py,sAz,sEl){
+          base.render(r,px,py,sAz,sEl);
+          for(const t of tail){const sx=fl(t.x),sy=fl(t.y);if(sx>=0&&sx<W()&&sy>=0&&sy<H()&&bayer(sx,sy)<t.life*.33){ctx.fillStyle=PAL[1];ctx.fillRect(sx,sy,1,1)}}
+        }
+      };
+    },
+    stats(){return{
+      radius:[9,18],
+      mass:[100,4000],
+      tempK:[900,3000],
+      pressAtm:[1e5,1e8],
+      windKph:[0,9000],
+      orbDays:[1,5],
+      rotHours:[6,30],
+      axialTilt:[0,20],
+      magG:[2,30],
+      atm:['H₂/He','TiO/VO/H₂'],
+      radiation:'LETHAL',
+      ageGyr:[0.1,5],
+      exotic:{radius:[18,30],mass:[4000,15000],tempK:[3000,6000],windKph:[9000,30000],orbDays:[.1,1]}
+    }}
+  },
+  protoplanet:{
+    label:'PROTOPLANET',
+    size:[.08,.15],
+    moons:[0,0],rings:[0,0],
+    palette(){
+      const h=rf(20,40),s=rf(50,75);
+      return['#000',hsl(h,s,12),hsl(h,s,34),hsl(h,s,66)];
+    },
+    render(){
+      const base=makeRocky({sea:rf(.45,.55),land:rf(.65,.75),craters:ri(3,6)});
+      const disk=Array.from({length:ri(280,550)},()=>({ang:r01()*PI*2,dist:0,sp:rf(.15,.55),sz:r01()>.8?2:1}));
+      return{
+        update(dt,r){base.update(dt);disk.forEach(d=>{d.ang+=d.sp*dt*.28;if(!d.dist)d.dist=r*rf(1.25,3.0)})},
+        render(r,px,py,sAz,sEl){
+          disk.forEach(d=>{
+            if(!d.dist)d.dist=r*rf(1.25,3.0);
+            const dx=COS(d.ang)*d.dist,dy=SIN(d.ang)*d.dist*.22;
+            const sx=fl(px+dx),sy=fl(py+dy);
+            if(sx>=0&&sx<W()&&sy>=0&&sy<H()){ctx.fillStyle=dx<0?PAL[2]:PAL[1];ctx.fillRect(sx,sy,d.sz,d.sz)}
+          });
+          base.render(r,px,py,sAz,sEl);
+        }
+      };
+    },
+    stats(){return{
+      radius:[0.4,1.5],
+      mass:[0.05,1.5],
+      tempK:[500,1800],
+      pressAtm:[0,0.01],
+      windKph:[0,500],
+      orbDays:[200,2000],
+      rotHours:[4,100],
+      axialTilt:[0,80],
+      magG:[0,1],
+      atm:['None','SO₂','H₂/He'],
+      radiation:'HIGH',
+      ageGyr:[0.001,0.5],
+      exotic:{tempK:[1800,5000]}
+    }}
+  },
+  browndwarf:{
+    label:'BROWN DWARF',
+    size:[.13,.21],
+    moons:[0,1],rings:[0,0],
+    palette(){
+      const h=rf(10,30),s=rf(65,90);
+      return['#000',hsl(h,s,10),hsl(h,s,26),hsl(h,s,50)];
+    },
+    render(){return makeBanded({bands:[ri(3,7),ri(7,11)],bw:rf(.12,.18),storms:r01()>.4,rotSpeed:rf(.012,.020),limbPow:rf(1.4,1.8)})},
+    stats(){return{
+      radius:[9,13],
+      mass:[4200,26000],
+      tempK:[700,2500],
+      pressAtm:[1e6,1e10],
+      windKph:[0,3000],
+      orbDays:null,
+      rotHours:[2,12],
+      axialTilt:[0,40],
+      magG:[100,5000],
+      atm:['H₂/He/CH₄','H₂/He/H₂O'],
+      radiation:'EXTREME',
+      ageGyr:[0.1,13],
+      exotic:{mass:[26000,80000],tempK:[2500,4000],magG:[5000,50000]}
+    }}
+  },
+  sun:{
+    label:'MAIN SEQUENCE',
+    size:[.14,.22],exotic:{size:[.22,.40]},
+    moons:[0,0],rings:[0,0],
+    palette(){
+      const v=ri(0,2);
+      if(v===0){const h=rf(38,54),s=rf(90,100);return['#000',hsl(h,s,16),hsl(h,s,52),hsl(h,s,97)]}
+      if(v===1){const h=rf(15,27),s=rf(85,97);return['#000',hsl(h,s,14),hsl(h,s,44),hsl(h,s,95)]}
+      const h=rf(55,65),s=rf(88,98);return['#000',hsl(h,s,18),hsl(h,s,58),hsl(h,s,98)];
+    },
+    render(){
+      const t1=Noise.perlin(Noise.white(32,32),4),t2=Noise.perlin(Noise.white(32,32),3);
+      let rot=0;const rs=rf(.014,.024);
+      const flares=Array.from({length:ri(2,5)},()=>({ang:r01()*PI*2,life:rf(.5,1.5),ph:r01()*PI*2}));
+      return{
+        update(dt){
+          rot=(rot+rs*dt*60)%32;
+          flares.forEach((f,i)=>{f.life-=dt*.1;f.ph+=dt*.6;if(f.life<=0)flares[i]={ang:r01()*PI*2,life:rf(.5,1.5),ph:r01()*PI*2}});
+        },
+        render(r,px,py){
+          const r2=r*r;
+          for(let dy=-r;dy<=r;dy++){
+            const sy=py+dy;if(sy<0||sy>=H())continue;
+            const hw=fl(sq(MAX(0,r2-dy*dy)));
+            for(let dx=-hw;dx<=hw;dx++){
+              const sx=px+dx;if(sx<0||sx>=W())continue;
+              const d=sq(dx*dx+dy*dy)/r;
+              const tx=ABS(fl((dx/r*7+16+rot)%32)),ty=ABS(fl((dy/r*7+16)%32));
+              const v1=t1[tx][ty],v2=t2[tx][ty];
+              const ld=POW(MAX(0,1-d),2.4);
+              let idx=3;
+              if(d>.85-v1*.05+v2*.02)idx=0;
+              else if(d>.58+v1*.14)idx=1;
+              else if(d>.3+v1*.16+v2*.08)idx=2;
+              if(idx===0&&bayer(sx,sy)>ld*1.4)idx=1;
+              ctx.fillStyle=PAL[idx];ctx.fillRect(sx,sy,1,1);
+            }
+          }
+          const cr=r+ri(4,8);
+          for(let dy=-cr;dy<=cr;dy++){
+            const sy=py+dy;if(sy<0||sy>=H())continue;
+            const hw=fl(sq(MAX(0,cr*cr-dy*dy)));
+            for(let dx=-hw;dx<=hw;dx++){
+              const dist=sq(dx*dx+dy*dy);if(dist<=r||dist>cr)continue;
+              const sx=px+dx;if(sx<0||sx>=W())continue;
+              if(bayer(sx,sy)<(cr-dist)/6*1.5){ctx.fillStyle=PAL[2];ctx.fillRect(sx,sy,1,1)}
+            }
+          }
+        }
+      };
+    },
+    stats(){return{
+      radius:[80,180],
+      mass:[200000,600000],
+      tempK:[4500,8000],
+      pressAtm:[1e10,1e15],
+      windKph:[0,700000],
+      orbDays:null,
+      rotHours:[300,2000],
+      axialTilt:[0,30],
+      magG:[1,100],
+      atm:['H/He'],
+      radiation:'LETHAL',
+      ageGyr:[0.5,12],
+      exotic:{radius:[180,800],tempK:[8000,40000],magG:[100,10000]}
+    }}
+  },
+  whitedwarf:{
+    label:'WHITE DWARF',
+    size:[.03,.07],
+    moons:[0,0],rings:[0,0],
+    palette(){
+      const v=ri(0,2);
+      if(v===0){const h=rf(210,230),s=rf(20,35);return['#000',hsl(h,s,50),hsl(h,s,74),hsl(h,s,96)]}
+      if(v===1){const h=rf(40,60),s=rf(25,40);return['#000',hsl(h,s,48),hsl(h,s,72),hsl(h,s,95)]}
+      const h=rf(280,300),s=rf(18,30);return['#000',hsl(h,s,52),hsl(h,s,76),hsl(h,s,97)];
+    },
+    render(){
+      let ph=r01()*PI*2;const pp=rf(.1,.4);
+      return{
+        update(dt){ph+=dt*pp*PI*2},
+        render(r,px,py){
+          const r2=r*r,cool=.5+.5*SIN(ph);
+          for(let dy=-r;dy<=r;dy++){
+            const sy=py+dy;if(sy<0||sy>=H())continue;
+            const hw=fl(sq(MAX(0,r2-dy*dy)));
+            for(let dx=-hw;dx<=hw;dx++){
+              const sx=px+dx;if(sx<0||sx>=W())continue;
+              const d=sq(dx*dx+dy*dy)/r;
+              let idx=3;
+              if(d>.32+cool*.3)idx=2;if(d>.70)idx=1;if(d>.90)idx=0;
+              if(idx===0&&bayer(sx,sy)>.42)idx=1;
+              ctx.fillStyle=PAL[idx];ctx.fillRect(sx,sy,1,1);
+            }
+          }
+        }
+      };
+    },
+    stats(){return{
+      radius:[0.6,1.0],
+      mass:[150000,350000],
+      tempK:[8000,80000],
+      pressAtm:[1e20,1e25],
+      windKph:[0,0],
+      orbDays:null,
+      rotHours:[0.01,10],
+      axialTilt:[0,20],
+      magG:[1e4,1e8],
+      atm:['H','He','CO'],
+      radiation:'LETHAL',
+      ageGyr:[1,13],
+      exotic:{tempK:[80000,500000],rotHours:[.001,.01],magG:[1e8,1e12]}
+    }}
+  },
+  blackhole:{
+    label:'BLACK HOLE',
+    size:[.07,.13],
+    moons:[0,0],rings:[0,0],
+    palette(){
+      const h=rf(20,40),s=rf(88,98);
+      return['#000',hsl(h,s,2),hsl(h,s,45),hsl(h,s,86)];
+    },
+    render(){
+      const particles=Array.from({length:ri(400,700)},()=>({ang:r01()*PI*2,rad:rf(1.15,3.2),sp:rf(.08,.35),sz:r01()>.82?2:1}));
+      let diskRot=0;
+      return{
+        update(dt){diskRot+=(.16+r01()*.025)*dt*60;particles.forEach(p=>p.ang+=p.sp*dt*.38)},
+        render(r,px,py){
+          const draw=(p,front)=>{
+            const a=p.ang+diskRot*.006,s2=SIN(a);
+            if(front&&s2<.04)return;if(!front&&s2>-.04)return;
+            const dx=COS(a)*p.rad*r,dy=s2*p.rad*r*.26;
+            const sx=fl(px+dx),sy=fl(py+dy);
+            if(sx<0||sx>=W()||sy<0||sy>=H())return;
+            const bright=dx<0;
+            ctx.fillStyle=bright?PAL[3]:PAL[front?2:1];
+            if(bright||bayer(sx,sy)<.58)ctx.fillRect(sx,sy,p.sz,p.sz);
+          };
+          particles.forEach(p=>draw(p,false));
+          const pr=r+ri(2,5);
+          for(let dy=-pr;dy<=pr;dy++){
+            const sy=py+dy;if(sy<0||sy>=H())continue;
+            const hw=fl(sq(MAX(0,pr*pr-dy*dy)));
+            for(let dx=-hw;dx<=hw;dx++){
+              const d=sq(dx*dx+dy*dy);if(d<r||d>pr)continue;
+              const sx=px+dx;if(sx<0||sx>=W())continue;
+              const bright=dx<0;
+              if(bayer(sx,sy)>(bright?.08:.55)){ctx.fillStyle=bright?PAL[3]:PAL[2];ctx.fillRect(sx,sy,1,1)}
+            }
+          }
+          const r2=r*r;
+          for(let dy=-r;dy<=r;dy++){
+            const sy=py+dy;if(sy<0||sy>=H())continue;
+            const hw=fl(sq(MAX(0,r2-dy*dy)));
+            ctx.fillStyle=PAL[0];ctx.fillRect(px-hw,sy,hw*2+1,1);
+          }
+          particles.forEach(p=>draw(p,true));
+        }
+      };
+    },
+    stats(){return{
+      radius:null,
+      mass:[1e7,1e12],
+      tempK:[0,1e-8],
+      pressAtm:null,
+      windKph:[0,0],
+      orbDays:null,
+      rotHours:null,
+      axialTilt:null,
+      magG:[1e10,1e15],
+      atm:['—'],
+      radiation:'LETHAL',
+      ageGyr:[5,13],
+      exotic:{mass:[1e12,1e18],magG:[1e15,1e20]}
+    }}
+  },
+  pulsar:{
+    label:'PULSAR',
+    size:[.025,.055],
+    moons:[0,0],rings:[0,0],
+    palette(){
+      const v=ri(0,2);
+      if(v===0){const h=rf(195,230),s=rf(70,95);return['#000',hsl(h,s,10),hsl(h,s,52),hsl(h,s,94)]}
+      if(v===1){const h=rf(280,310),s=rf(65,90);return['#000',hsl(h,s,10),hsl(h,s,50),hsl(h,s,92)]}
+      const h=rf(60,80),s=rf(80,95);return['#000',hsl(h,s,12),hsl(h,s,55),hsl(h,s,96)];
+    },
+    render(){
+      let ang=0;const spd=rf(60,220);
+      return{
+        update(dt){ang=(ang+spd*dt)%360},
+        render(r,px,py){
+          const r2=r*r;
+          for(let dy=-r;dy<=r;dy++){
+            const sy=py+dy;if(sy<0||sy>=H())continue;
+            const hw=fl(sq(MAX(0,r2-dy*dy)));
+            ctx.fillStyle=PAL[3];ctx.fillRect(px-hw,sy,hw*2+1,1);
+          }
+          const beamLen=MAX(W(),H())*1.1,a=ang*PI/180,a2=(ang+90)*PI/180;
+          for(const ba of[a,a2]){
+            for(let sign=1;sign>=-1;sign-=2){
+              for(let d=r+1;d<beamLen;d+=2){
+                const spread=1+fl(d/(r*4.5));
+                for(let s2=-spread;s2<=spread;s2++){
+                  const bx=px+sign*COS(ba)*d-SIN(ba)*s2*.28,by=py+sign*SIN(ba)*d+COS(ba)*s2*.28;
+                  const sx=fl(bx),sy=fl(by);
+                  if(sx<0||sx>=W()||sy<0||sy>=H())continue;
+                  if(bayer(sx,sy)>d/beamLen*.88){ctx.fillStyle=PAL[2];ctx.fillRect(sx,sy,1,1)}
+                }
+              }
+            }
+          }
+        }
+      };
+    },
+    stats(){return{
+      radius:[0.17,0.22],
+      mass:[400000,800000],
+      tempK:[50000,1e7],
+      pressAtm:[1e25,1e30],
+      windKph:[0,0],
+      orbDays:null,
+      rotHours:[0.001,0.1],
+      axialTilt:null,
+      magG:[1e12,1e15],
+      atm:['—'],
+      radiation:'LETHAL',
+      ageGyr:[0.001,2],
+      exotic:{mass:[800000,3000000],tempK:[1e7,1e10],rotHours:[.0001,.001],magG:[1e15,1e18]}
+    }}
+  },
+};
+
+function buildStats(key,mc,rc){
+  const def=DEFS[key];
+  const raw=def.stats();
+  const ex=raw.exotic||{};
+  let isExotic=false;
+
+  function rollS(name){
+    const range=raw[name];
+    if(range===null||range===undefined)return null;
+    if(Array.isArray(range)&&typeof range[0]==='string')return pick(range);
+    const exRange=ex[name];
+    if(exRange&&r01()<EXOTIC_CHANCE){isExotic=true;return rf(exRange[0],exRange[1])}
+    return rf(range[0],range[1]);
+  }
+
+  const radius=rollS('radius')||0;
+  const mass=rollS('mass')||0;
+  const gravity=mass>0&&radius>0?mass/(radius*radius):0;
+  const escVel=sq(2*MAX(0,gravity))*11.2;
+  const tempK=rollS('tempK')||0;
+  const pressAtm=rollS('pressAtm');
+  const orbDays=raw.orbDays!==null?rollS('orbDays'):null;
+  const rotH=raw.rotHours!==null?(key==='tidallylocked'&&orbDays?orbDays*24:rollS('rotHours')):null;
+
+  const starTypes=['G-type (Yellow)','K-type (Orange)','M-type (Red)','F-type (White)','A-type (White)','B-type (Blue)'];
+  const starW=[3,3,5,1,1,.5],tw=starW.reduce((a,b)=>a+b,0);
+  let rv=r01()*tw,st=starTypes[0];
+  for(let i=0;i<starTypes.length;i++){rv-=starW[i];if(rv<=0){st=starTypes[i];break}}
+  if(['blackhole','pulsar','whitedwarf','sun','browndwarf'].includes(key))st='—';
+
+  const habKeys=['terrestrial','superearth','ocean'];
+  const margKeys=['iceworld','desert'];
+  let hab;
+  if(['blackhole','pulsar','whitedwarf','sun'].includes(key))hab='NONE';
+  else if(key==='rogue')hab='SUBSURFACE?';
+  else if(habKeys.includes(key)&&tempK>260&&tempK<310&&pressAtm>0.1&&pressAtm<10)hab='POTENTIAL';
+  else if(habKeys.includes(key)||margKeys.includes(key))hab='MARGINAL';
+  else hab='NONE';
+
+  return{
+    isExotic,radius,mass,
+    density:mass>0&&radius>0?mass/(radius*radius*radius):0,
+    gravity,escVel,tempK,
+    tempC:tempK-273.15,
+    pressAtm,
+    atmComp:rollS('atm'),
+    windKph:rollS('windKph')||0,
+    orbDays,rotH,
+    axialTilt:rollS('axialTilt'),
+    moons:mc,rings:rc,
+    magG:rollS('magG')||0,
+    radiation:raw.radiation,
+    habitability:hab,
+    ageGyr:rollS('ageGyr'),
+    starType:st,
+    distLy:(['blackhole','pulsar'].includes(key))?rf(100,50000):rf(1,2000),
+  };
+}
+
+function fmt(n,d=2){
+  if(n===null||n===undefined||isNaN(n))return'—';
+  if(ABS(n)>=1e15)return n.toExponential(1);
+  if(ABS(n)>=1e6)return(n/1e6).toFixed(1)+'M';
+  if(ABS(n)>=1e3)return(n/1e3).toFixed(1)+'k';
+  return n.toFixed(d);
+}
+function fmtP(p){if(p===null||p===undefined)return'—';if(p===0)return'Vacuum';if(p<1e-3)return'Vacuum';if(p<.01)return(p*1000).toFixed(2)+' mbar';if(p<1e3)return p.toFixed(2)+' atm';if(p<1e6)return fmt(p,0)+' atm';return p.toExponential(1)+' atm'}
+function fmtG(g){if(!g&&g!==0)return'—';if(g<1e-3)return'None';if(g<10)return g.toFixed(2)+' G';if(g<1e6)return fmt(g,0)+' G';return g.toExponential(1)+' G'}
+const RAD_CLASS={LOW:'safe','VERY LOW':'safe',MODERATE:'neutral',HIGH:'hazard',EXTREME:'hazard',LETHAL:'hazard'};
+const HAB_CLASS={POTENTIAL:'safe',MARGINAL:'neutral','SUBSURFACE?':'neutral',NONE:'hazard'};
+
+function set(id,text,cls){const el=document.getElementById(id);el.textContent=text;if(cls!==undefined)el.className='sv '+cls}
+
+function updateHUD(key,s,label){
+  set('s-seed',_s.toString(16).toUpperCase().padStart(8,'0'));
+  set('s-class',label);
+  document.getElementById('eb').style.display=s.isExotic?'block':'none';
+  set('s-radius',s.radius?s.radius.toFixed(2)+' R⊕':'—');
+  set('s-mass',s.mass>=1e5?s.mass.toExponential(2)+' M⊕':s.mass.toFixed(2)+' M⊕');
+  set('s-gravity',s.gravity?s.gravity.toFixed(2)+' g':'—');
+  set('s-escape',s.escVel?s.escVel.toFixed(1)+' km/s':'—');
+  const tc=s.tempC;
+  set('s-temp',`${rnd(s.tempK)} K / ${rnd(tc)}°C`, tc>60?'hazard':tc<-20?'neutral':'safe');
+  set('s-pressure',fmtP(s.pressAtm));
+  set('s-atm',s.atmComp||'—');
+  set('s-wind',s.windKph<1?'Calm':fmt(s.windKph,0)+' km/h');
+  set('s-orbit',s.orbDays?fmt(s.orbDays,1)+' days':'N/A');
+  set('s-day',s.rotH?(s.rotH>48?fmt(s.rotH/24,1)+' days':s.rotH.toFixed(1)+' hrs'):'—');
+  set('s-tilt',s.axialTilt!=null?s.axialTilt.toFixed(1)+'°':'—');
+  set('s-moons',''+s.moons);
+  set('s-rings',s.rings>0?s.rings+' system':'None');
+  set('s-mag',fmtG(s.magG));
+  set('s-rad',s.radiation,RAD_CLASS[s.radiation]||'neutral');
+  set('s-hab',s.habitability,HAB_CLASS[s.habitability]||'neutral');
+  set('s-age',s.ageGyr?s.ageGyr.toFixed(2)+' Gyr':'—');
+  set('s-star',s.starType);
+  set('s-dist',s.distLy>=1000?fmt(s.distLy,0)+' ly':s.distLy.toFixed(1)+' ly');
+}
+
+class Orbiter{
+  constructor(sz,col,rad,av,zt,xt,ang){
+    this.sz=MAX(1,fl(sz));this.col=col;this.rad=rad;this.av=av;this.zt=zt;this.xt=xt;this.ang=ang;
+    this.rx=0;this.ry=0;this.zPos=0;
+  }
+  update(dt){
+    this.ang=(this.ang+this.av*dt)%360;
+    const a=this.ang*PI/180,x0=this.rad*COS(a),z0=this.rad*SIN(a);
+    const zr=this.zt*PI/180,xr=this.xt*PI/180;
+    const x1=x0*COS(zr),y1=x0*SIN(zr);
+    const y2=y1*COS(xr)-z0*SIN(xr),z2=y1*SIN(xr)+z0*COS(xr);
+    this.rx=fl(CX()+x1-this.sz/2);this.ry=fl(CY()+y2-this.sz/2);this.zPos=z2;
+  }
+  render(){
+    ctx.fillStyle=this.col;
+    if(this.sz<=2){ctx.fillRect(this.rx,this.ry,this.sz,this.sz);return}
+    const r=fl(this.sz/2),cx=this.rx+r,cy=this.ry+r,r2=r*r;
+    for(let dy=-r;dy<=r;dy++){
+      const sy=cy+dy;if(sy<0||sy>=H())continue;
+      const hw=fl(sq(MAX(0,r2-dy*dy)));
+      ctx.fillRect(MAX(0,cx-hw),sy,MIN(W(),cx+hw)-MAX(0,cx-hw),1);
+    }
+  }
+}
+
+class Star{
+  constructor(){this.x=fl(M.random()*W());this.y=fl(M.random()*H());this.sz=M.random()>.96?2:1;this.t=M.random()*PI*2;this.ts=.15+M.random()*.8}
+  update(dt){this.t+=dt*this.ts}
+  render(){const lum=.5+.5*SIN(this.t),idx=MIN(3,MAX(1,fl(1+lum*2+bayer(this.x,this.y))));ctx.fillStyle=PAL[idx];ctx.fillRect(this.x,this.y,this.sz,this.sz)}
+}
+class ShootingStar{
+  constructor(){this.x=-80;this.y=M.random()*H();this.vx=4+M.random()*9;this.vy=1.5+M.random()*4;this.life=1;this.decay=.016+M.random()*.022;this.active=true}
+  update(dt){this.x+=this.vx;this.y+=this.vy;this.life-=this.decay;if(this.life<=0||this.x>W()+10)this.active=false}
+  render(){const len=fl(this.life*11);for(let i=0;i<len;i++){const sx=fl(this.x-i*this.vx*.3),sy=fl(this.y-i*this.vy*.3);if(sx>=0&&sx<W()&&sy>=0&&sy<H()&&(i===0||((sx+sy)&1))){ctx.fillStyle=PAL[3];ctx.fillRect(sx,sy,1,1)}}}
+}
+class Nebula{
+  constructor(){this.pts=Array.from({length:ri(200,450)},()=>({x:r01()*W(),y:r01()*H(),c:r01()>.55?1:2}))}
+  render(){for(const p of this.pts){const sx=fl(p.x),sy=fl(p.y);if(sx>=0&&sx<W()&&sy>=0&&sy<H()&&bayer(sx,sy)>.65){ctx.fillStyle=PAL[p.c];ctx.fillRect(sx,sy,1,1)}}}
+}
+
+let SUN_AZ=PI*.18,SUN_EL=.42;
+
+class Scene{
+  constructor(){this.objs=[];this.stars=[];this.shooting=[];this.nebula=null;this.planet=null;this.stTimer=0}
+  init(){this.stars=Array.from({length:MIN(3000,fl(W()*H()/680))},()=>new Star())}
+  random(){
+    setSeed(fl(M.random()*0xFFFFFFFF));
+    const keys=Object.keys(DEFS);
+    const key=keys[fl(r01()*keys.length)];
+    const def=DEFS[key];
+    const sizeEx=def.exotic&&def.exotic.size;
+    const minDim=MIN(W(),H());
+    const baseSize=sizeEx&&r01()<EXOTIC_CHANCE?rf(sizeEx[0],sizeEx[1]):rf(def.size[0],def.size[1]);
+    const R=fl(minDim*baseSize/2);
+    PAL=def.palette();
+    this.objs=[];this.shooting=[];
+    SUN_AZ=rf(0,PI*2);SUN_EL=rf(.2,.68);
+    this.planet=def.render();
+    this.planet.r=R;
+    const mc=ri(def.moons[0],def.moons[1]);
+    const vd=r01()>.5?1:-1,zt=(r01()>.5?1:-1)*(10+r01()*50),xt=-(10+r01()*50);
+    for(let i=0;i<mc;i++){
+      const mR=R*(rf(1.35,1.65)+i*.22)+r01()*minDim*.1;
+      this.objs.push(new Orbiter(ri(2,5)+fl(r01()*3),r01()>.5?PAL[2]:PAL[1],mR,vd*(5+r01()*60),zt+(r01()-.5)*30,xt+(r01()-.5)*30,r01()*360));
+    }
+    const rc=ri(def.rings[0],def.rings[1]);
+    let minR=R+ri(6,14);let actualR=0;
+    for(let rIdx=0;rIdx<rc;rIdx++){
+      const maxR=minR+ri(5,10)+r01()*minDim*.07;
+      const av=vd*(5+r01()*24),rz=zt+(r01()-.5)*22,rx2=xt+(r01()-.5)*22;
+      const gc=minR+(maxR-minR)*(rf(.25,.55)),gw=(maxR-minR)*rf(.02,.06);
+      for(let i=0;i<ri(70,300);i++){
+        const rad=minR+r01()*(maxR-minR);
+        if(ABS(rad-gc)<gw)continue;
+        this.objs.push(new Orbiter(1+(r01()>.84?1:0),r01()>.5?PAL[2]:PAL[1],rad,av,rz,rx2,r01()*360));
+      }
+      minR=maxR+ri(3,10)+r01()*7;actualR++;
+    }
+    this.nebula=new Nebula();this.init();
+    const stats=buildStats(key,mc,actualR);
+    updateHUD(key,stats,def.label);
+  }
+  update(dt){
+    this.stTimer-=dt;
+    if(this.stTimer<=0&&M.random()<.005){this.shooting.push(new ShootingStar());this.stTimer=5+M.random()*7}
+    for(let i=this.shooting.length-1;i>=0;i--){this.shooting[i].update(dt);if(!this.shooting[i].active)this.shooting.splice(i,1)}
+    this.stars.forEach(s=>s.update(dt));
+    this.objs.forEach(o=>o.update(dt));
+    this.planet&&this.planet.update(dt,this.planet.r);
+    this.objs.sort((a,b)=>a.zPos-b.zPos);
+  }
+  render(){
+    ctx.fillStyle=PAL[0];ctx.fillRect(0,0,W(),H());
+    this.nebula&&this.nebula.render();
+    this.stars.forEach(s=>s.render());
+    const back=this.objs.filter(o=>o.zPos<0),front=this.objs.filter(o=>o.zPos>=0);
+    back.forEach(o=>o.render());
+    this.planet&&this.planet.render(this.planet.r,CX(),CY(),SUN_AZ,SUN_EL);
+    front.forEach(o=>o.render());
+    this.shooting.forEach(s=>s.render());
+  }
+}
+
+const scene=new Scene();let last=0;
+function loop(t){const dt=MIN((t-last)/1000,.05);last=t;scene.update(dt);scene.render();requestAnimationFrame(loop)}
+document.getElementById('rand').addEventListener('click',()=>{
+  const f=document.getElementById('flash');f.style.opacity='.15';
+  setTimeout(()=>{f.style.opacity='0';scene.random()},80);
+});
+scene.random();requestAnimationFrame(loop);
+</script>
+</body>
+</html>

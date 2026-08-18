@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Heavy Space War</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#000102; overflow:hidden; }
+canvas { display:block; image-rendering:pixelated; filter: contrast(1.5) brightness(1.25) saturate(1.3); }
+#fx {
+    position:fixed; inset:0; pointer-events:none; z-index:20;
+    background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%), linear-gradient(90deg, rgba(255,255,255,0.012), rgba(0,0,0,0.012));
+    background-size: 100% 2px, 2px 100%;
+    box-shadow: inset 0 0 200px rgba(0,0,0,0.9);
+}
+</style>
+<base target="_blank">
+</head>
+<body>
+<canvas id="g"></canvas>
+<div id="fx"></div>
+<script>
+const GAME = { U:11, P2:Math.PI*2, MAX:8000, GCELL:110, TICK:1000/60 };
+const R=(a,b)=>Math.random()*(b-a)+a;
+const D2=(x1,y1,x2,y2)=>(x1-x2)**2+(y1-y2)**2;
+const clamp=(v,mn,mx)=>v<mn?mn:v>mx?mx:v;
+const nA=a=>{if(!Number.isFinite(a))return 0;a%=GAME.P2;if(a>Math.PI)a-=GAME.P2;if(a<-Math.PI)a+=GAME.P2;return a;};
+
+const C=document.getElementById('g'),ctx=C.getContext('2d',{alpha:false});
+let W,H;
+window.onresize=()=>{W=C.width=window.innerWidth;H=C.height=window.innerHeight;};
+window.onresize();
+
+const FX={
+  TRAIL_SHIP_ALPHA:0.045,TRAIL_SHIP_LEN:3.2,
+  TRAIL_PROJ_ALPHA:0.06,TRAIL_PROJ_LEN:2.5,
+  TRAIL_MISSILE_ALPHA:0.07,TRAIL_MISSILE_LEN:6,
+  IMPACT_FLASH_MAX:3.5,IMPACT_FLASH_DECAY:0.82,
+  SHAKE_DECAY:0.88,SHOCK_ALPHA:0.11,SHOCK_GROW:0.12,
+  DEATH_PARTICLES:55,DEATH_SPARKS:30,DEATH_CORES:6,
+  FLASH_DMG:3,FLASH_SHIELD:7,FLASH_DECAY:0.09,SHIELD_DECAY:0.10
+};
+
+const FTL={
+  DURATION:160,SPEED_BASE:3,SPEED_MAX:22,
+  SPAWN_OFFSET_U:12,COLLISION_DMG:99999,
+  COLLISION_RAD_MULT:1.2,EXIT_DAMP:0.2,
+  PARTICLES_PER_TICK:5
+};
+
+const AI_CFG={
+  RETARGET_BASE:30,RETARGET_VAR:50,
+  ORBIT_MIN:100,ORBIT_MAX:260,
+  VENT_SAFE_MULT:0.5,DODGE_RANGE_U:10,
+  DODGE_ANGLE:0.7,SEP_ALLY_MULT:0.35,
+  SEP_ENEMY_MULT:0.18,SEP_MIN_U:5.5,
+  BOUNDARY_MARGIN_U:4,BOUNDARY_FORCE:3,
+  FORM_OFFSET_X:30,FORM_OFFSET_Y:35,
+  RETREAT_HULL:0.18,RETREAT_DIST_U:14,
+  EVADE_WEIGHT:7,EVADE_AHEAD_DIST_U:10
+};
+
+const DMG_TABLE=[[3.5,1.0,1.0],[1.0,3.5,1.0],[1.0,1.0,3.5]];
+const RPS_COUNTER=[1,2,0];
+
+const WEAPONS=[
+  {
+    id:"Kinetic Autocannon",wType:0,
+    dmg:20,fluxCost:6,cooldown:36,
+    projSpeed:5.5,range:16*GAME.U,spread:0.05,spreadPerShot:0.06,spreadDecay:0.12,
+    size:0.7,impact:0.2,isBeam:false,isMissile:false,
+    burstCount:3,burstDelay:4,ammoMax:-1,reloadTime:0
+  },
+  {
+    id:"Plasma Beam",wType:1,
+    dmg:0,dps:88,fluxCostSec:105,cooldown:32,
+    range:18*GAME.U,beamDuration:110,chargeup:10,
+    size:1.2,isBeam:true,isMissile:false,
+    burstCount:0,burstDelay:0,ammoMax:-1,reloadTime:0
+  },
+  {
+    id:"Seeker Missile",wType:2,
+    dmg:240,fluxCost:15,cooldown:64,
+    projSpeed:1.5,range:32*GAME.U,spread:0.1,spreadPerShot:0,spreadDecay:0,
+    size:1.1,impact:1.5,isBeam:false,isMissile:true,
+    missileAccel:0.045,missileMaxSpeed:5.0,missileTurn:0.06,
+    proxFuse:GAME.U,proxRadius:2.5*GAME.U,aoeRatio:0.5,
+    burstCount:1,burstDelay:0,ammoMax:12,reloadTime:140
+  }
+];
+
+const DIR_F=0,DIR_R=Math.PI/2,DIR_B=Math.PI,DIR_L=-Math.PI/2;
+
+const HULL_SHAPES={
+  circle:Array.from({length:16},(_,j)=>[Math.cos(j*Math.PI/8)*1.25,Math.sin(j*Math.PI/8)*1.25]),
+  triangle:[[1.6,0],[-0.9,1.15],[-0.9,-1.15]],
+  square:[[1.05,1.05],[-1.05,1.05],[-1.05,-1.05],[1.05,-1.05]]
+};
+
+const HULLS=[
+  {
+    id:"Shield Frigate",shape:"circle",scale:5.4,defType:0,
+    hp:1400,armorRating:300,maxFlux:1100,
+    fluxDiss:22,maxSpeed:0.82,accel:0.028,decel:0.038,
+    maxTurn:0.095,turnAc:0.016,mass:1.2,
+    shieldArc:4.8,shieldEff:0.42,shieldUpkeep:7,
+    slots:[{dir:DIR_F,isTurret:true},{dir:DIR_F,isTurret:false}],
+    ai:{
+      prefDistU:12,orbitSpeed:60,approachStr:0.85,
+      ventFlux:0.68,ventSafeU:10,retreatFlux:0.92,
+      shieldRangeU:16,shieldProjU:12,shieldFluxLim:0.88,
+      class:"sentinel"
+    }
+  },
+  {
+    id:"Phase Frigate",shape:"triangle",scale:5.4,defType:1,
+    hp:900,armorRating:180,maxFlux:1600,
+    fluxDiss:28,maxSpeed:1.15,accel:0.038,decel:0.050,
+    maxTurn:0.130,turnAc:0.026,mass:0.7,
+    phaseCost:40,phaseUpkeep:32,phaseCd:70,
+    slots:[{dir:DIR_F,isTurret:false},{dir:DIR_B,isTurret:true}],
+    ai:{
+      prefDistU:9,orbitSpeed:85,approachStr:1.1,
+      ventFlux:0.65,ventSafeU:11,retreatFlux:0.90,
+      phaseEnterFlux:0.28,phaseExitFlux:0.82,
+      phaseStrikeU:5,phaseDiveU:20,phaseDiveRearU:10,
+      tacticDiveChance:0.40,tacticTimerMin:240,tacticTimerMax:580,
+      class:"stalker"
+    }
+  },
+  {
+    id:"Armor Frigate",shape:"square",scale:5.4,defType:2,
+    hp:3200,armorRating:2200,maxFlux:400,
+    fluxDiss:7,maxSpeed:0.46,accel:0.012,decel:0.018,
+    maxTurn:0.042,turnAc:0.006,mass:2.4,
+    slots:[{dir:DIR_L,isTurret:true},{dir:DIR_R,isTurret:true}],
+    ai:{
+      prefDistU:7,orbitSpeed:30,approachStr:1.5,
+      ventFlux:0.88,ventSafeU:12,retreatFlux:0.95,
+      pushAggro:1.4,dodgeChance:0.15,
+      class:"juggernaut"
+    }
+  }
+];
+HULLS[0].pts=HULL_SHAPES.circle;
+HULLS[1].pts=HULL_SHAPES.triangle;
+HULLS[2].pts=HULL_SHAPES.square;
+
+const MAX=GAME.MAX;
+const mkU8=()=>new Uint8Array(MAX);
+const mkF32=()=>new Float32Array(MAX);
+const mkI16=()=>new Int16Array(MAX).fill(-1);
+
+const eType=mkU8(),fac=mkU8(),cId=mkU8(),aiRole=mkU8();
+const px=mkF32(),py=mkF32(),vx=mkF32(),vy=mkF32(),ang=mkF32(),angVel=mkF32();
+const hull=mkF32(),maxHull=mkF32(),armor=mkF32(),maxArmor=mkF32();
+const flux=mkF32(),maxFlux=mkF32(),fluxDiss=mkF32();
+const overload=mkF32(),venting=mkF32(),shieldOn=mkU8(),phaseOn=mkU8();
+const shieldFlash=mkF32(),flash=mkF32(),ftl=mkF32();
+const phaseCd=mkF32(),phaseCoolMax=mkF32();
+const ttl=mkF32(),bDmg=mkF32(),bSpd=mkF32(),bWType=mkI16();
+const trg=mkI16(),srcId=mkI16();
+const mSeed=mkF32();
+
+const wState=new Array(MAX);
+const sMeta=new Array(MAX);
+
+let alive=0;
+const pool=new Uint16Array(MAX);
+for(let i=0;i<MAX;i++)pool[i]=i;
+
+const spawn=t=>{
+  if(alive>=MAX)return -1;
+  const id=pool[alive++];eType[id]=t;
+  trg[id]=srcId[id]=-1;vx[id]=vy[id]=flash[id]=ftl[id]=angVel[id]=0;
+  mSeed[id]=R(0,GAME.P2);
+  return id;
+};
+const destroy=id=>{
+  if(!eType[id])return;
+  eType[id]=0;pool[--alive]=id;
+};
+
+let gHead,gNext=new Int16Array(MAX);
+const GCOLS=()=>Math.ceil(W/GAME.GCELL)+2;
+const GROWS=()=>Math.ceil(H/GAME.GCELL)+2;
+
+const rebuildGrid=()=>{
+  const sz=GCOLS()*GROWS();
+  if(!gHead||gHead.length<sz)gHead=new Int16Array(sz).fill(-1);
+  else gHead.fill(-1);
+  for(let i=0;i<MAX;i++){
+    if(!eType[i])continue;
+    let cx=((px[i]/GAME.GCELL)|0)+1,cy=((py[i]/GAME.GCELL)|0)+1;
+    if(!Number.isFinite(cx))cx=1;if(!Number.isFinite(cy))cy=1;
+    const h=cx+cy*GCOLS();
+    if(h>=0&&h<gHead.length){gNext[i]=gHead[h];gHead[h]=i;}
+  }
+};
+
+const gNear=(x,y,r,cb)=>{
+  const c=Math.ceil(r/GAME.GCELL),cols=GCOLS();
+  const cx=((x/GAME.GCELL)|0)+1,cy=((y/GAME.GCELL)|0)+1;
+  for(let i=-c;i<=c;i++)for(let j=-c;j<=c;j++){
+    const idx=(cx+i)+(cy+j)*cols;
+    if(idx<0||idx>=gHead.length)continue;
+    let cur=gHead[idx];
+    while(cur!==-1&&cur!==undefined){if(cb(cur))return;cur=gNext[cur];}
+  }
+};
+
+const FACTIONS=[];
+const initFactions=()=>{
+  const h1=R(0,360);
+  let h2=(h1+R(100,260))%360;
+  FACTIONS.push({hue:h1,sat:82+R(0,18),light:52+R(0,8)});
+  FACTIONS.push({hue:h2,sat:82+R(0,18),light:52+R(0,8)});
+};
+initFactions();
+
+const shipColor=(fi,bright,sat)=>{
+  const f=FACTIONS[fi%2];
+  return `hsl(${0|f.hue},${sat===undefined?(0|f.sat):(0|sat)}%,${0|bright}%)`;
+};
+const shipColorA=(fi,bright,a,sat)=>{
+  const f=FACTIONS[fi%2];
+  return `hsla(${0|f.hue},${sat===undefined?(0|f.sat):(0|sat)}%,${0|bright}%,${a})`;
+};
+
+let shake=0;
+let impactFlash=0;
+
+const addShip=(y,f,hIdx,warp)=>{
+  const id=spawn(1);if(id===-1)return -1;
+  const h=HULLS[hIdx];
+  fac[id]=f;cId[id]=hIdx;
+  hull[id]=h.hp*R(0.92,1.08);maxHull[id]=h.hp;
+  armor[id]=h.armorRating*R(0.9,1.1);maxArmor[id]=h.armorRating;
+  flux[id]=0;maxFlux[id]=h.maxFlux;
+  fluxDiss[id]=h.fluxDiss*R(0.9,1.1);
+  overload[id]=venting[id]=shieldOn[id]=phaseOn[id]=0;
+  shieldFlash[id]=flash[id]=0;
+  ang[id]=f===0?0:Math.PI;angVel[id]=0;
+  phaseCd[id]=0;phaseCoolMax[id]=h.phaseCd||90;
+  px[id]=warp?(f===0?-FTL.SPAWN_OFFSET_U*GAME.U:W+FTL.SPAWN_OFFSET_U*GAME.U):((f===0?W*0.15:W*0.85));
+  py[id]=y;ftl[id]=warp?FTL.DURATION:0;
+  trg[id]=-1;
+
+  wState[id]=h.slots.map(s=>{
+    const rndWIdx=Math.floor(Math.random()*WEAPONS.length);
+    return{
+      wIdx:rndWIdx,baseAng:s.dir,isTurret:s.isTurret,curAng:s.dir,
+      cd:0,ammo:WEAPONS[rndWIdx].ammoMax,reloadCd:0,
+      beamActive:false,beamTimer:0,beamCharge:0,
+      burstQ:0,burstCd:0,spread:0
+    };
+  });
+
+  const fxOff=hIdx===0?-AI_CFG.FORM_OFFSET_X:(hIdx===1?AI_CFG.FORM_OFFSET_X:0);
+  sMeta[id]={
+    sp:h.maxSpeed*R(0.94,1.04),ac:h.accel*R(0.94,1.04),dc:h.decel*R(0.94,1.04),
+    tr:h.maxTurn*R(0.94,1.04),tac:h.turnAc*R(0.94,1.04),mass:h.mass,
+    prefDist:h.ai.prefDistU*GAME.U,
+    orbitDir:Math.random()<0.5?1:-1,orbitTimer:0,retargetCd:0,
+    ventStartFlux:h.ai.ventFlux,ventSafeDist:h.ai.ventSafeU*GAME.U,
+    formOffset:{x:fxOff+R(-25,25),y:R(-AI_CFG.FORM_OFFSET_Y,AI_CFG.FORM_OFFSET_Y)},
+    tactic:hIdx===1?(Math.random()>h.ai.tacticDiveChance?'dive':'skirmish'):'normal',
+    tacticTimer:R(h.ai.tacticTimerMin||120,h.ai.tacticTimerMax||300),
+    ftlTx:0,ftlTy:0,ftlVx:0,ftlVy:0,
+    task:0
+  };
+  aiRole[id]=hIdx;
+  return id;
+};
+
+const addPart=(x,y,fi,speed,size,life)=>{
+  if(alive>MAX-FX.PARTICLE_CAP)return;
+  const id=spawn(3);if(id===-1)return;
+  const a=R(0,GAME.P2);
+  px[id]=x;py[id]=y;fac[id]=fi;
+  vx[id]=Math.cos(a)*speed;vy[id]=Math.sin(a)*speed;
+  bSpd[id]=size;ttl[id]=life;
+};
+
+const addProj=(x,y,a,fi,wIdx,ship)=>{
+  const id=spawn(2);if(id===-1)return -1;
+  const w=WEAPONS[wIdx];
+  px[id]=x;py[id]=y;fac[id]=fi;srcId[id]=ship;trg[id]=trg[ship];
+  bWType[id]=wIdx;
+  const sp=w.projSpeed||1;
+  vx[id]=Math.cos(a)*sp;vy[id]=Math.sin(a)*sp;
+  ang[id]=a;ttl[id]=w.range/sp;
+  bSpd[id]=w.size||1;bDmg[id]=w.dmg||0;
+  armor[id]=w.isMissile?55:0;
+  return id;
+};
+
+const addShock=(x,y,fi,maxR)=>{
+  const id=spawn(7);if(id===-1)return;
+  px[id]=x;py[id]=y;fac[id]=fi;ttl[id]=0;bSpd[id]=maxR;
+};
+
+const applyDmg=(tId,rawDmg,wType,emp,shooterFac,projId)=>{
+  if(eType[tId]!==1||ftl[tId]>0)return;
+  const dt=HULLS[cId[tId]].defType;
+  const mult=(DMG_TABLE[wType]&&DMG_TABLE[wType][dt])!==undefined?DMG_TABLE[wType][dt]:1.0;
+
+  if(dt===0&&shieldOn[tId]&&overload[tId]<=0){
+    const hx=projId>=0?px[projId]:px[tId];
+    const hy=projId>=0?py[projId]:py[tId];
+    const ha=Math.atan2(hy-py[tId],hx-px[tId]);
+    const h=HULLS[cId[tId]];
+    if(Math.abs(nA(ha-ang[tId]))<h.shieldArc/2){
+      flux[tId]+=rawDmg*mult*h.shieldEff;
+      shieldFlash[tId]=FX.FLASH_SHIELD;
+      addPart(px[tId]+Math.cos(ha)*h.scale*1.35,py[tId]+Math.sin(ha)*h.scale*1.35,shooterFac,R(1,3),1.4,R(0.4,0.9));
+      if(rawDmg>40)impactFlash=Math.max(impactFlash,0.8);
+      return;
+    }
+  }
+
+  if(dt===1&&phaseOn[tId]){
+    flux[tId]+=rawDmg*0.12;
+    if(flux[tId]>=maxFlux[tId])overload[tId]=260;
+    return;
+  }
+
+  const arm=armor[tId];
+  const armMit=clamp((arm/(arm+rawDmg*1.5))*0.85,0,0.88);
+  const hullDmg=Math.max(1,rawDmg*mult*(1-armMit));
+  armor[tId]=Math.max(0,armor[tId]-rawDmg*mult*0.08);
+  hull[tId]-=hullDmg;
+  flash[tId]=FX.FLASH_DMG;
+
+  if(emp>0){flux[tId]+=emp*0.5;if(flux[tId]>=maxFlux[tId]*0.95){overload[tId]=220;shieldOn[tId]=phaseOn[tId]=venting[tId]=0;}}
+
+  if(projId>=0&&eType[projId]===2){
+    const kb=(rawDmg/Math.max(1,sMeta[tId]?.mass||1))*0.025*(WEAPONS[bWType[projId]]?.impact||0);
+    vx[tId]+=vx[projId]*kb;vy[tId]+=vy[projId]*kb;
+    if(rawDmg>60)for(let k=0;k<8;k++)addPart(px[tId],py[tId],fac[projId],R(0.5,2),R(1,2.5),R(0.3,0.8));
+  }
+
+  if(armor[tId]/maxArmor[tId]<0.45&&Math.random()<0.35){
+    for(let k=0;k<3;k++)addPart(px[tId]+R(-3,3),py[tId]+R(-3,3),fac[tId],R(0.5,1.5),R(0.8,1.6),R(0.15,0.4));
+  }
+
+  if(rawDmg>90)impactFlash=Math.max(impactFlash,1.6);
+  if(hull[tId]<=0)killShip(tId);
+};
+
+const killShip=id=>{
+  const sc=HULLS[cId[id]].scale;
+  for(let i=0;i<FX.DEATH_PARTICLES;i++)addPart(px[id],py[id],fac[id],R(0.3,sc*0.35),R(1.5,5),R(0.6,1.6));
+  for(let i=0;i<FX.DEATH_SPARKS;i++)addPart(px[id],py[id],fac[id],R(0.2,sc*0.4),R(2.5,6.5),R(0.8,2.0));
+  for(let i=0;i<FX.DEATH_CORES;i++)addPart(px[id],py[id],fac[id]+2,R(0.1,sc*0.15),R(3,7),R(0.4,1.0));
+  addShock(px[id],py[id],fac[id],sc*5.5);
+  shake=Math.max(shake,5.5);
+  impactFlash=Math.max(impactFlash,3.2);
+  destroy(id);
+};
+
+const applyAoE=(cx,cy,radius,rawDmg,wType,sf)=>{
+  gNear(cx,cy,radius,id=>{
+    if(eType[id]!==1||fac[id]===sf||ftl[id]>0)return false;
+    const d=Math.sqrt(D2(cx,cy,px[id],py[id]));
+    if(d<radius)applyDmg(id,rawDmg*(1-d/radius),wType,0,sf,-1);
+    return false;
+  });
+};
+
+const fireWeapon=(ship,ws,aimAng)=>{
+  const h=HULLS[cId[ship]],w=WEAPONS[ws.wIdx];
+  if(!w||!h)return;
+  const mAng=ang[ship]+ws.curAng;
+  const mx=px[ship]+Math.cos(mAng)*h.scale*0.85;
+  const my=py[ship]+Math.sin(mAng)*h.scale*0.85;
+  ws.spread=clamp((ws.spread||0)+(w.spreadPerShot||0),0,w.maxSpread||0.3);
+  const sa=aimAng+R(-(ws.spread||0),ws.spread||0)*0.5;
+  addProj(mx,my,sa,fac[ship],ws.wIdx,ship);
+  for(let k=0;k<5;k++)addPart(mx+Math.cos(sa)*5,my+Math.sin(sa)*5,fac[ship],R(1,4),1.2,R(0.2,0.5));
+  flux[ship]+=w.fluxCost||0;
+  const m=sMeta[ship]?.mass||1;
+  vx[ship]-=Math.cos(sa)*(w.impact||0)*0.15/m;
+  vy[ship]-=Math.sin(sa)*(w.impact||0)*0.15/m;
+  if(ws.ammo>0)ws.ammo--;
+};
+
+const aiTick=id=>{
+  const h=HULLS[cId[id]];
+  const meta=sMeta[id];
+  const cfg=h.ai;
+  if(!h||!meta)return;
+
+  if(--meta.retargetCd<=0){
+    meta.retargetCd=AI_CFG.RETARGET_BASE+(Math.random()*AI_CFG.RETARGET_VAR|0);
+    const preferred=RPS_COUNTER[cId[id]];
+    let bestScore=-1e9,bestId=-1;
+    const allyFocus=new Float32Array(MAX);
+    gNear(px[id],py[id],140*GAME.U,nId=>{
+      if(eType[nId]!==1||nId===id||fac[nId]===fac[id]||ftl[nId]>0)return false;
+      if(trg[nId]>-1)allyFocus[trg[nId]]=(allyFocus[trg[nId]]||0)+1;
+      return false;
+    });
+    gNear(px[id],py[id],140*GAME.U,nId=>{
+      if(eType[nId]!==1||nId===id||fac[nId]===fac[id]||ftl[nId]>0)return false;
+      const d=Math.sqrt(D2(px[id],py[id],px[nId],py[nId]));
+      const isPreferred=cId[nId]===preferred?1:0;
+      const hRatio=hull[nId]/maxHull[nId];
+      const fRatio=flux[nId]/maxFlux[nId];
+      let score=isPreferred*100*GAME.U-d*0.7+fRatio*35*GAME.U+(1-hRatio)*25*GAME.U+(allyFocus[nId]||0)*15*GAME.U;
+      if(cId[id]===1){
+        score=isPreferred*50*GAME.U-d*0.35+fRatio*140*GAME.U+(1-hRatio)*220*GAME.U+(allyFocus[nId]||0)*20*GAME.U;
+      }
+      if(score>bestScore){bestScore=score;bestId=nId;}
+      return false;
+    });
+    trg[id]=bestId;
+  }
+
+  const tId=trg[id];
+  const hasTgt=tId>-1&&eType[tId]===1&&ftl[tId]<=0;
+  const dist=hasTgt?Math.sqrt(D2(px[id],py[id],px[tId],py[tId])):9999;
+  const fRatio=flux[id]/maxFlux[id];
+  const hRatio=hull[id]/maxHull[id];
+
+  let task=0;
+  const shouldRetreat=overload[id]>0||(fRatio>cfg.retreatFlux&&h.defType!==2)||(hRatio<AI_CFG.RETREAT_HULL&&hasTgt&&dist<AI_CFG.RETREAT_DIST_U*GAME.U);
+  const shouldVent=fRatio>cfg.ventFlux&&(!hasTgt||dist>cfg.ventSafeU*GAME.U);
+  if(shouldRetreat)task=1;
+  else if(shouldVent)task=2;
+  meta.task=task;
+
+  if(overload[id]>0){
+    overload[id]--;
+    flux[id]=Math.max(0,flux[id]-fluxDiss[id]*0.5);
+  }else{
+    if(venting[id]>0){
+      flux[id]-=fluxDiss[id]*2.6;
+      shieldOn[id]=0;
+      if(flux[id]<maxFlux[id]*0.12||dist<meta.ventSafeDist*AI_CFG.VENT_SAFE_MULT)venting[id]=0;
+      if(Math.random()<0.45){
+        const va=ang[id]+Math.PI+R(-0.6,0.6);
+        addPart(px[id]+Math.cos(va)*h.scale,py[id]+Math.sin(va)*h.scale,fac[id],R(1,3.5),R(1.5,2.5),R(0.3,0.7));
+      }
+    }else{
+      flux[id]=Math.max(0,flux[id]-fluxDiss[id]*0.07);
+      if(task===2)venting[id]=1;
+    }
+  }
+
+  if(flux[id]>=maxFlux[id]&&overload[id]<=0){
+    overload[id]=260+(1-hull[id]/maxHull[id])*80;
+    shieldOn[id]=phaseOn[id]=venting[id]=0;
+  }
+  if(flash[id]>0)flash[id]-=FX.FLASH_DECAY;
+  if(shieldFlash[id]>0)shieldFlash[id]-=FX.SHIELD_DECAY;
+
+  if(h.defType===0&&overload[id]<=0&&venting[id]<=0){
+    let raise=false;
+    if(hasTgt&&dist<cfg.shieldRangeU*GAME.U)raise=true;
+    gNear(px[id],py[id],cfg.shieldProjU*GAME.U,p=>{
+      if(eType[p]===2&&fac[p]!==fac[id]){
+        const toMe=Math.atan2(py[id]-py[p],px[id]-px[p]);
+        const projDir=Math.atan2(vy[p],vx[p]);
+        if(Math.abs(nA(projDir-toMe))<1.1){raise=true;return true;}
+      }
+    });
+    if(fRatio>cfg.shieldFluxLim&&(!hasTgt||dist>10*GAME.U))raise=false;
+    shieldOn[id]=raise?1:0;
+    if(shieldOn[id])flux[id]+=h.shieldUpkeep/60;
+  }
+
+  if(h.defType===1&&overload[id]<=0){
+    let dodge=false;
+    if(hasTgt){
+      gNear(px[id],py[id],13*GAME.U,p=>{
+        if(eType[p]===2&&fac[p]!==fac[id]){
+          const toMe=Math.atan2(py[id]-py[p],px[id]-px[p]);
+          const projDir=Math.atan2(vy[p],vx[p]);
+          if(Math.abs(nA(projDir-toMe))<0.9){dodge=true;return true;}
+        }
+      });
+    }
+    const isDiving=meta.tactic==='dive';
+    let behindTgt=false;
+    if(hasTgt){
+      const dirX=px[id]-px[tId],dirY=py[id]-py[tId];
+      behindTgt=(Math.cos(ang[tId])*dirX+Math.sin(ang[tId])*dirY)<-2*GAME.U;
+    }
+    const inFiringPos=hasTgt&&dist<=meta.prefDist+5*GAME.U;
+    if(phaseOn[id]){
+      flux[id]+=h.phaseUpkeep/60;
+      let readyToStrike=inFiringPos&&!dodge;
+      if(isDiving)readyToStrike=readyToStrike&&behindTgt;
+      if(fRatio>cfg.phaseExitFlux||readyToStrike){
+        phaseOn[id]=0;phaseCd[id]=phaseCoolMax[id];
+      }
+    }else{
+      if(phaseCd[id]>0)phaseCd[id]--;
+      else{
+        let strike=hasTgt&&dist>meta.prefDist&&dist<meta.prefDist+cfg.phaseDiveU*GAME.U&&fRatio<cfg.phaseEnterFlux;
+        if(isDiving&&hasTgt&&!behindTgt&&fRatio<cfg.phaseEnterFlux+0.07)strike=true;
+        if(dodge||strike){phaseOn[id]=1;shieldOn[id]=0;}
+      }
+    }
+    if(--meta.tacticTimer<=0){
+      meta.tactic=Math.random()>cfg.tacticDiveChance?'dive':'skirmish';
+      meta.tacticTimer=R(cfg.tacticTimerMin||120,cfg.tacticTimerMax||300);
+    }
+  }
+
+  let dx=0,dy=0;
+  const retreating=task===1||(task===2&&hasTgt&&dist<10*GAME.U);
+
+  if(retreating){
+    const rx=fac[id]===0?W*0.08:W*0.92;
+    const ry=H*0.5+meta.formOffset.y;
+    const rdx=rx-px[id],rdy=ry-py[id];
+    const rd=Math.sqrt(rdx*rdx+rdy*rdy)||1;
+    dx+=(rdx/rd)*18;dy+=(rdy/rd)*18;
+  }else if(hasTgt&&dist>0.1){
+    let tx=px[tId],ty=py[tId];
+    let pref=meta.prefDist;
+
+    if(cId[id]===1&&meta.tactic==='dive'){
+      const rearDist=cfg.phaseDiveRearU*GAME.U;
+      tx=px[tId]-Math.cos(ang[tId])*rearDist;
+      ty=py[tId]-Math.sin(ang[tId])*rearDist;
+      pref=cfg.phaseStrikeU*GAME.U;
+    }
+
+    const tgtDx=tx-px[id],tgtDy=ty-py[id];
+    const distToPt=Math.sqrt(tgtDx*tgtDx+tgtDy*tgtDy)||1;
+    const nx=tgtDx/distToPt,ny=tgtDy/distToPt,ox=-ny,oy=nx;
+    const gap=distToPt-pref;
+
+    let appStr=cfg.approachStr;
+    let orbStr=cfg.orbitSpeed;
+    if(cId[id]===2){
+      appStr*=cfg.pushAggro||1.0;
+      orbStr*=0.6;
+    }
+
+    dx+=nx*gap*appStr+ox*meta.orbitDir*orbStr;
+    dy+=ny*gap*appStr+oy*meta.orbitDir*orbStr;
+
+    if(phaseOn[id]&&gap>0){
+      const phaseBoost=meta.tactic==='dive'?4.2:2.8;
+      dx+=nx*gap*phaseBoost;
+      dy+=ny*gap*phaseBoost;
+    }
+    if(--meta.orbitTimer<=0){meta.orbitDir*=-1;meta.orbitTimer=0|(R(AI_CFG.ORBIT_MIN,AI_CFG.ORBIT_MAX));}
+  }else if(!retreating){
+    const ex=fac[id]===0?W*0.28:W*0.72;
+    const gx=ex-px[id],gy=(H*0.5+meta.formOffset.y)-py[id];
+    const mg=Math.sqrt(gx*gx+gy*gy)||1;
+    dx+=gx/mg*4;dy+=gy/mg*4;
+  }
+
+  if(cId[id]!==2||Math.random()<cfg.dodgeChance||0){
+    let evadeX=0,evadeY=0,evadeCount=0;
+    gNear(px[id],py[id],AI_CFG.DODGE_RANGE_U*GAME.U,p=>{
+      if(eType[p]===2&&fac[p]!==fac[id]&&!WEAPONS[bWType[p]]?.isMissile){
+        const toMeX=px[id]-px[p],toMeY=py[id]-py[p];
+        const toMeD=Math.sqrt(toMeX*toMeX+toMeY*toMeY)||1;
+        const projDir=Math.atan2(vy[p],vx[p]);
+        const toMeDir=Math.atan2(toMeY,toMeX);
+        if(Math.abs(nA(projDir-toMeDir))<AI_CFG.DODGE_ANGLE&&toMeD<AI_CFG.EVADE_AHEAD_DIST_U*GAME.U){
+          evadeX+=-toMeY/toMeD;evadeY+=toMeX/toMeD;evadeCount++;
+        }
+      }
+    });
+    if(evadeCount>0){dx+=(evadeX/evadeCount)*AI_CFG.EVADE_WEIGHT;dy+=(evadeY/evadeCount)*AI_CFG.EVADE_WEIGHT;}
+  }
+
+  gNear(px[id],py[id],9*GAME.U,nId=>{
+    if(eType[nId]!==1||nId===id||ftl[nId]>0)return false;
+    const d2=D2(px[id],py[id],px[nId],py[nId]);
+    const minD=AI_CFG.SEP_MIN_U*GAME.U;
+    if(d2>0&&d2<minD*minD){
+      const d=Math.sqrt(d2);
+      const push=(minD-d)/d;
+      const weight=fac[nId]===fac[id]?AI_CFG.SEP_ALLY_MULT:AI_CFG.SEP_ENEMY_MULT;
+      dx+=(px[id]-px[nId])*push*weight;
+      dy+=(py[id]-py[nId])*push*weight;
+    }
+    return false;
+  });
+
+  const M=AI_CFG.BOUNDARY_MARGIN_U*GAME.U;
+  if(px[id]<M)dx+=(M-px[id])*AI_CFG.BOUNDARY_FORCE;
+  else if(px[id]>W-M)dx+=(W-M-px[id])*AI_CFG.BOUNDARY_FORCE;
+  if(py[id]<M)dy+=(M-py[id])*AI_CFG.BOUNDARY_FORCE;
+  else if(py[id]>H-M)dy+=(H-M-py[id])*AI_CFG.BOUNDARY_FORCE;
+
+  const crRatio=clamp(hull[id]/maxHull[id]*0.6+armor[id]/maxArmor[id]*0.4,0.25,1.0);
+  const dvx=dx*0.038-vx[id],dvy=dy*0.038-vy[id];
+  const dvMag=Math.sqrt(dvx*dvx+dvy*dvy);
+  const acc=meta.ac*(overload[id]>0?0.3:1)*(venting[id]>0?0.22:1)*crRatio*(phaseOn[id]?1.35:1);
+  const isDecel=(vx[id]*dvx+vy[id]*dvy)<0;
+  if(dvMag>0){const s=Math.min(isDecel?meta.dc:acc,dvMag)/dvMag;vx[id]+=dvx*s;vy[id]+=dvy*s;}
+
+  let sp=Math.sqrt(vx[id]*vx[id]+vy[id]*vy[id]);
+  const maxSp=meta.sp*(overload[id]>0?0.4:1)*(phaseOn[id]?2.2:1)*crRatio;
+  if(sp>maxSp){vx[id]*=maxSp/sp;vy[id]*=maxSp/sp;}
+  vx[id]*=0.984;vy[id]*=0.984;
+  px[id]+=vx[id];py[id]+=vy[id];
+
+  const r=h.scale*2.6;
+  if(px[id]<r||px[id]>W-r)vx[id]*=-0.6;
+  if(py[id]<r||py[id]>H-r)vy[id]*=-0.6;
+  px[id]=clamp(px[id],r,W-r);
+  py[id]=clamp(py[id],r,H-r);
+
+  if(Math.random()<0.42){
+    const exX=px[id]-Math.cos(ang[id])*h.scale*0.85;
+    const exY=py[id]-Math.sin(ang[id])*h.scale*0.85;
+    addPart(exX,exY,fac[id],R(0.4,1.6),R(1.2,2.4),R(0.2,0.55));
+  }
+
+  const faceTgt=hasTgt&&!retreating;
+  const desired=faceTgt?Math.atan2(py[tId]-py[id],px[tId]-px[id]):ang[id];
+  const aD=nA(desired-ang[id]);
+  angVel[id]+=clamp(aD*0.48,-meta.tac,meta.tac);
+  angVel[id]=clamp(angVel[id],-meta.tr,meta.tr);
+  angVel[id]*=0.74;
+  ang[id]+=angVel[id];
+
+  for(let m=0;m<h.slots.length;m++){
+    const ws=wState[id][m];if(!ws)continue;
+    const w=WEAPONS[ws.wIdx];if(!w)continue;
+    const aimA=hasTgt?Math.atan2(py[tId]-py[id],px[tId]-px[id]):ang[id]+ws.baseAng;
+    let targetRelative=ws.baseAng;
+    if(hasTgt)targetRelative=nA(aimA-ang[id]);
+    if(ws.isTurret){
+      targetRelative=clamp(targetRelative,ws.baseAng-Math.PI/2.1,ws.baseAng+Math.PI/2.1);
+      const diff=nA(targetRelative-ws.curAng);
+      ws.curAng+=clamp(diff,-0.07,0.07);
+    }else{
+      ws.curAng=ws.baseAng;
+    }
+    const slotW=ang[id]+ws.curAng;
+    ws.spread=Math.max(0,(ws.spread||0)-(w.spreadDecay||0.15));
+    if(ws.reloadCd>0){if(--ws.reloadCd<=0)ws.ammo=w.ammoMax;continue;}
+    if(ws.ammo===0&&w.reloadTime>0){ws.reloadCd=w.reloadTime;continue;}
+    if(ws.burstQ>0){
+      if(ws.burstCd>0){ws.burstCd--;}
+      else{fireWeapon(id,ws,slotW);ws.burstQ--;ws.burstCd=w.burstDelay||5;}
+      continue;
+    }
+    if(ws.cd>0){ws.cd--;continue;}
+    if(overload[id]>0||venting[id]>0||phaseOn[id])continue;
+    if(w.isBeam){
+      const fc=(w.fluxCostSec||0)/60;
+      const canF=flux[id]+fc<maxFlux[id]*1.05&&!phaseOn[id];
+      const inR=hasTgt&&dist<=w.range&&!phaseOn[tId];
+      if(ws.beamActive){
+        if(!canF||!inR||--ws.beamTimer<=0){ws.beamActive=false;ws.beamCharge=0;ws.cd=w.cooldown;}
+        else{
+          flux[id]+=fc;applyDmg(tId,(w.dps||0)/60,w.wType,0,fac[id],-1);
+          const bid=spawn(6);if(bid>-1){
+            const sa=slotW,mh=h.scale*0.85;
+            px[bid]=px[id]+Math.cos(sa)*mh;py[bid]=py[id]+Math.sin(sa)*mh;
+            vx[bid]=px[tId];vy[bid]=py[tId];
+            fac[bid]=fac[id];ttl[bid]=2;bDmg[bid]=w.dps||0;
+          }
+        }
+      }else if(canF&&inR&&Math.abs(nA(aimA-slotW))<0.18){
+        if(w.chargeup>0){ws.beamCharge++;if(ws.beamCharge>=w.chargeup){ws.beamActive=true;ws.beamTimer=w.beamDuration;ws.beamCharge=0;}}
+        else{ws.beamActive=true;ws.beamTimer=w.beamDuration;}
+      }
+      continue;
+    }
+    const aD2=nA(aimA-slotW);
+    const fc=w.fluxCost||0;
+    const thresh=0.26+(w.wType===2?0.1:0);
+    if(hasTgt&&!phaseOn[tId]&&Math.abs(aD2)<thresh&&dist<=w.range&&flux[id]+fc<maxFlux[id]*1.02){
+      if(w.burstCount>1){ws.burstQ=w.burstCount-1;ws.burstCd=w.burstDelay||5;}
+      fireWeapon(id,ws,slotW);
+      ws.cd=w.cooldown;
+    }
+  }
+};
+
+let waveNum=0,waveTimer=0,wavePause=0;
+const WAVE_PAUSE=520;
+
+const countAlive=f=>{
+  let c=0;
+  for(let i=0;i<MAX;i++)if(eType[i]===1&&fac[i]===f&&ftl[i]<=0)c++;
+  return c;
+};
+const dominantHull=f=>{
+  const c=[0,0,0];
+  for(let i=0;i<MAX;i++)if(eType[i]===1&&fac[i]===f&&ftl[i]<=0)c[cId[i]]++;
+  return c.indexOf(Math.max(...c));
+};
+
+const directorTick=()=>{
+  if(wavePause>0){wavePause--;return;}
+  const c0=countAlive(0),c1=countAlive(1);
+  if(waveNum===0){
+    waveNum=1;
+    for(let i=0;i<6;i++){
+      addShip(H*R(0.12,0.88),0,i%3,true);
+      addShip(H*R(0.12,0.88),1,i%3,true);
+    }
+    wavePause=WAVE_PAUSE;
+    return;
+  }
+  if(waveTimer>0){waveTimer--;return;}
+  waveTimer=0|(R(360,520));
+  const weaker=c0<=c1?0:1;
+  const stronger=1-weaker;
+  const dom=dominantHull(stronger);
+  const counter=RPS_COUNTER[dom];
+  const waveSize=Math.min(2+(waveNum>>2),5);
+  waveNum++;
+  for(let i=0;i<waveSize;i++){
+    const hullType=Math.random()<0.55?counter:Math.floor(Math.random()*HULLS.length);
+    const oy=H*R(0.12,0.88);
+    addShip(oy+R(-70,70),weaker,hullType,true);
+  }
+};
+
+const updateAll=()=>{
+  rebuildGrid();
+  directorTick();
+  for(let i=0;i<MAX;i++){
+    const t=eType[i];if(!t)continue;
+    if(t===1){
+      if(ftl[i]>0){
+        if(ftl[i]===FTL.DURATION-1){
+          sMeta[i].ftlTx=(fac[i]===0?W*0.18:W*0.82)+R(-40,40);
+          sMeta[i].ftlTy=H*0.5+R(-H*0.18,H*0.18);
+          const dx=sMeta[i].ftlTx-px[i],dy=sMeta[i].ftlTy-py[i];
+          const d=Math.sqrt(dx*dx+dy*dy)||1;
+          sMeta[i].ftlVx=(dx/d)*FTL.SPEED_MAX;
+          sMeta[i].ftlVy=(dy/d)*FTL.SPEED_MAX;
+          ang[i]=Math.atan2(dy,dx);
+        }
+        ftl[i]--;
+        const prog=ftl[i]/FTL.DURATION;
+        const spd=FTL.SPEED_BASE+prog*(FTL.SPEED_MAX-FTL.SPEED_BASE);
+        vx[i]=Math.cos(ang[i])*spd;
+        vy[i]=Math.sin(ang[i])*spd;
+
+        const h=HULLS[cId[i]];
+        gNear(px[i],py[i],h.scale*FTL.COLLISION_RAD_MULT,nId=>{
+          if(eType[nId]===1&&ftl[nId]<=0&&nId!==i){
+            const d2=D2(px[i],py[i],px[nId],py[nId]);
+            const rad=(h.scale+HULLS[cId[nId]].scale)*0.5*FTL.COLLISION_RAD_MULT;
+            if(d2<rad*rad){
+              killShip(nId);
+              shake=Math.max(shake,6);
+              impactFlash=Math.max(impactFlash,4);
+              for(let k=0;k<20;k++)addPart(px[nId],py[nId],fac[i],R(2,8),R(2,5),R(0.4,1.2));
+            }
+          }
+        });
+
+        px[i]+=vx[i];py[i]+=vy[i];
+        for(let k=0;k<FTL.PARTICLES_PER_TICK;k++)addPart(px[i]-Math.cos(ang[i])*R(4,18),py[i]-Math.sin(ang[i])*R(4,18),fac[i],R(1.5,4.5),R(2.5,4.5),R(0.5,1.2));
+        if(ftl[i]<=0){vx[i]*=FTL.EXIT_DAMP;vy[i]*=FTL.EXIT_DAMP;}
+        continue;
+      }
+      aiTick(i);
+    }else if(t===2){
+      const wIdx=bWType[i];const w=WEAPONS[wIdx];if(!w){destroy(i);continue;}
+      if(w.isMissile){
+        let tid=trg[i];
+        if(tid===-1||eType[tid]!==1||ftl[tid]>0||fac[tid]===fac[i]){
+          let bd=1e9,nt=-1;
+          gNear(px[i],py[i],w.range,id2=>{
+            if(eType[id2]===1&&fac[id2]!==fac[i]&&ftl[id2]<=0){
+              const d=D2(px[i],py[i],px[id2],py[id2]);
+              if(d<bd){bd=d;nt=id2;}
+            }
+          });
+          trg[i]=tid=nt;
+        }
+        let desiredAng=tid>-1?Math.atan2(py[tid]-py[i],px[tid]-px[i]):ang[i];
+        let evadeX=0,evadeY=0,threatCount=0;
+        gNear(px[i],py[i],12*GAME.U,nId=>{
+          if(eType[nId]===2&&fac[nId]!==fac[i]&&!WEAPONS[bWType[nId]]?.isMissile){
+            const dx=px[nId]-px[i],dy=py[nId]-py[i];
+            const distSq=dx*dx+dy*dy;
+            const isAhead=(Math.cos(ang[i])*dx+Math.sin(ang[i])*dy)>0;
+            if(isAhead&&distSq<(10*GAME.U)**2){evadeX+=px[nId];evadeY+=py[nId];threatCount++;}
+          }
+        });
+        if(threatCount>0){
+          evadeX/=threatCount;evadeY/=threatCount;
+          const toThreat=Math.atan2(evadeY-py[i],evadeX-px[i]);
+          const sign=nA(toThreat-ang[i])>0?-1:1;
+          desiredAng=ang[i]+sign*Math.PI/1.5;
+        }
+        ang[i]+=clamp(nA(desiredAng-ang[i]),-(w.missileTurn||0.02),w.missileTurn||0.02);
+        vx[i]+=Math.cos(ang[i])*(w.missileAccel||0.012);
+        vy[i]+=Math.sin(ang[i])*(w.missileAccel||0.012);
+        let sp=Math.sqrt(vx[i]*vx[i]+vy[i]*vy[i]);
+        const msp=(w.projSpeed||1)*(w.missileMaxSpeed||2.6);
+        vx[i]=vx[i]*0.94+Math.cos(ang[i])*sp*0.06;
+        vy[i]=vy[i]*0.94+Math.sin(ang[i])*sp*0.06;
+        if(sp>msp){vx[i]*=msp/sp;vy[i]*=msp/sp;}
+        if(Math.random()<0.35)addPart(px[i]-Math.cos(ang[i])*3,py[i]-Math.sin(ang[i])*3,fac[i],R(0.1,0.3),1,R(0.2,0.4));
+        if(w.proxFuse){
+          gNear(px[i],py[i],w.proxFuse,nId=>{
+            if(eType[nId]===1&&fac[nId]!==fac[i]&&ftl[nId]<=0&&!phaseOn[nId]&&D2(px[i],py[i],px[nId],py[nId])<w.proxFuse*w.proxFuse){
+              applyAoE(px[i],py[i],w.proxRadius,w.dmg,w.wType,fac[i]);
+              for(let k=0;k<16;k++)addPart(px[i],py[i],fac[i],R(0.5,2.5),R(1.5,4),R(0.5,1.2));
+              shake=Math.max(shake,3);
+              impactFlash=Math.max(impactFlash,2.0);
+              destroy(i);return true;
+            }
+          });
+          if(!eType[i])continue;
+        }
+        if(armor[i]>0){
+          gNear(px[i],py[i],2*GAME.U,nId=>{
+            if(eType[nId]===2&&fac[nId]!==fac[i]&&!WEAPONS[bWType[nId]]?.isMissile&&D2(px[i],py[i],px[nId],py[nId])<(1.4*GAME.U)*(1.4*GAME.U)){
+              armor[i]-=bDmg[nId]*0.55;
+              if(armor[i]<=0){
+                for(let k=0;k<10;k++)addPart(px[i],py[i],fac[i],R(0.4,1.4),R(1,2.5),R(0.3,0.7));
+                destroy(i);return true;
+              }
+            }
+          });
+          if(!eType[i])continue;
+        }
+      }
+      px[i]+=vx[i];py[i]+=vy[i];
+      if(--ttl[i]<=0){destroy(i);continue;}
+      gNear(px[i],py[i],3*GAME.U,nId=>{
+        if(fac[nId]===fac[i]||ftl[nId]>0||nId===i)return false;
+        if(eType[nId]===1&&!phaseOn[nId]&&D2(px[i],py[i],px[nId],py[nId])<(bSpd[i]+HULLS[cId[nId]].scale*2.4+2)**2){
+          applyDmg(nId,bDmg[i],w.wType,0,srcId[i],i);
+          if(w.proxRadius)applyAoE(px[i],py[i],w.proxRadius,bDmg[i]*w.aoeRatio,w.wType,fac[i]);
+          for(let p=0;p<12;p++)addPart(px[i],py[i],fac[i],R(1,3),R(1.5,3),R(0.3,0.8));
+          if(bDmg[i]>100){shake=Math.max(shake,2);impactFlash=Math.max(impactFlash,1.2);}
+          destroy(i);return true;
+        }
+        if(!w.isMissile&&eType[nId]===2&&WEAPONS[bWType[nId]]?.isMissile&&D2(px[i],py[i],px[nId],py[nId])<(1.4*GAME.U)*(1.4*GAME.U)){
+          for(let k=0;k<8;k++)addPart(px[nId],py[nId],fac[nId],R(0.4,1.2),R(1,2.5),R(0.2,0.5));
+          destroy(nId);destroy(i);return true;
+        }
+      });
+    }else if(t===3){
+      px[i]+=vx[i];py[i]+=vy[i];
+      vx[i]*=0.91;vy[i]*=0.91;bSpd[i]*=0.95;
+      if((ttl[i]-=0.025)<=0)destroy(i);
+    }else if(t===6){
+      if(--ttl[i]<=0)destroy(i);
+    }else if(t===7){
+      ttl[i]+=(bSpd[i]-ttl[i])*FX.SHOCK_GROW;
+      if(ttl[i]>=bSpd[i]-0.3)destroy(i);
+    }
+  }
+};
+
+const render=()=>{
+  ctx.imageSmoothingEnabled=false;
+  ctx.fillStyle='rgba(0,1,2,0.34)';
+  ctx.globalCompositeOperation='source-over';
+  ctx.fillRect(0,0,W,H);
+
+  if(impactFlash>0.05){
+    ctx.fillStyle=`rgba(250,248,240,${Math.min(0.035,impactFlash*0.012)})`;
+    ctx.fillRect(0,0,W,H);
+    impactFlash*=FX.IMPACT_FLASH_DECAY;
+    if(impactFlash<0.1)impactFlash=0;
+  }
+
+  if(shake>0.1){
+    ctx.save();
+    ctx.translate(R(-shake,shake),R(-shake,shake));
+    shake*=FX.SHAKE_DECAY;
+    if(shake<0.15)shake=0;
+  }
+
+  ctx.strokeStyle='rgba(0,200,255,0.016)';ctx.lineWidth=1;ctx.beginPath();
+  for(let i=0;i<W;i+=120){ctx.moveTo(i,0);ctx.lineTo(i,H);}
+  for(let i=0;i<H;i+=120){ctx.moveTo(0,i);ctx.lineTo(W,i);}
+  ctx.stroke();
+
+  ctx.globalCompositeOperation='lighter';
+
+  for(let i=0;i<MAX;i++){
+    const t=eType[i];if(!t)continue;
+    const lx=px[i],ly=py[i];
+
+    if(t===3){
+      const s=bSpd[i];
+      ctx.globalAlpha=Math.max(0,Math.min(1,ttl[i]));
+      const bright=48+s*14;
+      ctx.fillStyle=shipColor(fac[i]%2,bright);
+      ctx.fillRect(0|lx-s,0|ly-s,0|s*2,0|s*2);
+      ctx.globalAlpha=1;
+    }else if(t===7){
+      const prog=ttl[i]/bSpd[i];
+      ctx.globalAlpha=(1-prog)*FX.SHOCK_ALPHA;
+      ctx.strokeStyle=shipColor(fac[i]%2,75,100);
+      ctx.lineWidth=1.5*(1-prog);
+      ctx.beginPath();
+      ctx.arc(lx,ly,ttl[i],0,GAME.P2);
+      ctx.stroke();
+      ctx.globalAlpha=1;
+    }else if(t===2){
+      const w=WEAPONS[bWType[i]];
+      const sz=Math.max(1.2,(w?.size||1)*0.85);
+      if(w?.isMissile){
+        ctx.globalAlpha=FX.TRAIL_MISSILE_ALPHA;
+        ctx.strokeStyle=shipColor(fac[i]%2,40,100);
+        ctx.lineWidth=0.9;
+        ctx.beginPath();
+        ctx.moveTo(0|(lx-vx[i]*FX.TRAIL_MISSILE_LEN),0|(ly-vy[i]*FX.TRAIL_MISSILE_LEN));
+        ctx.lineTo(0|lx,0|ly);
+        ctx.stroke();
+      }else{
+        ctx.globalAlpha=FX.TRAIL_PROJ_ALPHA;
+        ctx.strokeStyle=shipColor(fac[i]%2,45,100);
+        ctx.lineWidth=0.7;
+        ctx.beginPath();
+        ctx.moveTo(0|(lx-vx[i]*FX.TRAIL_PROJ_LEN),0|(ly-vy[i]*FX.TRAIL_PROJ_LEN));
+        ctx.lineTo(0|lx,0|ly);
+        ctx.stroke();
+      }
+      ctx.globalAlpha=0.35;
+      ctx.fillStyle=shipColor(fac[i]%2,70);
+      ctx.fillRect(0|(lx-vx[i]*1.2-sz),0|(ly-vy[i]*1.2-sz),0|sz*2,0|sz*2);
+      ctx.globalAlpha=1;
+      ctx.fillRect(0|lx-sz,0|ly-sz,0|sz*2,0|sz*2);
+      ctx.fillStyle=shipColor(fac[i]%2,92,100);ctx.globalAlpha=0.65;
+      ctx.fillRect(0|lx-sz*0.35,0|ly-sz*0.35,0|sz*0.7,0|sz*0.7);
+      ctx.globalAlpha=1;
+    }else if(t===6){
+      const op=ttl[i]/2;
+      ctx.strokeStyle=shipColor(fac[i]%2,70,100);ctx.lineWidth=bDmg[i]>50?2.8:1.4;
+      ctx.globalAlpha=op;
+      ctx.beginPath();ctx.moveTo(0|px[i],0|py[i]);ctx.lineTo(0|vx[i],0|vy[i]);ctx.stroke();
+      ctx.strokeStyle=shipColor(fac[i]%2,92,100);ctx.lineWidth=bDmg[i]>50?1.4:0.7;ctx.stroke();
+      ctx.globalAlpha=1;
+    }else if(t===1){
+      const h=HULLS[cId[i]];if(!h)continue;
+      if(ftl[i]<=0){
+        ctx.globalAlpha=FX.TRAIL_SHIP_ALPHA;
+        ctx.strokeStyle=shipColor(fac[i]%2,38,100);
+        ctx.lineWidth=1.1;
+        ctx.beginPath();
+        ctx.moveTo(0|(lx-vx[i]*FX.TRAIL_SHIP_LEN),0|(ly-vy[i]*FX.TRAIL_SHIP_LEN));
+        ctx.lineTo(0|lx,0|ly);
+        ctx.stroke();
+        ctx.globalAlpha=1;
+      }
+      if(ftl[i]>0){
+        ctx.save();
+        ctx.translate(0|lx,0|ly);ctx.rotate(ang[i]);
+        const streak=ftl[i]/FTL.DURATION;
+        ctx.globalAlpha=streak*0.7;
+        ctx.strokeStyle=shipColor(fac[i]%2,45);
+        ctx.lineWidth=3+streak*4;
+        ctx.beginPath();
+        ctx.moveTo(-h.scale*0.5,0);
+        ctx.lineTo(-h.scale*(2+streak*6),0);
+        ctx.stroke();
+        ctx.globalAlpha=streak*0.4;
+        ctx.strokeStyle=shipColor(fac[i]%2,85,100);
+        ctx.lineWidth=1.5;
+        ctx.beginPath();
+        ctx.moveTo(-h.scale*0.3,0);
+        ctx.lineTo(-h.scale*(1+streak*4),0);
+        ctx.stroke();
+        ctx.globalAlpha=1;
+        ctx.restore();
+      }
+      ctx.save();ctx.translate(0|lx,0|ly);ctx.rotate(ang[i]);
+      const s=h.scale;
+      const sc=1+(flash[i]>0?Math.sin(Date.now()*0.012)*0.06:0);
+      ctx.scale(sc,sc);
+      if(ftl[i]>0){ctx.shadowColor=shipColor(fac[i]%2,50);ctx.shadowBlur=24;ctx.globalAlpha=0.78;}
+      if(overload[i]>0){
+        ctx.shadowColor=shipColor(fac[i]%2,50);ctx.shadowBlur=14+Math.sin(Date.now()*0.03)*6;
+        ctx.strokeStyle=shipColorA(fac[i]%2,60,0.4+Math.random()*0.35,100);
+        ctx.lineWidth=1;
+        for(let a=0;a<3;a++){
+          const aa=R(-Math.PI,Math.PI),rr=R(2,s*1.2);
+          ctx.beginPath();ctx.moveTo(Math.cos(aa)*s*0.3,Math.sin(aa)*s*0.3);
+          ctx.lineTo(Math.cos(aa)*rr,Math.sin(aa)*rr);ctx.stroke();
+        }
+      }
+      const pts=h.pts;
+      const bC=flash[i]>0?shipColor(fac[i]%2,95,100):shipColor(fac[i]%2,65);
+      if(phaseOn[i]){
+        ctx.globalAlpha=0.82;
+        ctx.beginPath();ctx.moveTo(pts[0][0]*s,pts[0][1]*s);
+        for(let j=1;j<pts.length;j++)ctx.lineTo(pts[j][0]*s,pts[j][1]*s);
+        ctx.closePath();ctx.setLineDash([2,3]);ctx.lineWidth=1.2;
+        ctx.strokeStyle=shipColor(fac[i]%2,80,100);
+        ctx.stroke();
+        ctx.translate(R(-1.2,1.2),R(-1.2,1.2));
+        ctx.strokeStyle=shipColor(fac[i]%2,55,100);
+        ctx.stroke();ctx.setLineDash([]);
+      }else{
+        ctx.beginPath();ctx.moveTo(pts[0][0]*s,pts[0][1]*s);
+        for(let j=1;j<pts.length;j++)ctx.lineTo(pts[j][0]*s,pts[j][1]*s);
+        ctx.closePath();ctx.fillStyle=bC;ctx.fill();
+        ctx.globalCompositeOperation='source-over';
+        ctx.beginPath();ctx.moveTo(pts[0][0]*s*0.6,pts[0][1]*s*0.6);
+        for(let j=1;j<pts.length;j++)ctx.lineTo(pts[j][0]*s*0.6,pts[j][1]*s*0.6);
+        ctx.closePath();ctx.fillStyle='#000102';ctx.fill();
+        ctx.lineWidth=1.3;ctx.strokeStyle=bC;ctx.stroke();
+        ctx.globalCompositeOperation='lighter';
+        const aR=armor[i]/maxArmor[i];
+        if(aR<0.55){
+          ctx.fillStyle=`rgba(255,90,0,${(0.55-aR)*0.55})`;
+          for(let k=0;k<4;k++)ctx.fillRect(R(-s,s)*0.9,R(-s,s)*0.9,1.5,1.5);
+        }
+        if(hull[i]/maxHull[i]<0.35){
+          ctx.fillStyle='rgba(80,80,80,0.22)';
+          for(let k=0;k<2;k++)ctx.fillRect(R(-s,s)*0.7,R(-s,s)*0.7,2,2);
+        }
+      }
+      if(h.defType===0&&shieldOn[i]&&overload[i]<=0){
+        const sr=s*1.32,fW=flux[i]/maxFlux[i];
+        const hsl=shipColor(fac[i]%2,65,100);
+        ctx.strokeStyle=hsl;
+        ctx.fillStyle=shipColorA(fac[i]%2,65,0.06+(shieldFlash[i]>0?shieldFlash[i]*0.07:0),100);
+        ctx.lineWidth=1.6;
+        const segs=Math.max(3,Math.ceil(h.shieldArc*4));
+        const start=-h.shieldArc/2,step=h.shieldArc/segs;
+        ctx.beginPath();
+        for(let j=0;j<=segs;j++){
+          const a=start+j*step;
+          if(j===0)ctx.moveTo(Math.cos(a)*sr,Math.sin(a)*sr);
+          else ctx.lineTo(Math.cos(a)*sr,Math.sin(a)*sr);
+        }
+        ctx.stroke();ctx.lineTo(0,0);ctx.closePath();ctx.fill();
+        if(fW>0.72){ctx.strokeStyle=shipColorA(fac[i]%2,50,fW*0.5,100);ctx.lineWidth=2.2;ctx.stroke();}
+        if(shieldFlash[i]>0.1){
+          const ripR=sr+(FX.FLASH_SHIELD-shieldFlash[i])*2.8;
+          ctx.strokeStyle=shipColorA(fac[i]%2,80,shieldFlash[i]*0.055,100);
+          ctx.lineWidth=1.2;
+          ctx.beginPath();
+          ctx.arc(0,0,ripR,-h.shieldArc/2-0.1,h.shieldArc/2+0.1);
+          ctx.stroke();
+        }
+      }
+      ctx.shadowBlur=0;ctx.globalAlpha=1;
+      ctx.globalCompositeOperation='lighter';
+      ctx.restore();
+    }
+  }
+  if(shake>0.1)ctx.restore();
+};
+
+const TICK=GAME.TICK;
+let last=performance.now(),accum=0;
+const loop=now=>{
+  const dt=Math.min(now-last,100);
+  last=now;
+  accum+=dt;
+  let steps=0;
+  while(accum>=TICK&&steps<4){
+    updateAll();accum-=TICK;
+    steps++;
+  }
+  if(steps>=4)accum=0;
+  render();w
+  requestAnimationFrame(loop);
+};
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -1,125 +1,67 @@
-<!doctype html>
-<html lang="vi">
+<!DOCTYPE html>
+<html lang=en>
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cyber-Sim Minimal</title>
-<style>
-:root{--bg:#05060a;--neon:#00fde0;--accent:#ff0077;--panel:#0b0d12;--muted:#7b7f87;--cell-size:18px}
-html,body{height:100%;margin:0;background:var(--bg);font-family:Inter,system-ui,Segoe UI,Roboto,Arial}
-.app{display:flex;height:100vh;gap:12px;padding:12px;box-sizing:border-box}
-.left{width:calc(var(--cell-size)*32+24px);background:linear-gradient(180deg,rgba(255,255,255,.02),transparent);border-radius:8px;padding:12px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;box-shadow:0 0 18px rgba(0,255,225,.03)}
-canvas{background:linear-gradient(180deg,#04050a,#0b0d12);border-radius:6px;image-rendering:pixelated}
-.right{flex:1;display:flex;flex-direction:column;gap:12px}
-.panel{background:var(--panel);padding:10px;border-radius:8px;color:#cbd0d6;box-shadow:0 8px 30px rgba(0,0,0,.6)}
-.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-button{background:#0f1115;border:1px solid rgba(255,255,255,.03);color:var(--neon);padding:6px 10px;border-radius:6px;cursor:pointer}
-button.secondary{color:var(--accent)}
-.console{height:46vh;overflow:auto;background:#06070b;padding:8px;border-radius:6px;font-family:monospace;font-size:12px;color:#9fb}
-.small{font-size:12px;color:var(--muted)}
-.agent-info{display:flex;gap:8px;align-items:center}
-.agent-chip{width:12px;height:12px;border-radius:3px;background:var(--neon);display:inline-block}
-.stat{display:flex;gap:6px;align-items:center}
-input[type=range]{width:160px}
-.badge{background:#071018;padding:6px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.02);font-family:monospace}
-a{color:var(--neon);text-decoration:none}
-</style>
+<meta charset=UTF-8>
+<title>Rain World Eco-Sim</title>
+<style>body{margin:0;background:#050505;color:#888;font-family:monospace;overflow:hidden}canvas{display:block;margin:0 auto;border:1px solid #333}#ui{position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.7);padding:10px;pointer-events:none}.legend-item{display:flex;align-items:center;margin-bottom:4px}.dot{width:10px;height:10px;margin-right:8px;display:inline-block}</style>
 </head>
 <body>
-<div class="app">
-  <div class="left panel">
-    <canvas id="map" width="576" height="576"></canvas>
-    <div class="small" style="margin-top:8px;color:var(--muted)">Click agent → right controls. Grid A* pathfinding.</div>
-  </div>
-  <div class="right">
-    <div class="panel controls">
-      <div style="flex:1">
-        <div style="display:flex;gap:8px;align-items:center">
-          <button id="spawn">Spawn Agent</button>
-          <button id="spawnRandom" class="secondary">Spawn Random 5</button>
-          <button id="toggleObstacles">Toggle Obstacles</button>
-          <label class="small" style="margin-left:8px;color:var(--muted)">Speed</label>
-          <input id="speed" type="range" min="50" max="1000" value="220">
-          <div class="badge" id="tickInfo">Tick: 0</div>
-        </div>
-        <div style="margin-top:8px" class="small">Selected: <span id="selectedAgent">None</span></div>
-      </div>
-      <div style="width:260px">
-        <div class="agent-info">
-          <div class="agent-chip" id="selColor"></div>
-          <div style="flex:1">
-            <div id="selName" style="font-weight:700">—</div>
-            <div class="small" id="selState">—</div>
-          </div>
-        </div>
-        <div style="margin-top:8px;display:flex;gap:6px">
-          <button id="forceEat">Force Eat</button>
-          <button id="forceWork" class="secondary">Force Work</button>
-          <button id="kill" style="background:#25050a;color:var(--accent)">Kill</button>
-        </div>
-      </div>
-    </div>
-    <div class="panel">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <strong>Console</strong>
-        <div class="small">Latest logs</div>
-      </div>
-      <div id="console" class="console"></div>
-    </div>
-    <div class="panel small">
-      <strong>Tips</strong>
-      <ul>
-        <li>32×32 grid, cell size via <code>--cell-size</code>.</li>
-        <li>Agents seek food/home/work/wander. A* avoids obstacles.</li>
-        <li>Click agent → force actions.</li>
-      </ul>
-    </div>
-   </div>
+<div id=ui>
+<h3>CYCLE: <span id=cycleTimer>0</span></h3>
+<div class=legend-item><span class=dot style=background:white></span>Slugcat</div>
+<div class=legend-item><span class=dot style=background:#0f0></span>Green Lizard</div>
+<div class=legend-item><span class=dot style=background:#f0f></span>Pink Lizard</div>
+<div class=legend-item><span class=dot style=background:#444></span>Batfly</div>
+<div class=legend-item><span class=dot style=background:orange></span>Spear</div>
+<div style=font-size:.8em;margin-top:5px>Viewing Room: <span id=roomIdx>0</span></div>
+<div style=font-size:.8em;color:#666>(Click canvas to change rooms)</div>
 </div>
-
-<script>
-const COLS=32,ROWS=32,CELL=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-size'))||18;
-const CANVAS_SIZE=CELL*COLS,OBSTACLE_DENSITY=.12;
-const canvas=document.getElementById('map'),ctx=canvas.getContext('2d');
-canvas.width=canvas.height=CANVAS_SIZE;
-const consoleDiv=document.getElementById('console'),tickInfo=document.getElementById('tickInfo');
-const selectedAgentLabel=document.getElementById('selectedAgent'),selName=document.getElementById('selName');
-const selState=document.getElementById('selState'),selColor=document.getElementById('selColor');
-let tick=0,tickDelay=+document.getElementById('speed').value;
-document.getElementById('speed').addEventListener('input',e=>tickDelay=+e.target.value);
-let grid=createGrid(COLS,ROWS),obstaclesEnabled=true;
-randomizeObstacles();
-let agents=[],selectedAgent=null,nextAgentId=1;
-
-function log(m){const t=new Date().toLocaleTimeString();const d=document.createElement('div');d.textContent=`[${t}][T${tick}] ${m}`;consoleDiv.prepend(d);if(consoleDiv.children.length>500)consoleDiv.removeChild(consoleDiv.lastChild);}
-function posKey(x,y){return`${x},${y}`;}
-function createGrid(c,r){const g=[];for(let x=0;x<c;x++){g[x]=[];for(let y=0;y<r;y++)g[x][y]={obstacle:false}}return g;}
-function randomizeObstacles(){for(let x=0;x<COLS;x++)for(let y=0;y<ROWS;y++){if(x===0||y===0||x===COLS-1||y===ROWS-1)grid[x][y].obstacle=true;else grid[x][y].obstacle=obstaclesEnabled&&Math.random()<OBSTACLE_DENSITY}for(let i=0;i<6;i++){const sx=rand(2,COLS-3),sy=rand(2,ROWS-3),len=rand(4,12);for(let j=0;j<len;j++)if(sx+j<COLS-2)grid[sx+j][sy].obstacle=false}}
-function toggleObstacles(){obstaclesEnabled=!obstaclesEnabled;randomizeObstacles();}
-function spawnAgent(x,y){const id=nextAgentId++,color=pickColor(id);const a={id,name:`A${id}`,x,y,color,hunger:rand(30,80),fatigue:rand(20,80),morale:rand(30,80),target:null,path:[],state:'idle',cooldown:0};agents.push(a);log(`Spawned ${a.name} @(${x},${y})`);return a;}
-function spawnRandomAgents(n=5){for(let i=0;i<n;i++){let x,y;do{x=rand(2,COLS-3);y=rand(2,ROWS-3)}while(grid[x][y].obstacle||findAgentAt(x,y));spawnAgent(x,y)}}
-function findAgentAt(x,y){return agents.find(a=>a.x===x&&a.y===y&&a.state!=='dead')}
-function pickColor(i){const p=['#00ffe1','#ff0077','#7a00ff','#00d4ff','#ffb84d','#7cff66'];return p[i%p.length]}
-function chooseGoalFor(a){if(a.hunger<40)return{type:'food',pos:findNearestCell(a,c=>!grid[c.x][c.y].obstacle&&Math.random()<.2)};if(a.fatigue<35)return{type:'home',pos:findNearestCell(a,c=>!grid[c.x][c.y].obstacle&&Math.random()<.05)};if(Math.random()<.08){const o=agents.filter(b=>b.id!==a.id&&b.state!=='dead');if(o.length)return{type:'interact',agentTarget:o[rand(0,o.length-1)]}}if(Math.random()<.5)return{type:'work',pos:findNearestCell(a,c=>!grid[c.x][c.y].obstacle&&Math.random()<.08)};return{type:'wander',pos:findNearestCell(a,c=>!grid[c.x][c.y].obstacle)}}
-function findNearestCell(a,p){const r=10;for(let d=1;d<=r;d++){const c=[];for(let dx=-d;dx<=d;dx++)for(let dy=-d;dy<=d;dy++){const x=a.x+dx,y=a.y+dy;if(x>0&&y>0&&x<COLS-1&&y<ROWS-1&&p({x,y}))c.push({x,y})}if(c.length)return c[rand(0,c.length-1)]}for(let t=0;t<200;t++){const x=rand(1,COLS-2),y=rand(1,ROWS-2);if(!grid[x][y].obstacle)return{x,y}}return{x:a.x,y:a.y}}
-function neighbors(n){const d=[[1,0],[-1,0],[0,1],[0,-1]],o=[];for(const v of d){const nx=n.x+v[0],ny=n.y+v[1];if(nx>=0&&ny>=0&&nx<COLS&&ny<ROWS&&!grid[nx][ny].obstacle)o.push({x:nx,y:ny})}return o}
-function heuristic(a,b){return Math.abs(a.x-b.x)+Math.abs(a.y-b.y)}
-function aStar(s,g,a=new Set()){const sk=posKey(s.x,s.y),gk=posKey(g.x,g.y);if(sk===gk)return[];const o=new Map,c=new Set,gs=new Map,fs=new Map;gs.set(sk,0);fs.set(sk,heuristic(s,g));o.set(sk,s);const cf=new Map;while(o.size){let ck,cur;for(const[k,v]of o){if(!ck||fs.get(k)<fs.get(ck)){ck=k;cur=v}}if(ck===gk){const p=[];let cu=ck;while(cf.has(cu)){const[px,py]=cu.split(',').map(Number);p.push({x:px,y:py});cu=cf.get(cu)}p.reverse();return p}o.delete(ck);c.add(ck);for(const nb of neighbors(cur)){const nk=posKey(nb.x,nb.y);if(c.has(nk))continue;if(a.has(nk)&&nk!==gk)continue;const tg=gs.get(ck)+1;if(!o.has(nk)||tg<gs.get(nk)){cf.set(nk,ck);gs.set(nk,tg);fs.set(nk,tg+heuristic(nb,g));o.set(nk,nb)}}}return null}
-function simTick(){tick++;tickInfo.textContent=`Tick: ${tick}`;const occ=new Set;for(const a of agents)if(a.state!=='dead')occ.add(posKey(a.x,a.y));for(const a of agents){if(a.state==='dead')continue;a.hunger-=0.15;a.fatigue-=0.08;if(a.hunger<0)a.hunger=0;if(a.fatigue<0)a.fatigue=0;if(a.cooldown>0){a.cooldown--;continue}if(!a.target){a.target=chooseGoalFor(a);if(a.target&&a.target.pos){const av=new Set(Array.from(occ));const p=aStar({x:a.x,y:a.y},a.target.pos,av);if(p&&p.length)a.path=p}else a.path=[]}if(a.target){switch(a.target.type){case'food':if(heuristic(a,a.target.pos)===0){a.state='eating';a.cooldown=rand(5,15);a.hunger=Math.min(100,a.hunger+rand(25,45));log(`${a.name} ate → ${a.hunger.toFixed(0)}`);a.target=null;a.path=[]}else stepAgentAlong(a,occ);break;case'home':if(heuristic(a,a.target.pos)===0){a.state='resting';a.cooldown=rand(8,24);a.fatigue=Math.min(100,a.fatigue+rand(30,60));log(`${a.name} rested → ${a.fatigue.toFixed(0)}`);a.target=null;a.path=[]}else stepAgentAlong(a,occ);break;case'work':if(heuristic(a,a.target.pos)===0){a.state='working';a.cooldown=rand(6,20);a.morale=Math.max(0,a.morale-rand(0,6));a.hunger-=rand(3,8);log(`${a.name} worked → ${a.morale.toFixed(0)}`);a.target=null;a.path=[]}else stepAgentAlong(a,occ);break;case'wander':if(!a.path||a.path.length===0)a.target=null;else stepAgentAlong(a,occ);break;case'interact':const o=a.target.agentTarget;if(!o||o.state==='dead'){a.target=null;a.path=[];break}const d=heuristic(a,o);if(d<=1){if(Math.random()<.35){a.state='fighting';const w=Math.random()<.6?a:o,l=w===a?o:a;l.state='dead';log(`${a.name} fought ${o.name}. ${w.name} wins, ${l.name} dead.`)}else{a.state='chat';a.cooldown=rand(3,10);a.morale=Math.min(100,a.morale+rand(2,8));log(`${a.name} chatted ${o.name} → ${a.morale.toFixed(0)}`)}a.target=null;a.path=[]}else{const av=new Set(Array.from(occ));av.delete(posKey(o.x,o.y));const p=aStar({x:a.x,y:a.y},{x:o.x,y:o.y},av);if(p)a.path=p;stepAgentAlong(a,occ)}break}}if(a.cooldown===0&&['eating','resting','working','chat','fighting'].includes(a.state))a.state='idle'}draw()}
-function stepAgentAlong(a,occ){if(!a.path||a.path.length===0){a.target=null;return}const n=a.path[0];if(findAgentAt(n.x,n.y)){const av=new Set(agents.filter(b=>b.id!==a.id&&b.state!=='dead').map(b=>posKey(b.x,b.y)));const tp=a.target.pos||{x:a.target.agentTarget.x,y:a.target.agentTarget.y};const np=aStar({x:a.x,y:a.y},tp,av);if(np)a.path=np;else a.cooldown=rand(1,3);return}a.x=n.x;a.y=n.y;a.path.shift();a.state='moving'}
-function draw(){ctx.fillStyle='#04050a';ctx.fillRect(0,0,CANVAS_SIZE,CANVAS_SIZE);for(let x=0;x<COLS;x++)for(let y=0;y<ROWS;y++){const px=x*CELL,py=y*CELL;if(grid[x][y].obstacle){ctx.fillStyle='#081019';ctx.fillRect(px,py,CELL,CELL);ctx.fillStyle='rgba(255,0,119,.06)';ctx.fillRect(px+1,py+1,CELL-2,CELL-2)}}const alive=agents.filter(a=>a.state!=='dead');alive.forEach(a=>{const px=a.x*CELL+CELL/6,py=a.y*CELL+CELL/6,w=CELL-CELL/3;ctx.fillStyle=a.color;ctx.fillRect(px,py,w,w);ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(px,py+w-3,w,3);ctx.fillStyle='rgba(255,255,255,.15)';ctx.fillRect(px,py+w-3,w*(a.hunger/100),3)});if(selectedAgent&&selectedAgent.state!=='dead'){ctx.strokeStyle='rgba(255,255,255,.14)';ctx.lineWidth=2;ctx.strokeRect(selectedAgent.x*CELL+1,selectedAgent.y*CELL+1,CELL-2,CELL-2)}}
-canvas.addEventListener('click',e=>{const r=canvas.getBoundingClientRect(),cx=e.clientX-r.left,cy=e.clientY-r.top,gx=Math.floor(cx/CELL),gy=Math.floor(cy/CELL);const ag=findAgentAt(gx,gy);if(ag){selectedAgent=ag;selectedAgentLabel.textContent=ag.name;selName.textContent=`${ag.name} (${ag.id})`;selState.textContent=`${ag.state} • H:${ag.hunger.toFixed(0)} F:${ag.fatigue.toFixed(0)}`;selColor.style.background=ag.color}else if(selectedAgent){selectedAgent.target={type:'wander',pos:{x:gx,y:gy}};const av=new Set(agents.filter(a=>a.id!==selectedAgent.id&&a.state!=='dead').map(a=>posKey(a.x,a.y)));selectedAgent.path=aStar({x:selectedAgent.x,y:selectedAgent.y},{x:gx,y:gy},av)||[];log(`${selectedAgent.name} → (${gx},${gy})`)}});
-document.getElementById('spawn').onclick=()=>{let x,y;do{x=rand(2,COLS-3);y=rand(2,ROWS-3)}while(grid[x][y].obstacle||findAgentAt(x,y));spawnAgent(x,y)};
-document.getElementById('spawnRandom').onclick=()=>spawnRandomAgents(5);
-document.getElementById('toggleObstacles').onclick=()=>{toggleObstacles();log(`Obstacles ${obstaclesEnabled?'on':'off'}`)};
-document.getElementById('forceEat').onclick=()=>{if(!selectedAgent)return;selectedAgent.target={type:'food',pos:findNearestCell(selectedAgent,c=>!grid[c.x][c.y].obstacle&&Math.random()<.2)};selectedAgent.path=aStar({x:selectedAgent.x,y:selectedAgent.y},selectedAgent.target.pos,new Set(agents.filter(a=>a.id!==selectedAgent.id).map(a=>posKey(a.x,a.y))))||[];log(`Forced ${selectedAgent.name} eat`)};
-document.getElementById('forceWork').onclick=()=>{if(!selectedAgent)return;selectedAgent.target={type:'work',pos:findNearestCell(selectedAgent,c=>!grid[c.x][c.y].obstacle&&Math.random()<.08)};selectedAgent.path=aStar({x:selectedAgent.x,y:selectedAgent.y},selectedAgent.target.pos,new Set(agents.filter(a=>a.id!==selectedAgent.id).map(a=>posKey(a.x,a.y))))||[];log(`Forced ${selectedAgent.name} work`)};
-document.getElementById('kill').onclick=()=>{if(!selectedAgent)return;selectedAgent.state='dead';log(`${selectedAgent.name} killed`);selectedAgent=null;selectedAgentLabel.textContent='None'};
-function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a}
-spawnRandomAgents(8);draw();log('Sim started');
-let loop=setInterval(simTick,tickDelay);
-setInterval(()=>{if(loop){clearInterval(loop)}loop=setInterval(simTick,tickDelay)},400);
-window._sim={agents,grid,aStar,rand,spawnAgent,spawnRandomAgents,log};
-</script>
+<canvas id=gameCanvas></canvas>
+<script>const TILE_SIZE=10;const ROOM_WIDTH=80;const ROOM_HEIGHT=50;const GRAVITY=0.4;const NUM_ROOMS=5;const ENTITY_TYPES={SLUGCAT:{color:'white',size:8,speed:2.5,type:'prey/predator'},LIZARD_GREEN:{color:'#00ff00',size:12,speed:1.5,type:'predator',hp:3},LIZARD_PINK:{color:'#ff00ff',size:10,speed:2.2,type:'predator',hp:2},BATFLY:{color:'#555',size:4,speed:1.0,type:'food'},SPEAR:{color:'orange',size:3,speed:8,type:'weapon'}};class Room{constructor(id){this.id=id;this.grid=[];this.entities=[];this.projectiles=[];this.generateCave();this.populate();}
+generateCave(){for(let x=0;x<ROOM_WIDTH;x++){this.grid[x]=[];for(let y=0;y<ROOM_HEIGHT;y++){if(x===0||x===ROOM_WIDTH-1||y===0||y===ROOM_HEIGHT-1)this.grid[x][y]=1;else this.grid[x][y]=Math.random()<0.45?1:0;}}
+for(let i=0;i<5;i++){let newGrid=JSON.parse(JSON.stringify(this.grid));for(let x=1;x<ROOM_WIDTH-1;x++){for(let y=1;y<ROOM_HEIGHT-1;y++){let neighbors=this.countNeighbors(x,y);if(neighbors>4)newGrid[x][y]=1;else if(neighbors<4)newGrid[x][y]=0;}}
+this.grid=newGrid;}
+this.drillTunnel(0,Math.floor(ROOM_HEIGHT/2),1,0);this.drillTunnel(ROOM_WIDTH-1,Math.floor(ROOM_HEIGHT/2),-1,0);}
+drillTunnel(startX,startY,dirX,dirY){let x=startX;let y=startY;for(let i=0;i<10;i++){if(x>=0&&x<ROOM_WIDTH&&y>=0&&y<ROOM_HEIGHT)this.grid[x][y]=0;x+=dirX;y+=dirY;}}
+countNeighbors(x,y){let count=0;for(let i=-1;i<=1;i++){for(let j=-1;j<=1;j++){if(i===0&&j===0)continue;if(this.grid[x+i][y+j]===1)count++;}}
+return count;}
+populate(){const spawn=(count,ClassRef)=>{for(let i=0;i<count;i++){let pos=this.findEmptySpot();if(pos)this.entities.push(new ClassRef(pos.x*TILE_SIZE,pos.y*TILE_SIZE,this));}};spawn(8,Batfly);spawn(2,Lizard);spawn(1,Slugcat);}
+findEmptySpot(){for(let k=0;k<100;k++){let x=Math.floor(Math.random()*(ROOM_WIDTH-2))+1;let y=Math.floor(Math.random()*(ROOM_HEIGHT-2))+1;if(this.grid[x][y]===0)return{x,y};}
+return null;}}
+class Entity{constructor(x,y,room,config){this.x=x;this.y=y;this.vx=0;this.vy=0;this.room=room;this.config=config;this.alive=true;this.grounded=false;this.holding=null;this.stunned=0;}
+update(){if(!this.alive)return;if(this.stunned>0){this.stunned--;this.vy+=GRAVITY;this.applyPhysics();return;}
+this.behavior();this.vy+=GRAVITY;this.applyPhysics();this.checkRoomTransition();}
+applyPhysics(){this.x+=this.vx;if(this.collides(this.x,this.y)){this.x-=this.vx;this.vx*=-0.5;}
+this.y+=this.vy;this.grounded=false;if(this.collides(this.x,this.y)){this.y-=this.vy;if(this.vy>0)this.grounded=true;this.vy=0;}
+this.vx*=0.9;}
+collides(x,y){let gx=Math.floor(x/TILE_SIZE);let gy=Math.floor(y/TILE_SIZE);if(gx<0||gx>=ROOM_WIDTH||gy<0||gy>=ROOM_HEIGHT)return false;return this.room.grid[gx][gy]===1;}
+checkRoomTransition(){if(this.x<0)world.switchRoom(this,-1);else if(this.x>ROOM_WIDTH*TILE_SIZE)world.switchRoom(this,1);}
+behavior(){}
+findClosest(typeStr){let closest=null;let minDist=9999;this.room.entities.forEach(e=>{if(e!==this&&e.alive&&e.config.type.includes(typeStr)){let d=Math.hypot(e.x-this.x,e.y-this.y);if(d<minDist){minDist=d;closest=e;}}});return{entity:closest,dist:minDist};}
+moveTowards(targetX,targetY){if(targetX<this.x)this.vx-=0.5;else this.vx+=0.5;if(Math.abs(this.vx)>this.config.speed)this.vx=Math.sign(this.vx)*this.config.speed;if(this.grounded&&this.collides(this.x+(this.vx*5),this.y)){this.vy=-5;}}
+draw(ctx){ctx.fillStyle=this.stunned>0?'gray':this.config.color;ctx.fillRect(this.x-this.config.size/2,this.y-this.config.size/2,this.config.size,this.config.size);if(this.holding){ctx.fillStyle=this.holding.type==='spear'?ENTITY_TYPES.SPEAR.color:'red';ctx.fillRect(this.x,this.y-10,4,4);}}}
+class Batfly extends Entity{constructor(x,y,room){super(x,y,room,ENTITY_TYPES.BATFLY);this.noise={x:Math.random(),y:Math.random()};}
+behavior(){this.vx+=(Math.random()-0.5)*0.5;this.vy+=(Math.random()-0.5)*0.5-0.1;let predator=this.findClosest('predator');if(predator.entity&&predator.dist<60){this.vx+=(this.x-predator.entity.x)*0.1;this.vy+=(this.y-predator.entity.y)*0.1;}}}
+class Lizard extends Entity{constructor(x,y,room){let type=Math.random()>0.5?ENTITY_TYPES.LIZARD_GREEN:ENTITY_TYPES.LIZARD_PINK;super(x,y,room,type);this.hp=type.hp;}
+behavior(){let prey=this.findClosest('prey');if(!prey.entity)prey=this.findClosest('food');if(prey.entity&&prey.dist<150){this.moveTowards(prey.entity.x,prey.entity.y);if(prey.dist<this.config.size+5){prey.entity.alive=false;}}else{if(Math.random()<0.05)this.vx=(Math.random()-0.5)*2;}}}
+class Slugcat extends Entity{constructor(x,y,room){super(x,y,room,ENTITY_TYPES.SLUGCAT);this.cooldown=0;this.spears=0;}
+behavior(){let enemy=this.findClosest('predator');let food=this.findClosest('food');if(enemy.entity&&enemy.dist<80){if(this.spears>0&&this.cooldown<=0){let dx=enemy.entity.x-this.x;let dy=enemy.entity.y-this.y;let mag=Math.hypot(dx,dy);this.room.projectiles.push(new Spear(this.x,this.y,(dx/mag)*8,(dy/mag)*8,this.room));this.spears--;this.cooldown=30;}else{this.moveTowards(this.x-(enemy.entity.x-this.x),this.y);}}
+else if(food.entity&&food.dist<200){this.moveTowards(food.entity.x,food.entity.y);if(food.dist<10){food.entity.alive=false;}}
+else{if(Math.random()<0.02)this.vx=(Math.random()-0.5)*4;if(this.spears===0&&Math.random()<0.005)this.spears=1;}
+if(this.cooldown>0)this.cooldown--;}
+draw(ctx){super.draw(ctx);if(this.spears>0){ctx.fillStyle='orange';ctx.fillRect(this.x,this.y-8,2,10);}}}
+class Spear{constructor(x,y,vx,vy,room){this.x=x;this.y=y;this.vx=vx;this.vy=vy;this.room=room;this.active=true;}
+update(){if(!this.active)return;this.x+=this.vx;this.y+=this.vy;this.vy+=0.1;let gx=Math.floor(this.x/TILE_SIZE);let gy=Math.floor(this.y/TILE_SIZE);if(gx>=0&&gx<ROOM_WIDTH&&gy>=0&&gy<ROOM_HEIGHT&&this.room.grid[gx][gy]===1){this.active=false;}
+this.room.entities.forEach(e=>{if(e.alive&&e.config.type==='predator'){let d=Math.hypot(e.x-this.x,e.y-this.y);if(d<e.config.size){e.hp--;e.vx+=this.vx*0.5;e.stunned=60;this.active=false;if(e.hp<=0)e.alive=false;}}});}
+draw(ctx){if(!this.active)return;ctx.fillStyle='orange';ctx.beginPath();ctx.arc(this.x,this.y,2,0,Math.PI*2);ctx.fill();}}
+class World{constructor(){this.rooms=[];for(let i=0;i<NUM_ROOMS;i++){this.rooms.push(new Room(i));}
+this.activeRoomIdx=0;}
+get activeRoom(){return this.rooms[this.activeRoomIdx];}
+update(){this.rooms.forEach(room=>{room.entities.forEach(e=>e.update());room.entities=room.entities.filter(e=>e.alive);room.projectiles.forEach(p=>p.update());room.projectiles=room.projectiles.filter(p=>p.active);if(Math.random()<0.005&&room.entities.filter(e=>e.config.type.includes('prey')).length===0){let pos=room.findEmptySpot();if(pos)room.entities.push(new Slugcat(pos.x*TILE_SIZE,pos.y*TILE_SIZE,room));}});}
+switchRoom(entity,direction){let oldRoom=entity.room;let newIdx=oldRoom.id+direction;if(newIdx<0||newIdx>=this.rooms.length){entity.vx*=-1;entity.x=direction>0?(ROOM_WIDTH*TILE_SIZE)-5:5;return;}
+let newRoom=this.rooms[newIdx];oldRoom.entities=oldRoom.entities.filter(e=>e!==entity);entity.room=newRoom;entity.x=direction>0?10:(ROOM_WIDTH*TILE_SIZE)-10;newRoom.entities.push(entity);}}
+const canvas=document.getElementById('gameCanvas');const ctx=canvas.getContext('2d');canvas.width=ROOM_WIDTH*TILE_SIZE;canvas.height=ROOM_HEIGHT*TILE_SIZE;const world=new World();let cycle=0;canvas.addEventListener('mousedown',()=>{world.activeRoomIdx=(world.activeRoomIdx+1)%NUM_ROOMS;document.getElementById('roomIdx').innerText=world.activeRoomIdx;});function loop(){cycle++;document.getElementById('cycleTimer').innerText=cycle;world.update();ctx.fillStyle='#050505';ctx.fillRect(0,0,canvas.width,canvas.height);let r=world.activeRoom;ctx.fillStyle='#222';for(let x=0;x<ROOM_WIDTH;x++){for(let y=0;y<ROOM_HEIGHT;y++){if(r.grid[x][y]===1)ctx.fillRect(x*TILE_SIZE,y*TILE_SIZE,TILE_SIZE,TILE_SIZE);}}
+ctx.fillStyle='#333';ctx.fillRect(0,(ROOM_HEIGHT/2)*TILE_SIZE-20,10,40);ctx.fillRect(canvas.width-10,(ROOM_HEIGHT/2)*TILE_SIZE-20,10,40);r.entities.forEach(e=>e.draw(ctx));r.projectiles.forEach(p=>p.draw(ctx));requestAnimationFrame(loop);}
+loop();</script>
 </body>
 </html>

@@ -1,0 +1,1611 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <title>Project: Speed (Modular Shield)</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=VT323&display=swap");
+
+      :root {
+        --bg: #111;
+        --txt: #888;
+        --hi: #fff;
+        --font: "VT323", monospace;
+      }
+
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--txt);
+        font-family: var(--font);
+        user-select: none;
+        touch-action: none;
+      }
+
+      canvas {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        cursor: crosshair;
+        pointer-events: auto;
+      }
+
+      #ui {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 20;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        pointer-events: none;
+        max-width: 400px;
+      }
+
+      .section {
+        margin-bottom: 20px;
+        pointer-events: auto;
+        transition: opacity 0.2s;
+        width: 100%;
+      }
+
+      .section.sunken {
+        opacity: 0.2;
+        pointer-events: none;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      h1 {
+        font-size: 40px;
+        margin: 0;
+        line-height: 1;
+        font-weight: normal;
+        color: var(--hi);
+        letter-spacing: 2px;
+      }
+
+      .score {
+        font-size: 24px;
+        margin-bottom: 10px;
+        color: var(--hi);
+      }
+
+      .row {
+        display: flex;
+        gap: 15px;
+        margin: 5px 0;
+        font-size: 18px;
+        color: #555;
+      }
+
+      .opt {
+        cursor: pointer;
+        transition: color 0.2s;
+      }
+
+      .opt.active {
+        color: var(--hi);
+      }
+
+      .btn-m {
+        font-size: 24px;
+        color: var(--hi);
+        cursor: pointer;
+        background: transparent;
+        padding: 0;
+        display: block;
+      }
+
+      .btn-m:hover {
+        text-decoration: underline;
+      }
+
+      .btn-s {
+        font-size: 16px;
+        color: #666;
+        cursor: pointer;
+        margin-top: 5px;
+        display: block;
+      }
+
+      .btn-s:hover {
+        color: #aaa;
+      }
+
+      #guide {
+        margin-top: 20px;
+        border-top: 1px solid #333;
+        padding-top: 10px;
+        font-size: 14px;
+      }
+
+      .g-grid {
+        display: grid;
+        grid-template-columns: 70px 80px 30px 1fr;
+        gap: 5px;
+        margin-bottom: 5px;
+        align-items: center;
+      }
+
+      .g-head {
+        color: #666;
+        border-bottom: 1px solid #333;
+        padding-bottom: 5px;
+        margin-bottom: 10px;
+        font-weight: bold;
+      }
+
+      .g-in {
+        color: var(--hi);
+      }
+
+      .g-name {
+        color: #aaa;
+      }
+
+      .g-tier {
+        color: #aaa;
+        text-align: center;
+      }
+
+      .g-desc {
+        color: #666;
+        font-size: 13px;
+        line-height: 1;
+      }
+
+      #debug-panel {
+        font-size: 14px;
+        color: #444;
+        margin-top: 20px;
+        border-top: 1px solid #333;
+        padding-top: 5px;
+        font-family: monospace;
+      }
+
+      .touch-box {
+        display: none;
+        position: absolute;
+        z-index: 30;
+        pointer-events: none;
+        inset: 0;
+      }
+
+      .pad {
+        position: absolute;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        pointer-events: auto;
+      }
+
+      .stk-base {
+        width: 120px;
+        height: 120px;
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .stk-nub {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 40px;
+        height: 40px;
+        background: var(--hi);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+
+      .btn-act {
+        width: 80px;
+        height: 80px;
+        background: rgba(255, 255, 255, 0.02);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #444;
+        font-size: 24px;
+      }
+
+      .btn-act.active {
+        background: var(--hi);
+        color: #000;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="ui">
+      <div id="menu" class="section">
+        <h1>DEV_CORE_1.3</h1>
+        <div id="score-disp" class="score">SCORE: 0</div>
+        <div class="row">
+          <span
+            id="opt-MOUSE"
+            class="opt active"
+            onclick="G.sys.in.scheme('MOUSE')"
+            >MOUSE</span
+          >
+          <span id="opt-TOUCH" class="opt" onclick="G.sys.in.scheme('TOUCH')"
+            >TOUCH</span
+          >
+        </div>
+        <div id="btn-start" class="btn-m" onclick="G.ui.start()">
+          > START SIMULATION
+        </div>
+        <div class="btn-s" onclick="G.ui.toggleGuide()">
+          > TOGGLE SYSTEM GUIDE
+        </div>
+      </div>
+      <div id="guide" class="section hidden">
+        <div class="g-grid g-head">
+          <div>INPUT</div>
+          <div>MOVE</div>
+          <div>T</div>
+          <div>INFO</div>
+        </div>
+        <div id="guide-list"></div>
+      </div>
+      <div id="debug-panel">
+        FPS: <span id="d-fps">0</span> | ENT: <span id="d-ent">0</span> |
+        <span id="d-mode">MOUSE</span>
+      </div>
+    </div>
+    <div id="touch-layer" class="touch-box"></div>
+    <canvas id="cvs"></canvas>
+    <script>
+      const PAL = { BG: "#111", W: "#fff" };
+      const CFG = {
+        PHY: { FRIC: 0.92, BOUNCE: -0.8, PAD: 25 },
+        DMG: { BASE: 15, WALL: 25 },
+        ST: { IDLE: "IDLE", MOVE: "MOVE", STUN: "STUN" },
+        AIM: { ANG: 0.9, DIST: 500, STR: 0.35, DZONE: 0.1 },
+        IN: { TAP_WIN: 8, HOLD_WIN: 9 },
+      };
+      const MoveReg = {
+        IDLE: { tier: 0, style: "NRM", name: "IDLE", desc: "Standing still." },
+        MOVE: {
+          tier: 1,
+          style: "NRM",
+          name: "MOVE",
+          desc: "Standard movement.",
+        },
+        STUN: { tier: 0, style: "STUN", name: "STUN", desc: "Incapacitated." },
+        DASH: {
+          tier: 3,
+          style: "GLOW",
+          dur: 15,
+          name: "DASH",
+          desc: "High speed dash. Breaks locks.",
+          enter: (o, d) => {
+            o.cp.vel = d.cln().mul(30);
+            o.cp.cmb.invTimer = 10;
+            o.cp.cmb.cds.dash = 60;
+          },
+          update: (o) => o.cp.vel.mul(0.85),
+        },
+        PARRY: {
+          tier: 5,
+          style: "PURE",
+          dur: 20,
+          name: "PARRY",
+          desc: "Deflects attacks. High Priority.",
+          enter: (o) => {
+            o.cp.vel.mul(0.1);
+            o.cp.cmb.cds.parry = 60;
+            o.cp.cmb.invTimer = 5;
+          },
+        },
+        SPRINT: {
+    tier: 2,
+    style: "GLOW",
+    dur: 999,
+    name: "SPRINT",
+    desc: "Fast movement. Constant velocity.",
+    update: (o, d) => {
+        // FIX 1: Use d.cln() so we don't corrupt the input vector
+        // FIX 2: Manually apply friction (mul 0.85) because PhySys skips it
+        o.cp.vel.add(d.cln().mul(2.5));  
+    },
+    exit: (o) => o.cp.vel.mul(0.5)
+},
+        BRACE: {
+    tier: 2,
+    style: "DIM",
+    dur: 999,
+    name: "SHIELD",
+    desc: "Directional Shield. Breaks if HP 0.",
+    enter: (o) => {},
+    update: (o, d) => {
+        // FIX 1: Use d.cln()
+        // FIX 2: Manually apply strong friction (mul 0.8) for the "heavy" feel
+        o.cp.vel.add(d.cln().mul(1.5));
+        o.cp.vel.mul(0.8);
+
+        const c = o.cp.cmb;
+        c.shieldHp = Math.min(c.shieldMax, c.shieldHp + 0.2);
+    },
+    onHit: (vi, at, dmg) => {
+        let facing = vi.cp.vel.cln();
+        if (facing.mag() < 0.1) facing = vi.cp.in.last.cln();
+        const inc = Vec2.sub(at.cp.pos.v, vi.cp.pos.v).nrm();
+        if (inc.dot(facing.nrm()) > 0) {
+            vi.cp.cmb.shieldHp -= dmg;
+            if (vi.cp.cmb.shieldHp <= 0) {
+                vi.cp.cmb.state = "STUN";
+                vi.cp.cmb.stTimer = 60;
+                vi.cp.vel.mul(-1.5);
+                FX.txt(vi.cp.pos.v, "!! BREAK !!", "#fff");
+            } else {
+                FX.txt(vi.cp.pos.v, "BLOCK", "#888");
+            }
+            return true;
+        }
+        return false;
+    },
+    draw: (ctx, o) => {
+        const c = o.cp,
+            s = c.st;
+        const hpPct = c.cmb.shieldHp / c.cmb.shieldMax;
+        if (hpPct <= 0) return;
+        ctx.save();
+        let ang = Math.atan2(c.vel.y, c.vel.x);
+        if (c.vel.mag() < 0.1) ang = Math.atan2(c.in.last.y, c.in.last.x);
+        ctx.rotate(ang);
+        ctx.beginPath();
+        ctx.arc(0, 0, s.rad + 8, -Math.PI / 3, Math.PI / 3);
+        ctx.strokeStyle = c.ren.col;
+        ctx.lineWidth = 4 * hpPct;
+        ctx.stroke();
+        ctx.restore();
+    }
+},
+CHARGE: {
+          tier: 1,
+          style: "CHG",
+          dur: 999,
+          name: "CHARGE",
+          desc: "Charges power for ultimate.",
+          enter: (o) => {},
+          update: (o) => {
+            const c = o.cp.cmb;
+            o.cp.vel.mul(0.8);
+            c.chgTimer++;
+            if (c.chgTimer > 100) {
+              c.moveset = "L2";
+              c.powerTimer = 400;
+              c.chgTimer = 0;
+              c.state = "IDLE";
+              c.reqRel = true;
+            }
+          },
+          exit: (o) => (o.cp.cmb.chgTimer = 0),
+        },
+        BLINK: {
+          tier: 3,
+          style: "PURE",
+          dur: 10,
+          name: "BLINK",
+          desc: "Instant teleportation.",
+          enter: (o, d) => {
+            o.cp.pos.v.add(d.cln().mul(150));
+            o.cp.cmb.cds.dash = 90;
+          },
+        },
+      };
+      const Loadouts = {
+        L1: {
+          tapA: "DASH",
+          tapB: "PARRY",
+          holdA: "SPRINT",
+          holdB: "BRACE",
+          chg: "CHARGE",
+        },
+        L2: {
+          tapA: "BLINK",
+          tapB: "PARRY",
+          holdA: "SPRINT",
+          holdB: "BRACE",
+          chg: "CHARGE",
+        },
+      };
+      const InpMap = {
+        tapA: "REL A",
+        tapB: "REL B",
+        holdA: "HOLD A",
+        holdB: "HOLD B",
+        chg: "HOLD AB",
+      };
+      const Defs = {
+        P1: {
+          tags: ["player", "p1"],
+          st: { hp: 100, max: 100, rad: 15, mods: { dmg: 1 } },
+          col: "#0ff",
+          in: "p1",
+        },
+        E_RUSH: {
+          st: { hp: 100, max: 100, rad: 15, mods: { dmg: 1 } },
+          ai: "AGRO",
+          traits: ["SPRINT"],
+          col: "#f00",
+        },
+        E_DEF: {
+          st: { hp: 100, max: 100, rad: 15, mods: { dmg: 1 } },
+          ai: "DEF",
+          traits: ["BRACE"],
+          col: "#678",
+        },
+        E_VUL: {
+          st: { hp: 100, max: 100, rad: 15, mods: { dmg: 1 } },
+          ai: "OPP",
+          traits: ["TRICKY"],
+          col: "#50f",
+        },
+        E_BOSS: {
+          st: { hp: 3000, max: 3000, rad: 20, mods: { dmg: 1 } },
+          ai: "BOSS",
+          traits: ["BOSS"],
+          col: "#a0f",
+        },
+      };
+      const Loot = {
+        HEAL: { col: "#0f0", txt: "HP", mod: { t: "STAT", k: "hp", v: 50 } },
+        GOD: {
+          col: "#fa0",
+          txt: "GOD",
+          mod: { t: "STATUS", k: "invTimer", v: 600 },
+        },
+        LIFE: {
+          col: "#0ff",
+          txt: "LIFE",
+          mod: { t: "SPEC", k: "lives", v: 1 },
+        },
+      };
+      class Vec2 {
+        constructor(x, y) {
+          this.x = x;
+          this.y = y;
+        }
+        add(v) {
+          this.x += v.x;
+          this.y += v.y;
+          return this;
+        }
+        sub(v) {
+          this.x -= v.x;
+          this.y -= v.y;
+          return this;
+        }
+        mul(s) {
+          this.x *= s;
+          this.y *= s;
+          return this;
+        }
+        mag() {
+          return Math.sqrt(this.x ** 2 + this.y ** 2);
+        }
+        nrm() {
+          const m = this.mag();
+          if (m !== 0) this.mul(1 / m);
+          return this;
+        }
+        dot(v) {
+          return this.x * v.x + this.y * v.y;
+        }
+        cln() {
+          return new Vec2(this.x, this.y);
+        }
+        static dist(a, b) {
+          return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+        }
+        static sub(a, b) {
+          return new Vec2(a.x - b.x, a.y - b.y);
+        }
+      }
+      class Bus {
+        constructor() {
+          this.s = {};
+        }
+        sub(e, cb) {
+          (this.s[e] = this.s[e] || []).push(cb);
+        }
+        pub(e, d) {
+          if (this.s[e]) this.s[e].forEach((cb) => cb(d));
+        }
+      }
+      const CompSchemas = {
+        st: ["hp", "max", "rad", "mods"],
+        ren: ["col"],
+        cmb: ["moveset", "state"],
+        in: ["id"],
+        ai: ["behav"],
+      };
+      const Col = {
+        hsl: (h) => {
+          let r = 0,
+            g = 0,
+            b = 0;
+          if (h.length == 4) {
+            r = "0x" + h[1] + h[1];
+            g = "0x" + h[2] + h[2];
+            b = "0x" + h[3] + h[3];
+          } else {
+            r = "0x" + h[1] + h[2];
+            g = "0x" + h[3] + h[4];
+            b = "0x" + h[5] + h[6];
+          }
+          r /= 255;
+          g /= 255;
+          b /= 255;
+          let min = Math.min(r, g, b),
+            max = Math.max(r, g, b),
+            d = max - min,
+            hv = 0,
+            s = 0,
+            l = (max + min) / 2;
+          if (d == 0) hv = 0;
+          else
+            hv =
+              max == r
+                ? ((g - b) / d) % 6
+                : max == g
+                  ? (b - r) / d + 2
+                  : (r - g) / d + 4;
+          hv = Math.round(hv * 60);
+          if (hv < 0) hv += 360;
+          s = d == 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+          return { h: hv, s: s * 100, l: l * 100 };
+        },
+        dyn: (base, moveKey) => {
+          const mv = MoveReg[moveKey],
+            st = mv ? mv.style : "NRM",
+            c = Col.hsl(base);
+          let h = c.h,
+            s = c.s,
+            l = c.l;
+          switch (st) {
+            case "STUN":
+              s = 0;
+              l = 30;
+              break;
+            case "GLOW":
+              l = 80;
+              s = 100;
+              break;
+            case "DIM":
+              l = 20;
+              break;
+            case "PURE":
+              return PAL.W;
+            case "CHG":
+              l = 80 + Math.sin(Date.now() / 50) * 20;
+              s = 100;
+              break;
+          }
+          return `hsl(${h},${s}%,${l}%)`;
+        },
+      };
+      const FX = {
+        txt: (pos, str, col) =>
+          G.vis.txt.push({
+            pos: pos.cln(),
+            vel: new Vec2(0, -1),
+            str: str,
+            col: col,
+            life: 1.0,
+          }),
+      };
+      const Acts = {
+        vec: (s, t) => Vec2.sub(t.cp.pos.v, s.cp.pos.v),
+        turn: (s, td) => {
+          const c = s.cp.in.last,
+            d = c.dot(td);
+          s.cp.in.last = new Vec2(
+            c.x + (td.x - c.x) * (d > 0.95 ? 0.5 : 1.5),
+            c.y + (td.y - c.y) * (d > 0.95 ? 0.5 : 1.5),
+          ).nrm();
+        },
+        H_SP: (s, t) => {
+          s.cp.in.p1 = true;
+          s.cp.in.p2 = false;
+          Acts.turn(s, Acts.vec(s, t).nrm());
+        },
+        H_BR: (s, t) => {
+          s.cp.in.p1 = false;
+          s.cp.in.p2 = true;
+          Acts.turn(s, Acts.vec(s, t).nrm());
+        },
+        H_CH: (s, t) => {
+          s.cp.in.p1 = true;
+          s.cp.in.p2 = true;
+          Acts.turn(s, Acts.vec(s, t).nrm());
+        },
+        R_ATK: (s) => {
+          s.cp.in.p1 = false;
+          s.cp.in.p2 = false;
+        },
+        BAIT: (s, t) => {
+          Acts.turn(s, Acts.vec(s, t).nrm().mul(-1));
+          if (Math.random() < 0.1) s.cp.in.fP2 = true;
+        },
+        BOSS: (s, t) => {
+          s.cp.in.p1 = true;
+          Acts.turn(s, Acts.vec(s, t).nrm());
+        },
+      };
+      const Behave = {
+        AGRO: [
+          { t: "H_SP", w: 5, r: [0, 3000], d: 60 },
+          { t: "R_ATK", w: 3, cd: "dash", r: [0, 300], d: 5 },
+        ],
+        DEF: [
+          { t: "H_BR", w: 5, r: [0, 3000], d: 120 },
+          { t: "R_ATK", w: 2, cd: "dash", r: [0, 150], d: 5 },
+          { t: "H_SP", w: 1, r: [300, 1000], d: 40 },
+        ],
+        OPP: [
+          { t: "H_SP", cond: "T_STUN", w: 50, r: [0, 500], d: 30 },
+          { t: "BAIT", cond: "T_ATK", w: 20, r: [0, 200], d: 20 },
+          { t: "H_SP", w: 4, r: [200, 3000], d: 40 },
+          { t: "R_ATK", w: 4, cd: "dash", r: [0, 250], d: 5 },
+        ],
+        BOSS: [
+          { t: "H_CH", w: 2, r: [0, 3000], d: 90 },
+          { t: "R_ATK", w: 4, cd: "dash", r: [0, 3000], d: 5 },
+          { t: "BOSS", w: 1, r: [0, 3000], d: 100 },
+        ],
+      };
+      class Obj {
+        constructor(id) {
+          this.id = id;
+          this.cp = {};
+          this.tags = new Set();
+          this.act = true;
+        }
+        add(n, d) {
+          this.cp[n] = d;
+          return this;
+        }
+        has(n) {
+          return !!this.cp[n];
+        }
+        tag(t) {
+          return this.tags.has(t);
+        }
+      }
+      class ObjMan {
+        constructor() {
+          this.all = [];
+          this.nid = 0;
+        }
+        mk() {
+          const o = new Obj(++this.nid);
+          this.all.push(o);
+          return o;
+        }
+        kill(o) {
+          o.act = false;
+        }
+        clean() {
+          this.all = this.all.filter((e) => e.act);
+        }
+        get(c) {
+          return this.all.filter((e) => e.act && c.every((n) => e.has(n)));
+        }
+        tag(t) {
+          return this.all.filter((e) => e.act && e.tag(t));
+        }
+      }
+      const Factory = {
+        validate: (o) => {
+          for (let cName in o.cp) {
+            if (CompSchemas[cName]) {
+              const req = CompSchemas[cName];
+              const has = Object.keys(o.cp[cName]);
+              const missing = req.filter((x) => !has.includes(x));
+              if (missing.length > 0)
+                console.error(`Validation Error ${cName}`);
+            }
+          }
+        },
+        mk: (t, x, y) => {
+          const o = G.obs.mk(),
+            bp = Defs[t];
+          if (!bp && t.includes("RUSH")) return Factory.foe(t, x, y);
+          o.cp.pos = { v: new Vec2(x, y), rot: 0 };
+          o.cp.vel = new Vec2(0, 0);
+          if (bp.tags) bp.tags.forEach((tg) => o.tags.add(tg));
+          o.add("st", { ...bp.st });
+          o.add("ren", { col: bp.col }).add("in", {
+            id: bp.in,
+            p1: false,
+            p2: false,
+            ht1: 0,
+            ht2: 0,
+            last: new Vec2(1, 0),
+          });
+          o.add("cmb", {
+            moveset: "L1",
+            baseMoveset: "L1",
+            state: CFG.ST.IDLE,
+            stTimer: 0,
+            chgTimer: 0,
+            powerTimer: 0,
+            cds: { parry: 0, dash: 0 },
+            invTimer: 0,
+            lvl: 0,
+            reqRel: false,
+            shieldHp: 100,
+            shieldMax: 100,
+          });
+          Factory.validate(o);
+          return o;
+        },
+        foe: (k, x, y) => {
+          const o = G.obs.mk(),
+            raw = Defs[Object.keys(Defs).find((dk) => k.includes(dk))];
+          o.tags.add("enemy");
+          o.tags.add(k);
+          o.cp.pos = { v: new Vec2(x, y), rot: 0 };
+          o.cp.vel = new Vec2(0, 0);
+          o.add("st", { ...raw.st });
+          o.add("ren", { col: raw.col });
+          o.add("in", {
+            id: "ai",
+            p1: false,
+            p2: false,
+            ht1: 0,
+            ht2: 0,
+            last: new Vec2(1, 0),
+            fP1: false,
+            fP2: false,
+          });
+          o.add("cmb", {
+            moveset: "L1",
+            baseMoveset: "L1",
+            state: CFG.ST.IDLE,
+            stTimer: 0,
+            chgTimer: 0,
+            powerTimer: 0,
+            cds: { parry: 0, dash: 0 },
+            invTimer: 0,
+            lvl: 0,
+            reqRel: false,
+            shieldHp: 100,
+            shieldMax: 100,
+          });
+          o.add("ai", {
+            behav: Behave[raw.ai],
+            traits: raw.traits || [],
+            mem: { dmg: 0 },
+            tick: 0,
+            plan: null,
+          });
+          Factory.validate(o);
+          return o;
+        },
+        loot: (x, y, k) => {
+          const o = G.obs.mk();
+          o.tags.add("loot");
+          o.cp.pos = { v: new Vec2(x, y), rot: 0 };
+          o.cp.vel = new Vec2(0, 0);
+          o.add("loot", { type: k, life: 1200, data: Loot[k] });
+          o.add("ren", { col: Loot[k].col });
+          return o;
+        },
+      };
+      class InpSys {
+        constructor() {
+          this.md = "MOUSE";
+          this.pad = { p1: { p1: 0, p2: 0, ax: new Vec2(0, 0) } };
+          this.tch = {};
+          this.mo = { x: 0, y: 0 };
+          this.bind();
+        }
+        bind() {
+          const L = window.addEventListener;
+          L("mousemove", (e) => {
+            if (this.md == "MOUSE") {
+              this.mo.x = e.clientX;
+              this.mo.y = e.clientY;
+            }
+          });
+          L("mousedown", (e) => {
+            if (this.md == "MOUSE" && !G.st.menu) {
+              if (e.button == 0) this.pad.p1.p1 = true;
+              if (e.button == 2) this.pad.p1.p2 = true;
+            }
+          });
+          L("mouseup", (e) => {
+            if (this.md == "MOUSE") {
+              if (e.button == 0) this.pad.p1.p1 = false;
+              if (e.button == 2) this.pad.p1.p2 = false;
+            }
+          });
+          L("contextmenu", (e) => e.preventDefault());
+        }
+        assist(s, v) {
+          if (v.mag() < CFG.AIM.DZONE) return v;
+          let ts = s.tag("player") ? G.obs.tag("enemy") : G.obs.tag("player"),
+            bst = null,
+            max = -1;
+          ts.forEach((t) => {
+            const d = Vec2.dist(s.cp.pos.v, t.cp.pos.v);
+            if (d > CFG.AIM.DIST) return;
+            const dir = Vec2.sub(t.cp.pos.v, s.cp.pos.v).nrm(),
+              dot = v.dot(dir);
+            if (dot > CFG.AIM.ANG) {
+              const sc = dot + (1 - d / 1000);
+              if (sc > max) {
+                max = sc;
+                bst = dir;
+              }
+            }
+          });
+          return bst
+            ? new Vec2(
+                v.x * (1 - CFG.AIM.STR) + bst.x * CFG.AIM.STR,
+                v.y * (1 - CFG.AIM.STR) + bst.y * CFG.AIM.STR,
+              ).nrm()
+            : v;
+        }
+        run() {
+          this.map();
+          G.obs.get(["in", "cmb", "vel"]).forEach((o) => {
+            if (G.st.menu && o.cp.in.id !== "ai") return;
+            const inC = o.cp.in,
+              cm = o.cp.cmb,
+              set = Loadouts[cm.moveset] || Loadouts["L1"];
+            let bA = false,
+              bB = false,
+              ax = new Vec2(0, 0);
+            if (inC.id === "ai") {
+              if (inC.fP1) {
+                bA = true;
+                inC.fP1 = false;
+              } else bA = inC.p1;
+              if (inC.fP2) {
+                bB = true;
+                inC.fP2 = false;
+              } else bB = inC.p2;
+              ax = inC.last.cln();
+            } else {
+              bA = this.pad[inC.id].p1;
+              bB = this.pad[inC.id].p2;
+              if (this.md === "MOUSE" && inC.id === "p1") {
+                if (Vec2.dist(o.cp.pos.v, this.mo) > 10)
+                  ax = Vec2.sub(this.mo, o.cp.pos.v).nrm();
+              } else {
+                if (this.pad[inC.id].ax.mag() > CFG.AIM.DZONE)
+                  ax = this.pad[inC.id].ax.cln();
+              }
+              if (ax.mag() > CFG.AIM.DZONE) ax = this.assist(o, ax.nrm());
+            }
+            if (ax.mag() > CFG.AIM.DZONE) inC.last = ax.cln().nrm();
+            else if (inC.last.mag() === 0) inC.last = new Vec2(1, 0);
+            const aim = ax.mag() > CFG.AIM.DZONE ? ax.nrm() : inC.last;
+            if (cm.reqRel) {
+              if (!bA && !bB) cm.reqRel = false;
+              else {
+                if (ax.mag() > 0) {
+                  cm.state = CFG.ST.MOVE;
+                  o.cp.vel.add(ax.mul(1.5));
+                } else cm.state = CFG.ST.IDLE;
+                return;
+              }
+            }
+            if (cm.state !== CFG.ST.IDLE && cm.state !== CFG.ST.MOVE) {
+              const active = MoveReg[cm.state];
+              if (active && active.update) active.update(o, aim);
+              if (
+                (active && cm.state === set.holdA && !bA) ||
+                (cm.state === set.holdB && !bB) ||
+                (cm.state === set.chg && (!bA || !bB))
+              ) {
+                if (active.exit) active.exit(o);
+                cm.state = CFG.ST.IDLE;
+                cm.stTimer = 0;
+              }
+              return;
+            }
+            let next = null;
+            if (bA && bB) next = set.chg;
+            else if (bA && inC.ht1 > CFG.IN.HOLD_WIN) next = set.holdA;
+            else if (bB && inC.ht2 > CFG.IN.HOLD_WIN) next = set.holdB;
+            else if (!bA && inC.ht1 > 0 && inC.ht1 <= CFG.IN.TAP_WIN)
+              next = set.tapA;
+            else if (!bB && inC.ht2 > 0 && inC.ht2 <= CFG.IN.TAP_WIN)
+              next = set.tapB;
+            if (next && MoveReg[next]) {
+              const m = MoveReg[next];
+              if (
+                (next === set.tapA && cm.cds.dash > 0) ||
+                (next === set.tapB && cm.cds.parry > 0)
+              ) {
+              } else {
+                cm.state = next;
+                cm.stTimer = m.dur;
+                if (m.enter) m.enter(o, aim);
+                if (next === set.tapA) inC.ht1 = 0;
+                if (next === set.tapB) inC.ht2 = 0;
+              }
+            } else {
+              if (ax.mag() > 0) {
+                cm.state = CFG.ST.MOVE;
+                o.cp.vel.add(ax.mul(1.5));
+              } else cm.state = CFG.ST.IDLE;
+            }
+            inC.ht1 = bA ? inC.ht1 + 1 : 0;
+            inC.ht2 = bB ? inC.ht2 + 1 : 0;
+          });
+        }
+        map() {
+          if (this.md === "TOUCH") {
+            ["p1"].forEach((i) => {
+              let s = this.tch[`stk-${i}`];
+              if (s) {
+                this.pad[i].ax.x = s.x;
+                this.pad[i].ax.y = s.y;
+              }
+              this.pad[i].p1 = this.tch[`btnA-${i}`];
+              this.pad[i].p2 = this.tch[`btnB-${i}`];
+            });
+          }
+        }
+        scheme(s) {
+          this.md = s;
+          ["MOUSE", "TOUCH"].forEach((k) =>
+            document
+              .getElementById(`opt-${k}`)
+              .classList.toggle("active", s === k),
+          );
+          this.touch();
+        }
+        touch() {
+          const ui = document.getElementById("touch-layer");
+          ui.innerHTML = "";
+          ui.style.display = this.md === "TOUCH" ? "block" : "none";
+          if (this.md !== "TOUCH") return;
+          const add = (id, t, r, rt) => {
+            const b = document.createElement("div");
+            b.className = `pad ${t == "stick" ? "stk-base" : "btn-act"}`;
+            if (t == "stick") {
+              b.style.left = "30px";
+              const n = document.createElement("div");
+              n.className = "stk-nub";
+              b.appendChild(n);
+              let og = null;
+              b.addEventListener("touchmove", (e) => {
+                e.preventDefault();
+                for (let v of e.changedTouches) {
+                  if (og && v.identifier == og.id) {
+                    let dx = v.clientX - og.x,
+                      dy = v.clientY - og.y,
+                      d = Math.min(50, Math.sqrt(dx * dx + dy * dy)),
+                      a = Math.atan2(dy, dx);
+                    n.style.transform = `translate(calc(-50%+${Math.cos(a) * d}px),calc(-50%+${Math.sin(a) * d}px))`;
+                    let ox = Math.cos(a) * (d / 50),
+                      oy = Math.sin(a) * (d / 50);
+                    if (rt) {
+                      ox *= -1;
+                      oy *= -1;
+                    }
+                    this.tch[`stk-${id}`] = { x: ox, y: oy };
+                  }
+                }
+              });
+              b.addEventListener("touchstart", (e) => {
+                e.preventDefault();
+                let rect = b.getBoundingClientRect();
+                og = {
+                  x: rect.left + rect.width / 2,
+                  y: rect.top + rect.height / 2,
+                  id: e.changedTouches[0].identifier,
+                };
+                this.tch[`stk-${id}`] = { x: 0, y: 0 };
+              });
+              b.addEventListener("touchend", (e) => {
+                og = null;
+                n.style.transform = `translate(-50%,-50%)`;
+                this.tch[`stk-${id}`] = { x: 0, y: 0 };
+              });
+            } else {
+              b.innerText = t == "btnA" ? "A" : "B";
+              b.style.right = r + "px";
+              b.addEventListener("touchstart", (e) => {
+                e.preventDefault();
+                this.tch[`${t}-${id}`] = true;
+                b.classList.add("active");
+              });
+              b.addEventListener("touchend", (e) => {
+                e.preventDefault();
+                this.tch[`${t}-${id}`] = false;
+                b.classList.remove("active");
+              });
+            }
+            b.style[rt ? "top" : "bottom"] = "30px";
+            if (rt) b.style.transform = "rotate(180deg)";
+            ui.appendChild(b);
+          };
+          add("p1", "stick", 0, false);
+          add("p1", "btnA", 40, false);
+          add("p1", "btnB", 140, false);
+        }
+      }
+      class AiSys {
+        run() {
+          const ps = G.obs.tag("player"),
+            es = G.obs.tag("enemy"),
+            lts = G.obs.tag("loot"),
+            tars = G.st.menu ? es : ps;
+          G.obs.get(["ai", "cmb"]).forEach((s) => {
+            const c = s.cp.cmb,
+              ai = s.cp.ai;
+            if ([CFG.ST.STUN, "DASH", "PARRY"].includes(c.state)) return;
+            ai.tick--;
+            if (ai.tick > 0 && ai.plan) {
+              let t = null;
+              if (ai.plan.tt == "LOOT")
+                t = lts.find((p) => p.id == ai.plan.tid);
+              else if (ai.plan.tt == "PLAY")
+                t = ps.find((p) => p.id == ai.plan.tid);
+              else t = es.find((e) => e.id == ai.plan.tid);
+              if (t && t.act && Acts[ai.plan.t]) Acts[ai.plan.t](s, t);
+              else ai.tick = 0;
+              return;
+            }
+            let pot = tars;
+            if (G.st.menu && s.tag("player")) pot = es;
+            else if (!s.tag("player")) pot = ps;
+            if (pot.length == 0 && G.st.menu)
+              pot = G.obs.tag("enemy").filter((e) => e.id !== s.id);
+            if (pot.length == 0) return;
+            const pTar = pot.reduce((p, c) =>
+              Vec2.dist(s.cp.pos.v, p.cp.pos.v) <
+              Vec2.dist(s.cp.pos.v, c.cp.pos.v)
+                ? p
+                : c,
+            );
+            let lTar = lts.length
+              ? lts.reduce((p, c) =>
+                  Vec2.dist(s.cp.pos.v, p.cp.pos.v) <
+                  Vec2.dist(s.cp.pos.v, c.cp.pos.v)
+                    ? p
+                    : c,
+                )
+              : null;
+            const valid = ai.behav.filter((b) => {
+              const t = b.t === "ACQ" ? lTar : pTar;
+              if (!t) return false;
+              const d = Vec2.dist(s.cp.pos.v, t.cp.pos.v);
+              if (b.r && (d < b.r[0] || d > b.r[1])) return false;
+              if (b.cd && c.cds[b.cd] > 0) return false;
+              if (b.cond) {
+                if (b.cond === "T_STUN" && t.cp.cmb.state !== CFG.ST.STUN)
+                  return false;
+                if (
+                  b.cond === "T_ATK" &&
+                  !["DASH", "CHG"].includes(t.cp.cmb.state)
+                )
+                  return false;
+              }
+              return true;
+            });
+            const tot = valid.reduce((s, b) => s + b.w, 0);
+            let r = Math.random() * tot,
+              sel = null;
+            for (const m of valid) {
+              r -= m.w;
+              if (r <= 0) {
+                sel = m;
+                break;
+              }
+            }
+            if (sel) {
+              const fin = sel.t === "ACQ" ? lTar : pTar;
+              ai.plan = {
+                t: sel.t,
+                tid: fin.id,
+                tt:
+                  sel.t === "ACQ"
+                    ? "LOOT"
+                    : fin.tag("player")
+                      ? "PLAY"
+                      : "ENEMY",
+              };
+              ai.tick = sel.d || Math.floor(Math.random() * 30 + 30);
+            } else {
+              ai.plan = { t: "H_SP", tid: pTar.id, tt: "PLAY" };
+              ai.tick = 30;
+            }
+          });
+        }
+      }
+      class PhySys {
+        run() {
+          G.obs.get(["vel", "pos"]).forEach((o) => {
+            const c = o.cp;
+            if (o.has("cmb")) {
+              if (c.cmb.powerTimer > 0) {
+                c.cmb.powerTimer--;
+                if (c.cmb.powerTimer <= 0) {
+                  c.cmb.moveset = c.cmb.baseMoveset;
+                  FX.txt(c.pos.v, "POWER DOWN", "#888");
+                }
+              }
+              ["dash", "parry"].forEach(
+                (k) => (c.cmb.cds[k] = Math.max(0, c.cmb.cds[k] - 1)),
+              );
+              c.cmb.invTimer = Math.max(0, c.cmb.invTimer - 1);
+              if (c.cmb.stTimer > 0) c.cmb.stTimer--;
+              else if (
+                ![CFG.ST.IDLE, CFG.ST.MOVE, CFG.ST.STUN].includes(c.cmb.state)
+              ) {
+                const mv = MoveReg[c.cmb.state];
+                if (mv && mv.exit) mv.exit(o);
+                c.cmb.state = CFG.ST.IDLE;
+              }
+              if (c.cmb.state == CFG.ST.STUN) {
+                c.vel.mul(0.85);
+              } else if (
+                c.cmb.state !== CFG.ST.MOVE &&
+                MoveReg[c.cmb.state] &&
+                MoveReg[c.cmb.state].update
+              ) {
+              } else {
+                c.vel.mul(CFG.PHY.FRIC);
+              }
+            }
+            c.pos.v.add(c.vel);
+            const b = CFG.PHY.PAD;
+            let hit = false;
+            if (c.pos.v.x < b) {
+              c.pos.v.x = b;
+              c.vel.x *= CFG.PHY.BOUNCE;
+              hit = true;
+            }
+            if (c.pos.v.x > G.w - b) {
+              c.pos.v.x = G.w - b;
+              c.vel.x *= CFG.PHY.BOUNCE;
+              hit = true;
+            }
+            if (c.pos.v.y < b) {
+              c.pos.v.y = b;
+              c.vel.y *= CFG.PHY.BOUNCE;
+              hit = true;
+            }
+            if (c.pos.v.y > G.h - b) {
+              c.pos.v.y = G.h - b;
+              c.vel.y *= CFG.PHY.BOUNCE;
+              hit = true;
+            }
+            if (hit && o.cp.cmb.state == CFG.ST.STUN) {
+              G.bus.pub("HIT", { at: o, vi: o, w: true });
+            }
+          });
+          G.obs.tag("loot").forEach((p) => {
+            p.cp.pos.rot += 0.05;
+            p.cp.loot.life--;
+            if (p.cp.loot.life <= 0) G.obs.kill(p);
+          });
+        }
+      }
+      class CmbSys {
+        getTier(o) {
+          if (!o.has("cmb")) return 0;
+          const m = MoveReg[o.cp.cmb.state];
+          return m ? m.tier || 0 : 0;
+        }
+        run() {
+          const c = G.obs.get(["cmb", "st"]),
+            l = G.obs.tag("loot");
+          c.forEach((e) => {
+            c.forEach((o) => {
+              if (
+                e !== o &&
+                Vec2.dist(e.cp.pos.v, o.cp.pos.v) < e.cp.st.rad + o.cp.st.rad
+              )
+                this.col(e, o);
+            });
+            for (let i = l.length - 1; i >= 0; i--)
+              if (Vec2.dist(e.cp.pos.v, l[i].cp.pos.v) < 30)
+                G.bus.pub("LOOT", { t: e, i: l[i] });
+          });
+        }
+        col(e1, e2) {
+          const d = Vec2.sub(e1.cp.pos.v, e2.cp.pos.v).nrm();
+          const t1 = this.getTier(e1),
+            t2 = this.getTier(e2);
+          if (e1.cp.cmb.state == "STUN")
+            return G.bus.pub("HIT", { at: e2, vi: e1, lv: t2 });
+          if (e2.cp.cmb.state == "STUN")
+            return G.bus.pub("HIT", { at: e1, vi: e2, lv: t1 });
+          if (t1 === t2) return G.bus.pub("CLASH", { e1, e2, lv: t1 });
+          if (t1 > t2) return G.bus.pub("HIT", { at: e1, vi: e2, lv: t1 });
+          if (t2 > t1) return G.bus.pub("HIT", { at: e2, vi: e1, lv: t2 });
+        }
+      }
+      class Rules {
+        constructor() {
+          const B = G.bus;
+          const getDmg = (at, tier) => {
+            const base = CFG.DMG.BASE * (tier > 0 ? tier : 1);
+            const mul = at.cp.st.mods ? at.cp.st.mods.dmg : 1;
+            return base * mul;
+          };
+          B.sub("HIT", ({ at, vi, lv, w }) => {
+            if (w) {
+              vi.cp.st.hp -= CFG.DMG.WALL;
+              return;
+            }
+            if (vi.cp.cmb.state != CFG.ST.STUN && vi.cp.cmb.invTimer > 0)
+              return;
+            let d = getDmg(at, lv);
+            const defMove = MoveReg[vi.cp.cmb.state];
+            if (defMove && defMove.onHit && defMove.onHit(vi, at, d)) return;
+            vi.cp.st.hp -= d;
+            if (vi.has("ai")) {
+              vi.cp.ai.mem.dmg += d;
+              if (vi.tag("BOSS") && vi.cp.st.hp < vi.cp.st.max * 0.5)
+                B.pub("BOSS_PH", { b: vi, ph: 2 });
+            }
+            const chg = vi.cp.cmb.chgTimer > 0;
+            if (!chg && vi.cp.cmb.state != CFG.ST.STUN)
+              vi.cp.cmb.state = CFG.ST.IDLE;
+            let f = lv * 10;
+            if (f > 0) {
+              const k = Vec2.sub(vi.cp.pos.v, at.cp.pos.v).nrm().mul(f);
+              vi.cp.vel = k;
+              at.cp.vel.add(k.cln().mul(0.2));
+            }
+            vi.cp.cmb.invTimer = 20;
+            G.st.stop = lv >= 3 ? 5 : 0;
+            if (vi.cp.st.hp <= 0) B.pub("DEATH", { vi, at });
+            else if (vi.tag("player") && !G.st.menu) G.st.combo = 0;
+          });
+          B.sub("CLASH", ({ e1, e2, lv }) => {
+            G.st.stop = 4;
+            const d = Vec2.sub(e1.cp.pos.v, e2.cp.pos.v).nrm();
+            e1.cp.vel = d.cln().mul(40);
+            e2.cp.vel = d.cln().mul(-40);
+            e1.cp.cmb.state = e2.cp.cmb.state = CFG.ST.IDLE;
+            e1.cp.cmb.invTimer = e2.cp.cmb.invTimer = 10;
+          });
+          B.sub("LOOT", ({ t, i }) => {
+            const m = i.cp.loot.data.mod;
+            if (m.t == "STAT")
+              t.cp.st[m.k] = Math.min(t.cp.st[m.k] + m.v, t.cp.st.max);
+            else if (m.t == "STATUS") t.cp.cmb[m.k] = m.v;
+            else if (m.t == "SPEC" && t.tag("player")) {
+              if (t.cp.st.lives < 1) t.cp.st.lives++;
+              else t.cp.st.hp = t.cp.st.max;
+            } else if (m.t == "MOD") {
+              t.cp.st.mods[m.k] = m.v;
+              setTimeout(() => {
+                if (t.act) t.cp.st.mods[m.k] = 1;
+                FX.txt(t.cp.pos.v, "BUFF END", "#888");
+              }, m.dur || 5000);
+            }
+            G.obs.kill(i);
+          });
+          B.sub("REVIVE", ({ ent }) => {
+            ent.cp.st.lives--;
+            ent.cp.st.hp = ent.cp.st.max;
+            ent.cp.cmb.invTimer = 180;
+            G.st.stop = 30;
+          });
+          B.sub("DEATH", ({ vi, at }) => {
+            if (vi.cp.st.lives > 0) return B.pub("REVIVE", { ent: vi });
+            G.obs.kill(vi);
+            G.st.stop = 5;
+            G.st.kills++;
+            G.st.combo++;
+            let s = 100;
+            if (vi.tag("BOSS")) s = 5000;
+            else if (vi.tag("ELITE")) s = 1000;
+            if (!G.st.menu) {
+              G.st.score += s;
+              G.ui.upd();
+            }
+            if (!vi.tag("RUSHER")) {
+              G.st.stop = 20;
+            }
+          });
+        }
+      }
+      class RenSys {
+        constructor() {
+          this.x = document.getElementById("cvs").getContext("2d");
+        }
+        draw() {
+          const w = G.w,
+            h = G.h,
+            x = this.x;
+          x.clearRect(0, 0, w, h);
+          this.drawEnts();
+          x.lineWidth = 2;
+          G.vis.txt.forEach((t) => {
+            x.globalAlpha = Math.max(0, t.life);
+            x.fillStyle = t.col;
+            x.font = "30px VT323";
+            x.fillText(t.str, t.pos.x, t.pos.y);
+          });
+          if (G.sys.in.md == "MOUSE" && !G.st.menu) {
+            const p1 = G.obs.tag("player")[0];
+            if (p1) {
+              x.strokeStyle = "#333";
+              x.beginPath();
+              x.moveTo(p1.cp.pos.v.x, p1.cp.pos.v.y);
+              x.lineTo(G.sys.in.mo.x, G.sys.in.mo.y);
+              x.stroke();
+            }
+          }
+        }
+        drawEnts() {
+          G.obs.tag("loot").forEach((p) => {
+            this.x.save();
+            this.x.translate(p.cp.pos.v.x, p.cp.pos.v.y);
+            this.x.rotate(p.cp.pos.rot);
+            this.x.strokeStyle = p.cp.ren.col;
+            this.x.lineWidth = 2;
+            this.x.strokeRect(-12, -12, 24, 24);
+            this.x.fillStyle = p.cp.ren.col;
+            this.x.font = "14px monospace";
+            this.x.textAlign = "center";
+            this.x.rotate(-p.cp.pos.rot);
+            this.x.fillText(p.cp.loot.data.txt, 0, -20);
+            this.x.restore();
+          });
+          G.obs.tag("enemy").forEach((e) => this.drawOne(e));
+          G.obs.tag("player").forEach((p) => this.drawOne(p));
+        }
+        drawOne(o) {
+          const c = o.cp,
+            s = c.st,
+            p = c.pos.v,
+            col = Col.dyn(c.ren.col, c.cmb.state);
+          this.x.save();
+          this.x.translate(p.x, p.y);
+          this.x.fillStyle = col;
+          this.x.font = "12px monospace";
+          this.x.textAlign = "center";
+          const tier = MoveReg[c.cmb.state] ? MoveReg[c.cmb.state].tier : 0;
+          this.x.fillText(`${Math.floor(s.hp)}/${s.max}`, 0, -35);
+          this.x.fillText(`[${c.cmb.state}]T:${tier}`, 0, -22);
+          if (c.cmb.state === "BRACE")
+            this.x.fillText(`SHLD:${Math.floor(c.cmb.shieldHp)}`, 0, -47);
+          if (o.has("ai") && o.cp.ai.plan) {
+            this.x.fillStyle = "#888";
+            this.x.fillText(`REQ:${o.cp.ai.plan.t}(${o.cp.ai.tick})`, 0, 35);
+          }
+          const mv = MoveReg[c.cmb.state];
+          if (mv && mv.draw) mv.draw(this.x, o);
+          this.x.rotate(Math.atan2(c.vel.y, c.vel.x));
+          this.x.lineWidth = 3;
+          this.x.strokeStyle = col;
+          this.x.globalAlpha = 1;
+          this.x.beginPath();
+          this.x.arc(0, 0, s.rad, 0, Math.PI * 2);
+          this.x.stroke();
+          this.x.beginPath();
+          this.x.moveTo(s.rad, 0);
+          this.x.lineTo(s.rad + 10, 0);
+          this.x.stroke();
+          this.x.restore();
+        }
+      }
+      class Game {
+        static obs = new ObjMan();
+        static vis = { txt: [] };
+        static st = {
+          menu: true,
+          score: 0,
+          kills: 0,
+          stop: 0,
+          wT: 0,
+          lT: 1800,
+          inv: false,
+          combo: 0,
+        };
+        static bus = new Bus();
+        static w = window.innerWidth;
+        static h = window.innerHeight;
+        static sys = {};
+        static ui = {
+          el: document.getElementById("menu"),
+          sc: document.getElementById("score-disp"),
+          d: {
+            fps: document.getElementById("d-fps"),
+            ent: document.getElementById("d-ent"),
+            mode: document.getElementById("d-mode"),
+          },
+          start: () => {
+            if (G.st.menu) {
+              G.st.menu = false;
+              G.ui.el.classList.remove("active");
+              G.ui.el.classList.add("sunken");
+              G.dir.play();
+            } else {
+              G.st.menu = true;
+              G.ui.el.classList.add("active");
+              G.ui.el.classList.remove("sunken");
+            }
+          },
+          toggleGuide: () => {
+            document.getElementById("guide").classList.toggle("hidden");
+          },
+          genGuide: () => {
+            const c = document.getElementById("guide-list");
+            c.innerHTML = "";
+            for (const [k, v] of Object.entries(Loadouts.L1)) {
+              const m = MoveReg[v];
+              if (m) {
+                const row = document.createElement("div");
+                row.className = "g-grid";
+                row.innerHTML = `<div class="g-in">${InpMap[k]}</div><div class="g-name">${m.name}</div><div class="g-tier">${m.tier}</div><div class="g-desc">${m.desc}</div>`;
+                c.appendChild(row);
+              }
+            }
+          },
+          upd: () => {
+            G.ui.sc.innerText = "SCORE: " + Math.floor(G.st.score);
+          },
+          debug: (dt) => {
+            G.ui.d.fps.innerText = Math.round(1000 / dt);
+            G.ui.d.ent.innerText = G.obs.all.length;
+            G.ui.d.mode.innerText = G.sys.in.md;
+          },
+        };
+        static dir = {
+          attr: () => {
+            G.obs.all = [];
+            G.obs.nid = 0;
+            G.vis.txt = [];
+            const a1 = Factory.mk("P1", G.w * 0.5, G.h / 2);
+            a1.cp.in.id = "ai";
+            a1.add("ai", {
+              behav: Behave.AGRO,
+              traits: ["SPRINT"],
+              mem: { dmg: 0 },
+              tick: 0,
+              plan: null,
+            });
+            G.st.menu = true;
+            G.ui.el.classList.add("active");
+            G.ui.el.classList.remove("sunken");
+            G.dir.spawnFoe();
+          },
+          play: () => {
+            G.loop.sz();
+            G.obs.all = [];
+            G.obs.nid = 0;
+            G.vis.txt = [];
+            Factory.mk("P1", G.w / 2, G.h / 2);
+            G.st.score = 0;
+            G.ui.upd();
+            G.st.kills = 0;
+            G.st.stop = 0;
+            G.st.lT = 1800;
+            G.sys.in.touch();
+            G.dir.spawnFoe();
+          },
+          spawnFoe: () => {
+            const r = Math.random(),
+              t =
+                r < 0.05
+                  ? "E_BOSS"
+                  : r < 0.4
+                    ? "E_DEF"
+                    : r < 0.7
+                      ? "E_VUL"
+                      : "E_RUSH";
+            const s = Math.floor(Math.random() * 4),
+              pos = [
+                new Vec2(Math.random() * G.w, -40),
+                new Vec2(G.w + 40, Math.random() * G.h),
+                new Vec2(Math.random() * G.w, G.h + 40),
+                new Vec2(-40, Math.random() * G.h),
+              ][s];
+            Factory.foe(t, pos.x, pos.y);
+          },
+          tick: () => {
+            if (G.obs.tag("enemy").length === 0) G.dir.spawnFoe();
+            if (G.st.menu && G.obs.tag("player").length === 0) {
+              const a1 = Factory.mk("P1", G.w * 0.5, G.h / 2);
+              a1.cp.in.id = "ai";
+              a1.add("ai", {
+                behav: Behave.AGRO,
+                traits: ["SPRINT"],
+                mem: { dmg: 0 },
+                tick: 0,
+                plan: null,
+              });
+            }
+            G.st.lT--;
+            if (G.st.lT <= 0) {
+              Factory.loot(
+                Math.random() * (G.w - 100) + 50,
+                Math.random() * (G.h - 100) + 50,
+                Math.random() > 0.8
+                  ? "LIFE"
+                  : Math.random() > 0.5
+                    ? "GOD"
+                    : "HEAL",
+              );
+              G.st.lT = 1800 + Math.random() * 1800;
+            }
+            if (G.obs.tag("player").length == 0 && !G.st.menu) G.dir.over();
+          },
+          over: () => {
+            G.st.menu = true;
+            G.ui.el.classList.add("active");
+            G.ui.el.classList.remove("sunken");
+          },
+        };
+        static init() {
+          this.sys = {
+            in: new InpSys(),
+            ai: new AiSys(),
+            phy: new PhySys(),
+            cmb: new CmbSys(),
+            rls: new Rules(),
+            ren: new RenSys(),
+          };
+          this.loop = {
+            id: null,
+            last: 0,
+            acc: 0,
+            step: 1000 / 60,
+            sz: () => {
+              G.w = document.getElementById("cvs").width = window.innerWidth;
+              G.h = document.getElementById("cvs").height = window.innerHeight;
+            },
+            run: (ts) => {
+              if (!G.loop.last) G.loop.last = ts;
+              let dt = ts - G.loop.last;
+              G.loop.last = ts;
+              if (dt > 200) dt = G.loop.step;
+              G.loop.acc += dt;
+              while (G.loop.acc >= G.loop.step) {
+                if (G.st.stop > 0) G.st.stop--;
+                else {
+                  G.sys.in.run();
+                  G.dir.tick();
+                  G.sys.ai.run();
+                  G.sys.phy.run();
+                  G.sys.cmb.run();
+                  G.obs.clean();
+                  G.vis.txt.forEach((t, i) => {
+                    t.pos.add(t.vel);
+                    t.life -= 0.02;
+                    if (t.life <= 0) G.vis.txt.splice(i, 1);
+                  });
+                }
+                G.loop.acc -= G.loop.step;
+              }
+              G.ui.debug(dt);
+              G.sys.ren.draw();
+              G.st.inv = false;
+              G.loop.id = requestAnimationFrame(G.loop.run);
+            },
+          };
+          window.addEventListener("resize", this.loop.sz);
+          this.loop.sz();
+          this.dir.attr();
+          G.ui.genGuide();
+          G.loop.id = requestAnimationFrame(this.loop.run);
+        }
+      }
+      const G = Game;
+      G.init();
+    </script>
+  </body>
+</html>

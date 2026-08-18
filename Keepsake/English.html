@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>English Grammar Cheatsheet</title>
+<style>
+@import url(https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap);
+:root{--yuki:#f8f5ee;--kami:#eee8db;--kasumi:#cfc8bc;--hai:#8d887d;--sumi:#1a1918;--shu:#923e35;--ruri:#7d8d9b;--moegi:#7e866f;--ougon:#b39d77;--u:5px}
+*{margin:0;padding:0;box-sizing:border-box;border-radius:0;box-shadow:none}
+::selection{background:var(--sumi);color:var(--yuki)}
+html{overflow-x:hidden}
+body{font-family:"Share Tech Mono",monospace;font-size:calc(14px + .2vw);line-height:1.45;color:var(--sumi);background:var(--yuki)}
+h1,h2,h3,h4,h5,h6{font-weight:400;text-transform:uppercase;letter-spacing:.1em;line-height:1.2;border-bottom:1px solid var(--kasumi)}
+h1{font-size:calc(20px + .4vw);padding:calc(var(--u)*2) calc(var(--u)*3);color:var(--sumi);border-left:5px solid var(--shu)}
+h2{font-size:calc(18px + .3vw);padding:calc(var(--u)*2) calc(var(--u)*3);color:var(--sumi);border-left:4px solid var(--ruri)}
+h3{font-size:calc(16px + .25vw);padding:calc(var(--u)*2) calc(var(--u)*3);color:var(--sumi);border-left:3px solid var(--moegi)}
+h4{font-size:calc(15px + .2vw);padding:calc(var(--u)*1) calc(var(--u)*3);color:var(--hai);border-left:3px solid var(--ougon)}
+h5{font-size:calc(14px + .15vw);padding:calc(var(--u)*1) calc(var(--u)*3);color:var(--hai);border-left:2px solid var(--kasumi)}
+h6{font-size:calc(14px + .1vw);padding:calc(var(--u)*1) calc(var(--u)*3);color:var(--hai);border-left:1px solid var(--hai)}
+p{padding:calc(var(--u)*1) calc(var(--u)*3)}
+ol,ul{list-style:none;padding:0}
+ul li{position:relative;padding:calc(var(--u)*1) calc(var(--u)*3) calc(var(--u)*1) calc(var(--u)*6)}
+ul li::before{content:"·";position:absolute;left:calc(var(--u)*3);color:var(--ougon);font-size:calc(14px + .2vw);line-height:1.1}
+ol{counter-reset:n}
+ol li{position:relative;padding:calc(var(--u)*1) calc(var(--u)*3) calc(var(--u)*1) calc(var(--u)*7)}
+ol li::before{counter-increment:n;content:counter(n,decimal-leading-zero);position:absolute;left:calc(var(--u)*3);color:var(--ougon);font-size:calc(14px + .1vw);letter-spacing:.04em}
+li>ol li,li>ul li{padding-left:calc(var(--u)*5)}
+li>ul li::before{left:calc(var(--u)*3)}
+table{width:100%;border-collapse:collapse;font-size:calc(14px + .15vw);line-height:1.35;border:1px solid var(--kasumi)}
+th{font-weight:400;text-transform:uppercase;letter-spacing:.06em;font-size:calc(14px + .1vw);text-align:left;padding:calc(var(--u)*1) calc(var(--u)*2);background:var(--kami);color:var(--sumi);border:1px solid var(--kasumi);border-left:3px solid var(--moegi);white-space:nowrap}
+td{padding:calc(var(--u)*1) calc(var(--u)*2);border:1px solid var(--kasumi);vertical-align:top;background:var(--yuki)}
+caption{font-size:calc(14px + .1vw);color:var(--hai);text-align:left;padding:calc(var(--u)*1) calc(var(--u)*2);letter-spacing:.06em;text-transform:uppercase}
+a{color:var(--ruri);text-decoration:none;border-bottom:1px dotted var(--ruri)}
+b,strong{font-weight:700;color:var(--sumi)}
+em,i{color:var(--hai);font-style:normal}
+small{font-size:calc(14px + .1vw);color:var(--hai);text-transform:uppercase;letter-spacing:.06em}
+mark{background:var(--ougon);color:var(--yuki);padding:0 3px}
+del{text-decoration:line-through;text-decoration-color:var(--shu);color:var(--hai)}
+ins{text-decoration:none;border-bottom:1px dotted var(--moegi);color:var(--moegi)}
+sub,sup{font-size:calc(14px + .1vw);color:var(--hai)}
+hr{border:none;border-top:1px solid var(--kasumi)}
+blockquote{padding:calc(var(--u)*1) calc(var(--u)*3);border-left:3px solid var(--shu);background:var(--kami)}
+dl{border:1px solid var(--kasumi)}
+dt{font-size:calc(14px + .1vw);text-transform:uppercase;letter-spacing:.08em;color:var(--hai);padding:calc(var(--u)*1) calc(var(--u)*2) calc(var(--u)*1);background:var(--kami);border-bottom:1px dotted var(--kasumi)}
+dd{padding:calc(var(--u)*1) calc(var(--u)*2) calc(var(--u)*1) calc(var(--u)*5)}
+code,kbd,samp{font-family:"Share Tech Mono",monospace;font-size:calc(14px + .1vw);background:var(--kami);padding:1px 4px;border:1px dotted var(--kasumi)}
+pre{font-family:"Share Tech Mono",monospace;font-size:calc(14px + .1vw);background:var(--kami);padding:calc(var(--u)*2) calc(var(--u)*3);border:1px solid var(--kasumi);border-left:3px solid var(--ougon);overflow-x:auto;line-height:1.5}
+pre code{background:0 0;border:none;padding:0}
+figure{border:1px solid var(--kasumi)}
+figcaption{font-size:calc(14px + .1vw);color:var(--hai);padding:calc(var(--u)*1) calc(var(--u)*3);border-top:1px dotted var(--kasumi);text-transform:uppercase;letter-spacing:.06em;background:var(--kami)}
+img{max-width:100%;display:block;filter:grayscale(100%) contrast(1.15)}
+abbr{border-bottom:1px dotted var(--hai);text-decoration:none;cursor:help}
+q{color:var(--hai)}
+q::before{content:"「";color:var(--kasumi)}q::after{content:"」";color:var(--kasumi)}
+cite{font-style:normal;color:var(--ougon);font-size:calc(14px + .1vw)}
+address{font-style:normal;color:var(--hai);padding:calc(var(--u)*1) calc(var(--u)*3);border-left:2px solid var(--kasumi)}
+details{border:1px solid var(--kasumi)}
+summary{padding:calc(var(--u)*1) calc(var(--u)*3);font-size:calc(14px + .1vw);text-transform:uppercase;letter-spacing:.08em;cursor:pointer;background:var(--kami);color:var(--sumi);border-left:3px solid var(--ougon)}
+details[open] summary{border-bottom:1px solid var(--kasumi);color:var(--ruri)}
+details>:not(summary){padding:calc(var(--u)*1) calc(var(--u)*3)}
+fieldset{border:1px solid var(--kasumi);padding:calc(var(--u)*2) calc(var(--u)*3)}
+legend{font-size:calc(14px + .1vw);text-transform:uppercase;letter-spacing:.08em;padding:0 calc(var(--u));color:var(--hai)}
+label{font-size:calc(14px + .1vw);text-transform:uppercase;letter-spacing:.06em;color:var(--hai)}
+button,input,select,textarea{font-family:"Share Tech Mono",monospace;font-size:calc(14px + .15vw);border:1px solid var(--kasumi);background:var(--yuki);color:var(--sumi);padding:calc(var(--u)*1) calc(var(--u)*2)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--ruri);outline-offset:-2px}
+button{cursor:pointer;text-transform:uppercase;letter-spacing:.08em;font-size:calc(14px + .1vw);background:var(--kami);color:var(--sumi);border:1px solid var(--kasumi);padding:calc(var(--u)*1) calc(var(--u)*2)}
+button:disabled{background:var(--yuki);color:var(--hai);border-color:var(--kasumi);cursor:not-allowed}
+textarea{resize:vertical;line-height:1.5}
+::placeholder{color:var(--hai)}
+nav{border-bottom:1px solid var(--kasumi);padding:calc(var(--u)*1) calc(var(--u)*3)}
+nav a{margin-right:calc(var(--u)*2);font-size:calc(14px + .1vw);text-transform:uppercase;letter-spacing:.08em}
+header{border-bottom:2px solid var(--kasumi);padding:calc(var(--u)*2) calc(var(--u)*3)}
+footer{border-top:1px solid var(--kasumi);padding:calc(var(--u)*1) calc(var(--u)*3);font-size:calc(14px + .1vw);color:var(--hai);text-transform:uppercase;letter-spacing:.06em}
+article,section{padding:0}
+aside{border-left:3px solid var(--ougon);padding:calc(var(--u)*1) calc(var(--u)*3);background:var(--kami);font-size:calc(14px + .1vw);color:var(--hai)}
+time{color:var(--ougon);font-size:calc(14px + .1vw)}var{color:var(--ruri);font-style:normal}samp{color:var(--moegi)}kbd{border:1px solid var(--hai)}
+.c-sh{color:var(--shu)}.c-ru{color:var(--ruri)}.c-mo{color:var(--moegi)}.c-ou{color:var(--ougon)}.c-ha{color:var(--hai)}.c-su{color:var(--sumi)}.c-yu{color:var(--yuki)}.c-ka{color:var(--kami)}.c-ks{color:var(--kasumi)}
+.bc-sh{border-color:var(--shu)}.bc-ru{border-color:var(--ruri)}.bc-mo{border-color:var(--moegi)}.bc-ou{border-color:var(--ougon)}.bc-ha{border-color:var(--hai)}.bc-su{border-color:var(--sumi)}.bc-yu{border-color:var(--yuki)}.bc-ka{border-color:var(--kami)}.bc-ks{border-color:var(--kasumi)}
+.bg-sh{background:var(--shu)}.bg-ru{background:var(--ruri)}.bg-mo{background:var(--moegi)}.bg-ou{background:var(--ougon)}.bg-ha{background:var(--hai)}.bg-su{background:var(--sumi)}.bg-yu{background:var(--yuki)}.bg-ka{background:var(--kami)}.bg-ks{background:var(--kasumi)}
+</style>
+<base target="_blank">
+</head>
+<body>
+
+<h1>0 FORMAT GUIDE & NOTATION</h1>
+
+<ul class="kb">
+  <li class="kb-meta">ID: [KB-001] | Updated: [YYYY-MM-DD] | Tags: [#tag1]</li>
+  <li class="kb-field"><b>Essence:</b> [High-level summary. The "what" in one sentence.]</li>
+  <li class="kb-field"><b>Definition:</b> [Technical precision and formal boundaries.]</li>
+  <li class="kb-field"><b>Mechanics:</b> [Input] → [Transformation] → [Output]</li>
+  <li class="kb-field"><b>Anatomy:</b> [Part A] — [Role] | [Part B] — [Role]</li>
+  <li class="kb-field"><b>Context:</b> [Ideal conditions for application.]</li>
+  <li class="kb-field"><b>Constraints:</b> [Anti-patterns, exceptions, or failure states.]</li>
+  <li class="kb-field"><b>Instance:</b> [A concrete, real-world example of the concept.]</li>
+  <li class="kb-field"><b>Source:</b> [Origin or reference link.] | <b>Related:</b> [Link to ID]</li>
+  <li class="kb-meta">Confidence: [Score] | Stability: [Evergreen/Volatile]</li>
+</ul>
+
+<h1>1 PHONOLOGY: The Sound Units</h1>
+
+<h2>1.1 Sound System</h2>
+<h3>1.1.1 IPA & Alphabet</h3>
+<ul><li>26 graphemes → 44 phonemes. Many-to-one bidirectional. English spelling encodes history, not current sound.</li></ul>
+<table>
+<tr><th>System</th><th>Function</th><th>Mapping</th></tr>
+<tr><td>Alphabet</td><td>Writing</td><td>1 letter → many sounds</td></tr>
+<tr><td>IPA</td><td>Speech</td><td>1 sound → many spellings</td></tr>
+</table>
+
+<h3>1.1.2 Vowel Phonemes</h3>
+<ul><li>20 vowels: 12 monophthongs + 8 diphthongs. 1 vowel nucleus = 1 syllable.</li></ul>
+<table>
+<tr><th rowspan="2">Height</th><th colspan="2">Monophthongs</th><th colspan="2">Diphthongs</th></tr>
+<tr><th>Long / Example</th><th>Short / Example</th><th>Sound / Example</th><th>Sound / Example</th></tr>
+<tr><td>Close front</td><td>/iː/ see</td><td>/ɪ/ sit</td><td>/eɪ/ day</td><td>/aɪ/ sky</td></tr>
+<tr><td>Close back</td><td>/uː/ food</td><td>/ʊ/ good</td><td>/ɔɪ/ boy</td><td>/əʊ/ go</td></tr>
+<tr><td>Mid-central</td><td>/ɜː/ bird</td><td>/ə/ about</td><td>/ɪə/ near</td><td>/eə/ hair</td></tr>
+<tr><td>Open-mid back</td><td>/ɔː/ door</td><td>/ɒ/ hot</td><td>/aʊ/ how</td><td>/ʊə/ tour</td></tr>
+<tr><td>Open back</td><td>/ɑː/ car</td><td>/ʌ/ cup</td><td colspan="2">—</td></tr>
+<tr><td>Near-open front</td><td>—</td><td>/æ/ cat</td><td colspan="2">—</td></tr>
+<tr><td>Open-mid front</td><td>—</td><td>/e/ bed</td><td colspan="2">—</td></tr>
+</table>
+<ul><li>Diphthongs glide to /ɪ/ | /ʊ/ | /ə/.</li></ul>
+
+<h3>1.1.3 Consonant Phonemes</h3>
+<ul><li>24 consonants: 8 voiced-voiceless pairs + 8 singles.</li></ul>
+<table>
+<tr><th colspan="3">Voiced-Voiceless Pairs</th></tr>
+<tr><th>Voiceless</th><th>Voiced</th><th>Example</th></tr>
+<tr><td>/p/</td><td>/b/</td><td>pen–ben</td></tr>
+<tr><td>/t/</td><td>/d/</td><td>ten–den</td></tr>
+<tr><td>/k/</td><td>/g/</td><td>kit–get</td></tr>
+<tr><td>/f/</td><td>/v/</td><td>fan–van</td></tr>
+<tr><td>/s/</td><td>/z/</td><td>sip–zip</td></tr>
+<tr><td>/ʃ/</td><td>/ʒ/</td><td>she–vision</td></tr>
+<tr><td>/tʃ/</td><td>/dʒ/</td><td>chin–jin</td></tr>
+<tr><td>/θ/</td><td>/ð/</td><td>think–this</td></tr>
+</table>
+<table>
+<tr><th colspan="3">Single Consonants</th></tr>
+<tr><th>Sound</th><th>Category</th><th>Example</th></tr>
+<tr><td>/m/ /n/ /ŋ/</td><td>Nasal</td><td>me / no / sing</td></tr>
+<tr><td>/h/ /l/ /r/ /w/ /j/</td><td>Approximant / Glide</td><td>he / leg / red / we / yes</td></tr>
+</table>
+<ul><li>/ŋ/ native before /k/ & /g/; elsewhere only in -ing.</li></ul>
+
+<h2>1.2 Syllable Structure</h2>
+<h3>1.2.1 Components</h3>
+<ul><li>Syllable = onset + nucleus + coda. Nucleus obligatory.</li></ul>
+<table>
+<tr><th>Part</th><th>Definition</th><th>Example: plan</th></tr>
+<tr><td>Onset</td><td>Initial consonant(s)</td><td>/pl/</td></tr>
+<tr><td>Nucleus</td><td>Core vowel</td><td>/æ/</td></tr>
+<tr><td>Coda</td><td>Final consonant(s)</td><td>/n/</td></tr>
+<tr><td>Rime</td><td>Nucleus + coda</td><td>/æn/</td></tr>
+</table>
+<ul><li>1 nucleus = 1 syllable: string(1); tea-cher(2); beau-ti-ful(3).</li></ul>
+
+<h2>1.3 Connected Speech Processes</h2>
+<table>
+<tr><th>Process</th><th>Definition / Example</th></tr>
+<tr><td>Assimilation</td><td>Sound becomes like neighbour — Progressive(regressive influence forward) | Regressive(active sound influenced by following) | Coalescent(two sounds merge into one).</td></tr>
+<tr><td>Elision</td><td>Omission of sound — next day /nekst deɪ/ → /neks deɪ/; handbag /hændbæg/ → /hæmbæg/.</td></tr>
+<tr><td>Linking R</td><td>Intrusive /r/ between vowels across word boundaries — law(r)and order; media(r)event.</td></tr>
+<tr><td>Liaison</td><td>Linking of final consonant to initial vowel — an apple /ə næpl/; pick it up /pɪ kɪ tʌp/.</td></tr>
+<tr><td>Gemination</td><td>Doubling of identical consonant across boundary — bus stop /bʌs stɒp/ → prolonged /s/.</td></tr>
+<tr><td>Weak forms</td><td>Unstressed function words reduce vowel to schwa — /kən/ for can; /ðə/ for the before consonant.</td></tr>
+<tr><td>Strong forms</td><td>Function words retain full vowel when stressed or isolated — /kæn/; /ðiː/.</td></tr>
+<tr><td>Schwa /ə/</td><td>Most common vowel in English; appears in unstressed syllables — about, sofa, system.</td></tr>
+</table>
+
+<h2>1.4 Prosody</h2>
+<h3>1.4.1 Word Stress</h3>
+<table>
+<tr><th>Pattern</th><th>Rule / Example</th></tr>
+<tr><td>Noun/Verb pairs</td><td>Noun: primary stress initial; Verb: primary stress final — RE-cord / re-CORD.</td></tr>
+<tr><td>Compound nouns</td><td>Stress first element — BLACK-board, GREEN-house.</td></tr>
+<tr><td>Phrasal verbs</td><td>Stress particle — give UP, turn OFF.</td></tr>
+<tr><td>Primary stress</td><td>Strongest syllable in word — pho-TO-graph.</td></tr>
+<tr><td>Secondary stress</td><td>Weaker stressed syllable — pho-to-GRA-phic.</td></tr>
+<tr><td>Unstressed</td><td>Reduced to schwa or /ɪ/.</td></tr>
+</table>
+
+<h3>1.4.2 Sentence Stress & Rhythm</h3>
+<ul>
+<li>Content words (Noun, Verb, Adjective, Adverb) stressed; function words (article, Preposition, Pronoun) unstressed.</li>
+<li>Intonation: ↓ = statement/command; ↑ = question/uncertainty.</li>
+</ul>
+
+<h3>1.4.3 Intonation Contours</h3>
+<table>
+<tr><th>Contour</th><th>Use / Example</th></tr>
+<tr><td>Falling ↓</td><td>Statements, wh-questions, commands — Where is it? ↓</td></tr>
+<tr><td>Rising ↑</td><td>Yes/no questions, lists, uncertainty — Are you coming? ↑</td></tr>
+<tr><td>Fall-Rise ↓↑</td><td>Implication, reservation, contrast — I like it ↓↑ (but...).</td></tr>
+<tr><td>Rise-Fall ↑↓</td><td>Surprise, strong agreement — Really? ↑↓</td></tr>
+<tr><td>Level →</td><td>Routine, bored, unfinished — Reading a list.</td></tr>
+</table>
+<ul><li>Tone units / Intonation phrases: breath group carrying one contour.</li></ul>
+
+<h1>2 ORTHOGRAPHY: The Writing Units</h1>
+
+<h2>2.1 The Alphabet</h2>
+<ul><li>26 letters: 5 vowels (a, e, i, o, u), 21 consonants. Upper case & Lower case forms.</li></ul>
+
+<h2>2.2 Graphemes</h2>
+<table>
+<tr><th>Type</th><th>Definition / Example</th></tr>
+<tr><td>Single-letter</td><td>1 letter = 1 sound — b=/b/, a=/æ/.</td></tr>
+<tr><td>Digraph</td><td>2 letters = 1 sound — sh=/ʃ/, ch=/tʃ/, th=/θ/ or /ð/, ph=/f/, wh=/w/ or /h/, gh=/f/ or silent, ck=/k/, qu=/kw/.</td></tr>
+<tr><td>Trigraph</td><td>3 letters = 1 sound — tch=/tʃ/, dge=/dʒ/, igh=/aɪ/.</td></tr>
+<tr><td>Silent letters</td><td>kn=/n/(know), wr=/r/(write), gn=/n/(gnaw), mb=/m/(lamb), l in walk, gh silent(though), b in debt, p in receipt, t in castle, w in write.</td></tr>
+</table>
+
+<h2>2.3 Spelling Conventions</h2>
+<table>
+<tr><th>Rule</th><th>Mechanism / Example</th></tr>
+<tr><td>Magic E</td><td>Vowel + Consonant + e → long vowel: bit → bite.</td></tr>
+<tr><td>C softening</td><td>c → /s/ before e,i,y (city); /k/ elsewhere (cat).</td></tr>
+<tr><td>G softening</td><td>g → /dʒ/ before e,i,y (age); /g/ elsewhere (go).</td></tr>
+<tr><td>Double Consonant</td><td>Consonant-Vowel-Consonant + vowel suffix → double final consonant: stop → stopping.</td></tr>
+<tr><td>Drop silent E</td><td>Remove e before vowel suffix: make → making.</td></tr>
+<tr><td>Y → I</td><td>Consonant + y + suffix: happy → happier.</td></tr>
+<tr><td>I before E</td><td>Except after C or when sounding like A: believe, receive, neighbour, weigh.</td></tr>
+<tr><td>Final -l</td><td>Double before suffixes in British English: travelled, cancelled.</td></tr>
+</table>
+
+<h2>2.4 Inflectional Endings</h2>
+<table>
+<tr><th>Ending</th><th>Environment</th><th>Sound / Example</th></tr>
+<tr><td rowspan="3">-s / -es</td><td>/s z ʃ ʒ tʃ dʒ/</td><td>/ɪz/ — kisses, boxes, ...</td></tr>
+<tr><td>Voiceless /p t k f θ/</td><td>/s/ — stops, cats, ...</td></tr>
+<tr><td>Elsewhere (voiced)</td><td>/z/ — dogs, plays, ...</td></tr>
+<tr><td rowspan="3">-ed</td><td>/t d/</td><td>/ɪd/ — wanted, decided, ...</td></tr>
+<tr><td>Voiceless /p k f s ʃ tʃ/</td><td>/t/ — stopped, washed, ...</td></tr>
+<tr><td>Elsewhere (voiced)</td><td>/d/ — played, learned, ...</td></tr>
+</table>
+
+<h2>2.5 Capitalization Rules</h2>
+<table>
+<tr><th>Context</th><th>Rule / Example</th></tr>
+<tr><td>Sentence</td><td>First word always — She left.</td></tr>
+<tr><td>Proper noun</td><td>Names of people, places, institutions, languages, nationalities — London, NASA, English, Vietnamese.</td></tr>
+<tr><td>I</td><td>First person Pronoun always — I am here.</td></tr>
+<tr><td>Titles</td><td>First, last, major words — The Catcher in the Rye; Doctor Smith.</td></tr>
+<tr><td>Days/Months/Holidays</td><td>Always; seasons do not — Monday, July, Christmas; summer.</td></tr>
+<tr><td>Brand names & Acronyms</td><td>NASA, BMW, Kleenex.</td></tr>
+<tr><td>Personification</td><td>Nature smiled.</td></tr>
+<tr><td>Direct quotation</td><td>First word of quoted sentence — He said, "Leave now."</td></tr>
+<tr><td>Salutations/Closings</td><td>Dear Sir, Yours faithfully.</td></tr>
+</table>
+
+<h1>3 MORPHOLOGY: The Word-Building Units</h1>
+
+<h2>3.1 Morpheme Types</h2>
+<table>
+<tr><th>Type</th><th>Definition / Example</th></tr>
+<tr><td>Free</td><td>Can stand alone — book, run.</td></tr>
+<tr><td>Bound</td><td>Must attach to another — un-, -ness, -ed.</td></tr>
+<tr><td>Lexical</td><td>Carries core meaning — struct, spect.</td></tr>
+<tr><td>Grammatical</td><td>Carries function — plural -s, past -ed.</td></tr>
+<tr><td>Root</td><td>Core semantic unit — struct→structure, construct.</td></tr>
+<tr><td>Base</td><td>Form to which affix attaches — help→helpful.</td></tr>
+<tr><td>Stem</td><td>Base plus any affixes — helpfulness ← helpful + ness.</td></tr>
+</table>
+
+<h2>3.2 Affixes</h2>
+<h3>3.2.1 Prefixes</h3>
+<ul><li>Meaning change; class rarely changes. Position: Prefix + Base.</li></ul>
+<table>
+<tr><th>Category</th><th>Prefixes</th></tr>
+<tr><td>Negation/Reversal</td><td>un-, re-, pre-, mis-, dis-, de-.</td></tr>
+<tr><td>Degree/Size</td><td>over-, under-, out-, hyper-, hypo-, mega-, mini-, mid-, micro-, macro-, super-, ultra-, extra-, semi-, sub-, vice-.</td></tr>
+<tr><td>Number</td><td>bi-, mono-, multi-, poly-, tri-, uni-.</td></tr>
+<tr><td>Time/Order</td><td>fore-, post-, pre-, neo-, retro-, ex-.</td></tr>
+<tr><td>Location/Direction</td><td>in-, inter-, intra-, extra-, trans-, tele-.</td></tr>
+<tr><td>Attitude</td><td>anti-, auto-, co-, counter-, pro-, with-.</td></tr>
+<tr><td>Assimilation variants</td><td>il-/im-/in-/ir- before certain consonants — illegal, impossible, intolerant, irregular.</td></tr>
+</table>
+
+<h3>3.2.2 Suffixes</h3>
+<table>
+<tr><th>Class</th><th>Suffixes</th></tr>
+<tr><td>Noun-forming</td><td>-ness, -ity, -ty, -er, -or, -ar, -ist, -ian, -ment, -tion, -sion, -ure, -age, -al, -ance, -ence, -dom, -ee, -ess, -hood, -ing, -ism, -ship, -th, -y.</td></tr>
+<tr><td>Verb-forming</td><td>-ize, -ise, -ify, -en, -ate.</td></tr>
+<tr><td>Adjective-forming</td><td>-ful, -less, -ous, -ive, -able, -ible, -al, -ial, -ic, -ical, -ish, -like, -ly, -some, -worthy, -en, -an, -ar, -ary, -ate, -ed, -ern, -escent, -free, -most.</td></tr>
+<tr><td>Adverb-forming</td><td>-ly, -ward, -wards, -wise, -fold, -long, -wide.</td></tr>
+<tr><td>Inflectional</td><td>-s/-es, -'s, -ed, -ing, -er, -est, -en.</td></tr>
+</table>
+
+<h2>3.3 Inflectional Categories</h2>
+<table>
+<tr><th>Category</th><th>Distinctions</th></tr>
+<tr><td>Number</td><td>Singular, Plural.</td></tr>
+<tr><td>Person</td><td>First, Second, Third.</td></tr>
+<tr><td>Tense</td><td>Present, Past.</td></tr>
+<tr><td>Aspect</td><td>Progressive, Perfect.</td></tr>
+<tr><td>Case</td><td>Common, Genitive/Possessive.</td></tr>
+<tr><td>Degree</td><td>Positive, Comparative, Superlative.</td></tr>
+</table>
+
+<h2>3.4 Word Formation Processes</h2>
+<table>
+<tr><th>Process</th><th>Function / Example</th></tr>
+<tr><td>Compounding</td><td>Combined words — bus stop, toothbrush, mother-in-law, passer-by. Types: Endocentric(head inside), Exocentric(head outside: redhead), Copulative(deaf-mute), Appositional(actor-director); Forms: Closed, Hyphenated, Open.</td></tr>
+<tr><td>Blending</td><td>Parts merged — brunch, smog, motel.</td></tr>
+<tr><td>Clipping</td><td>Shortened form — ad, phone, exam, lab.</td></tr>
+<tr><td>Acronyms / Initialisms</td><td>Initial letters — NATO(pronounced), FBI(spelled), laser(back-formed acronym).</td></tr>
+<tr><td>Back-formation</td><td>Remove supposed affix — edit from editor, babysit from babysitter.</td></tr>
+<tr><td>Conversion / Zero-derivation</td><td>Class shift without affix — bottle(Noun→Verb), empty(Adjective→Verb), up(Adverb→Verb).</td></tr>
+<tr><td>Eponyms</td><td>From proper name — sandwich, boycott, watt.</td></tr>
+<tr><td>Reduplication</td><td>Repeat or near-repeat — goody-goody, so-so.</td></tr>
+<tr><td>Loanwords / Calques</td><td>Borrowed from another language — café(loanword); superman(calque).</td></tr>
+</table>
+
+<h1>4 WORD CLASSES: The Lexical & Grammatical Categories</h1>
+
+<h2>4.1 Nouns</h2>
+<h3>4.1.1 Classification</h3>
+<ul>
+<li>Noun = person|place|thing|idea. Function: Subject|Object|Complement. Position: [Noun]=Subject/Object/Complement; [Noun]'s=possessive; Determiner Adjective [Noun].</li>
+</ul>
+<table>
+<tr><th>Type</th><th>Nature / Example</th></tr>
+<tr><td>Common</td><td>General — city, book, teacher, ...</td></tr>
+<tr><td>Proper</td><td>Specific — Vietnam, Monday, John, ...</td></tr>
+<tr><td>Concrete</td><td>Tangible — table, water, stone, ...</td></tr>
+<tr><td>Abstract</td><td>Intangible — love, freedom, advice, ...</td></tr>
+<tr><td>Countable</td><td>singular/plural — book, dog, idea, ...</td></tr>
+<tr><td>Uncountable</td><td>No direct plural — water, advice, furniture, ...</td></tr>
+<tr><td>Collective</td><td>Group — team, family, police, ...</td></tr>
+<tr><td>Compound</td><td>Two+ bases — toothbrush, bus stop.</td></tr>
+<tr><td>Gerund</td><td>Verb-ing as Noun — Swimming is good.</td></tr>
+<tr><td>Verbal noun</td><td>Derived from verb — destruction(arrive→arrival).</td></tr>
+<tr><td>Agent noun</td><td>Performer — teacher, runner.</td></tr>
+<tr><td>Diminutive</td><td>Small/endearing — booklet, piglet.</td></tr>
+</table>
+
+<h3>4.1.2 Number</h3>
+<table>
+<tr><th>Pattern</th><th>Rule / Example</th></tr>
+<tr><td>Regular</td><td>+s — books, dogs, ...</td></tr>
+<tr><td>s/x/sh/ch/z/o</td><td>+es (most -o; foreign loans take -s) — boxes, potatoes; pianos, photos.</td></tr>
+<tr><td>Consonant + y</td><td>y→i+es — cities, babies, ...</td></tr>
+<tr><td>f/fe</td><td>→ves — leaves, knives, ...</td></tr>
+<tr><td>Irregular</td><td>Vowel change — man→men, woman→women, child→children, tooth→teeth, foot→feet, mouse→mice, goose→geese, ox→oxen, person→people.</td></tr>
+<tr><td>No change</td><td>Same form — sheep, deer, fish, series, species.</td></tr>
+<tr><td>Foreign</td><td>Retain original plural — alumna→alumnae, criterion→criteria, phenomenon→phenomena, analysis→analyses, datum→data, medium→media, bacterium→bacteria, cactus→cacti, fungus→fungi, nucleus→nuclei, thesis→theses.</td></tr>
+</table>
+
+<h3>4.1.3 Possession</h3>
+<table>
+<tr><th>Pattern</th><th>Rule / Example</th></tr>
+<tr><td>Singular</td><td>+'s — the cat's tail.</td></tr>
+<tr><td>Plural regular</td><td>+' — the cats' house.</td></tr>
+<tr><td>Plural irregular</td><td>+'s — the children's toys.</td></tr>
+<tr><td>Names ending s</td><td>+'s or +' — James's / James'.</td></tr>
+<tr><td>Inanimate</td><td>of-phrase preferred; 's for time/space — the leg of the table; tomorrow's weather.</td></tr>
+<tr><td>Joint</td><td>Last noun only — Tom & Jerry's car.</td></tr>
+<tr><td>Separate</td><td>Each noun — Tom's & Jerry's cars.</td></tr>
+</table>
+<ul><li>Double genitive: a friend of mine.</li></ul>
+
+<h3>4.1.4 Countability & Crossover</h3>
+<ul><li>Mass→countable: a coffee(cup); two waters(bottle); an iron(appliance); a paper(document); a hair(strand).</li></ul>
+
+<h2>4.2 Pronouns</h2>
+<h3>4.2.1 Personal</h3>
+<ul>
+<li>Pronoun replace noun; inflect person|number|gender|case. Position: Pronoun=Subject/Object/Preposition.</li>
+</ul>
+<table>
+<tr><th>Person</th><th>Subject</th><th>Object</th><th>Possessive determiner</th><th>Possessive pronoun</th><th>Reflexive</th></tr>
+<tr><td>First singular</td><td>I</td><td>me</td><td>my</td><td>mine</td><td>myself</td></tr>
+<tr><td>First plural</td><td>we</td><td>us</td><td>our</td><td>ours</td><td>ourselves</td></tr>
+<tr><td>Second singular/plural</td><td>you</td><td>you</td><td>your</td><td>yours</td><td>yourself/yourselves</td></tr>
+<tr><td>Third singular masculine</td><td>he</td><td>him</td><td>his</td><td>his</td><td>himself</td></tr>
+<tr><td>Third singular feminine</td><td>she</td><td>her</td><td>her</td><td>hers</td><td>herself</td></tr>
+<tr><td>Third singular neuter</td><td>it</td><td>it</td><td>its</td><td>its</td><td>itself</td></tr>
+<tr><td>Third plural</td><td>they</td><td>them</td><td>their</td><td>theirs</td><td>themselves</td></tr>
+</table>
+<ul>
+<li>singular they: Someone left their book.</li>
+<li>Preposition → object case: between you & me, for him & her.</li>
+</ul>
+
+<h3>4.2.2 Possessive</h3>
+<table>
+<tr><th>Type</th><th>Form</th><th>Function</th></tr>
+<tr><td>Determinative</td><td>my, your, his, her, its, our, their</td><td>Adjunct to noun — my book.</td></tr>
+<tr><td>Independent</td><td>mine, yours, his, hers, ours, theirs</td><td>Standalone Noun Phrase — The book is mine.</td></tr>
+</table>
+
+<h3>4.2.3 Reflexive & Intensive</h3>
+<ul>
+<li>Reflexive: Object refers back to Subject — I cut myself.</li>
+<li>Intensive/Emphatic: Emphasizes antecedent — I myself saw it.</li>
+</ul>
+
+<h3>4.2.4 Reciprocal</h3>
+<ul><li>Mutual action — each other(two), one another(three+).</li></ul>
+
+<h3>4.2.5 Relative</h3>
+<table>
+<tr><th>Pronoun</th><th>Antecedent</th><th>Function / Example</th></tr>
+<tr><td>who</td><td>person</td><td>Subject — the man who lives here.</td></tr>
+<tr><td>whom</td><td>person</td><td>Object(formal) — the man whom I met.</td></tr>
+<tr><td>which</td><td>thing/animal</td><td>Subject/Object — the book which is red.</td></tr>
+<tr><td>that</td><td>person/thing</td><td>Subject/Object(defining only) — the man/book that I saw.</td></tr>
+<tr><td>whose</td><td>person/thing</td><td>possessive — the man whose car is red.</td></tr>
+<tr><td>where</td><td>place</td><td>Adverb — the house where I live.</td></tr>
+<tr><td>when</td><td>time</td><td>Adverb — the day when we met.</td></tr>
+<tr><td>why</td><td>reason</td><td>Adverb — the reason why I left.</td></tr>
+</table>
+<ul><li>Restrictive vs Non-restrictive: Restrictive = essential, no commas; Non-restrictive = extra, commas, that forbidden.</li></ul>
+
+<h3>4.2.6 Interrogative</h3>
+<ul><li>Questions — who, whom, whose, which, what.</li></ul>
+
+<h3>4.2.7 Demonstrative</h3>
+<table>
+<tr><th>singular</th><th>plural</th><th>Function</th></tr>
+<tr><td>this, that</td><td>these, those</td><td>Near/far from speaker. Determiner: This book. Pronoun: This is good.</td></tr>
+</table>
+
+<h3>4.2.8 Indefinite</h3>
+<ul><li>Unspecific reference.</li></ul>
+<table>
+<tr><th>Group</th><th>Words</th></tr>
+<tr><td>Universal</td><td>all, another, any, anybody, anyone, anything, both, each, either, enough, everybody, everyone, everything.</td></tr>
+<tr><td>Partitive</td><td>few, fewer, less, little, many, more, most, much, neither, nobody, none, no one, nothing, one, other, others, several, some, somebody, someone, something, such.</td></tr>
+</table>
+
+<h3>4.2.9 Dummy/Expletive</h3>
+<ul><li>Fill structural Subject position without lexical content — it(weather/time/distance), there(existence).</li></ul>
+
+<h2>4.3 Verbs</h2>
+<h3>4.3.1 Classification</h3>
+<ul>
+<li>Verb = action|state|occurrence; predicate nucleus. Position: Subject Verb Object; Auxiliary Verb; Modal Verb; to-infinitive; verb-ing.</li>
+</ul>
+<table>
+<tr><th>Type</th><th>Definition / Example</th></tr>
+<tr><td>Lexical/Main</td><td>Full meaning — run, think, break.</td></tr>
+<tr><td>Auxiliary</td><td>Tense/negation/helper — be, do, have.</td></tr>
+<tr><td>Modal</td><td>Ability/obligation — can, could, may, might, shall, should, will, would, must, ought to, used to, need, dare.</td></tr>
+<tr><td>Semi-modal</td><td>Conjugated like main verb — have to, be going to, be able to, be supposed to, had better.</td></tr>
+<tr><td>Finite</td><td>Inflected for tense/person — He walks.</td></tr>
+<tr><td>Non-finite</td><td>Infinitive, Participle, Gerund — to walk, walking, walked.</td></tr>
+<tr><td>Intransitive</td><td>No Object — sleep, walk, happen.</td></tr>
+<tr><td>Transitive</td><td>Requires Object — buy, love, eat.</td></tr>
+<tr><td>Ditransitive</td><td>Two Objects — give, send, tell.</td></tr>
+<tr><td>Linking/Copular</td><td>Subject → Complement — be, become, seem, look.</td></tr>
+<tr><td>Ergative/Middle</td><td>Object becomes Subject without passive — The door opened; The book sells well.</td></tr>
+<tr><td>Complex transitive</td><td>Object + Complement — They elected him leader.</td></tr>
+<tr><td>Phrasal</td><td>Verb + particle — give up, take off.</td></tr>
+<tr><td>Prepositional</td><td>Verb + Preposition — look after, listen to.</td></tr>
+<tr><td>Phrasal-prepositional</td><td>Verb + particle + Preposition — put up with, look forward to.</td></tr>
+<tr><td>Regular</td><td>past tense/-ed — walk→walked.</td></tr>
+<tr><td>Irregular</td><td>See 4.3.3.</td></tr>
+<tr><td>Stative</td><td>State, not continuous — know, believe, prefer, own, belong, seem.</td></tr>
+<tr><td>Dynamic</td><td>Action — run, eat, sleep, write.</td></tr>
+</table>
+
+<h3>4.3.2 Forms</h3>
+<table>
+<tr><th>Form</th><th>Label / Use</th></tr>
+<tr><td>Base</td><td>Verb — Present plural; after modal.</td></tr>
+<tr><td>Third person</td><td>Verb-s/es — Present singular.</td></tr>
+<tr><td>Past</td><td>past tense/-ed — Simple past.</td></tr>
+<tr><td>Past participle</td><td>past participle — Perfect; passive.</td></tr>
+<tr><td>Present participle</td><td>verb-ing — Continuous; gerund; Adjective.</td></tr>
+<tr><td>To-infinitive</td><td>to-infinitive — Purpose; Subject; Object.</td></tr>
+<tr><td>Bare infinitive</td><td>infinitive without to — after modal, make, let, have, see, hear.</td></tr>
+</table>
+
+<h3>4.3.3 Irregular Patterns</h3>
+<table>
+<tr><th>Pattern</th><th>Rule / Example</th></tr>
+<tr><td>Invariant</td><td>Base=Past=Participle — cut, put, shut.</td></tr>
+<tr><td>Vowel change</td><td>Base→Past→Participle(same) — find→found→found, sit→sat→sat.</td></tr>
+<tr><td>Vowel + -en</td><td>Base→Past→Participle(-en) — break→broke→broken, speak→spoke→spoken.</td></tr>
+<tr><td>Ablaut</td><td>Vowel gradation — sing→sang→sung, drink→drank→drunk.</td></tr>
+<tr><td>Weak</td><td>Dental suffix but irregular — bring→brought, buy→bought.</td></tr>
+<tr><td>Mixed</td><td>Weak past, strong participle — show→showed→shown.</td></tr>
+<tr><td>Suppletive</td><td>Stem replacement — be→was/were→been, go→went→gone, good→better→best.</td></tr>
+<tr><td>Zero</td><td>No change in some forms — put→put→put.</td></tr>
+<tr><td>Defective</td><td>Missing forms — can→could(*canned), may→might(*mayed).</td></tr>
+</table>
+
+<h3>4.3.4 Complementation</h3>
+<table>
+<tr><th>Pattern</th><th>Structure / Triggers</th></tr>
+<tr><td>Gerund</td><td>Verb + verb-ing — enjoy, mind, finish, avoid, spend time, be worth, can't help.</td></tr>
+<tr><td>Infinitive</td><td>Verb + to-infinitive — want, hope, decide, plan.</td></tr>
+<tr><td>Preposition + Gerund</td><td>Preposition + verb-ing — look forward to, object to, be used to, tired of, prevent from.</td></tr>
+<tr><td>Bare infinitive</td><td>Verb + Object + bare infinitive — make, let, have.</td></tr>
+<tr><td>Object infinitive</td><td>Verb + Object + to-infinitive — advise, encourage, ask, tell.</td></tr>
+<tr><td>Object gerund</td><td>Verb + Object + verb-ing — catch, find, hear, see.</td></tr>
+<tr><td>Adjective + infinitive</td><td>Adjective + to-infinitive — afraid, eager, likely, ready.</td></tr>
+<tr><td>Get + Adjective/Prepositional Phrase</td><td>get + Adjective / past participle — get married, get lost, get tired.</td></tr>
+</table>
+<ul>
+<li>Shift: I think he is right(opinion) versus I am thinking about it(process).</li>
+</ul>
+
+<h3>4.3.5 Gerund versus Present Participle</h3>
+<table>
+<tr><th>Feature</th><th>Gerund</th><th>Present Participle</th></tr>
+<tr><td>Function</td><td>Noun</td><td>Part of Verb phrase or Adjective.</td></tr>
+<tr><td>Position</td><td>Subject, Object, complement after Preposition.</td><td>After auxiliary be; before/after noun.</td></tr>
+<tr><td>Example</td><td>Swimming is good. / I enjoy swimming.</td><td>She is swimming. / a swimming pool.</td></tr>
+</table>
+<ul><li>Test: replace with "it" → gerund; replace with Adjective → participle.</li></ul>
+
+<h3>4.3.6 Gerund versus Infinitive Meaning Shifts</h3>
+<table>
+<tr><th>Verb</th><th>Gerund</th><th>Infinitive</th></tr>
+<tr><td>stop</td><td>quit — stop smoking.</td><td>pause in order to — stop to smoke.</td></tr>
+<tr><td>remember</td><td>past memory — remember meeting him.</td><td>future obligation — remember to call him.</td></tr>
+<tr><td>forget</td><td>lost memory — forget meeting him.</td><td>failed obligation — forget to call him.</td></tr>
+<tr><td>try</td><td>experiment — try opening it.</td><td>attempt — try to open it.</td></tr>
+<tr><td>regret</td><td>past regret — regret telling him.</td><td>bad news(formal) — regret to tell you.</td></tr>
+</table>
+<ul>
+<li>Help + (to) infinitive: He helped me (to) carry it.</li>
+<li>Need + verb-ing: passive meaning. The car needs washing. = The car needs to be washed.</li>
+</ul>
+
+<h3>4.3.7 Modals</h3>
+<table>
+<tr><th>Function</th><th>Modals / Example</th></tr>
+<tr><td>Ability</td><td>can, could, be able to — I can swim. / could=general past; was/were able to=specific past achievement.</td></tr>
+<tr><td>Permission</td><td>can, could, may — You may enter.</td></tr>
+<tr><td>Obligation</td><td>must, have to, need to — I must go.(internal) / I have to go.(external).</td></tr>
+<tr><td>Prohibition</td><td>mustn't, can't — You can't smoke here.</td></tr>
+<tr><td>Advice</td><td>should, ought to, had better — You should rest.</td></tr>
+<tr><td>Possibility</td><td>may, might, could — It might rain.(might &lt; may).</td></tr>
+<tr><td>Deduction</td><td>must, can't — He must be tired.</td></tr>
+<tr><td>Offer/Request</td><td>shall, will, would, can, could — Can I help?</td></tr>
+<tr><td>Past habit</td><td>would, used to — He would walk daily. / I used to smoke.</td></tr>
+</table>
+<ul>
+<li>May/Might as well = no better alternative.</li>
+<li>Dare/Need modal versus main: Modal: Need he go? He needn't go.(no -s, no do-support). Main: Does he need to go? He doesn't need to go.</li>
+<li>be/get used to + Noun/verb-ing = accustomed(state/process).</li>
+</ul>
+
+<h3>4.3.8 Modal Perfects</h3>
+<table>
+<tr><th>Modal Perfect</th><th>Use / Example</th></tr>
+<tr><td>must have + past participle</td><td>Certain past deduction — He must have left.</td></tr>
+<tr><td>can't have + past participle</td><td>negative past deduction — She can't have seen us.</td></tr>
+<tr><td>might have + past participle</td><td>Possible past event — He might have forgotten.</td></tr>
+<tr><td>could have + past participle</td><td>Unrealized past possibility — You could have told me!</td></tr>
+<tr><td>should have + past participle</td><td>Past criticism/regret — You should have studied.</td></tr>
+<tr><td>needn't have + past participle</td><td>Unnecessary but done — I needn't have brought it.</td></tr>
+<tr><td>didn't need to + Verb</td><td>Unnecessary (not done) — I didn't need to bring it.</td></tr>
+</table>
+
+<h3>4.3.9 Phrasal Verbs</h3>
+<table>
+<tr><th>Type</th><th>Rule / Example</th></tr>
+<tr><td>Intransitive</td><td>No Object — catch on, get up, break down.</td></tr>
+<tr><td>Transitive Separable</td><td>Object can split Verb & particle; Pronoun Object MUST split — turn off the light / turn it off (*turn off it).</td></tr>
+<tr><td>Transitive Inseparable</td><td>Object always follows particle — look after the baby (*look the baby after).</td></tr>
+<tr><td>Three-part</td><td>Verb + particle + Preposition. Always inseparable — put up with the noise / put up with it.</td></tr>
+</table>
+
+<h2>4.4 Adjectives</h2>
+<h3>4.4.1 Position & Order</h3>
+<ul>
+<li>Adjective modify noun; appear prenominally or after Linking Verb. Position: Determiner Adjective Noun; Subject Linking Verb Adjective. Order: Opinion→Size→Age→Shape→Colour→Origin→Material→Purpose. Example: a beautiful small old round red Italian wooden writing desk.</li>
+<li>Attributive: before noun — a red car.</li>
+<li>Predicative: after Linking Verb — The car is red.</li>
+<li>Postpositive: after noun — something important, attorney general.</li>
+</ul>
+
+<h3>4.4.2 Types</h3>
+<table>
+<tr><th>Type</th><th>Definition / Example</th></tr>
+<tr><td>Proper</td><td>From proper noun — Victorian, Shakespearean.</td></tr>
+<tr><td>Participial</td><td>Present(boring) | Past(bored).</td></tr>
+<tr><td>Compound</td><td>good-looking, brand-new.</td></tr>
+<tr><td>Denominal</td><td>From noun — wooden, metallic.</td></tr>
+<tr><td>Deverbal</td><td>From verb — running water, broken heart.</td></tr>
+<tr><td>Gradable</td><td>Can take degree — very tall, more important.</td></tr>
+<tr><td>Non-gradable/Absolute</td><td>Extreme or binary — unique, dead, perfect.</td></tr>
+<tr><td>Coordinate</td><td>Equal modification — nice and warm.</td></tr>
+<tr><td>Cumulative</td><td>Layered modification — a beautiful big table.</td></tr>
+</table>
+
+<h3>4.4.3 Comparison</h3>
+<table>
+<tr><th>Degree</th><th>Short (1 syllable; 2 syllables -y,-ow,-le)</th><th>Long (2+ syllables; other 2-syllable)</th></tr>
+<tr><td>Equal</td><td>as tall as</td><td>as beautiful as</td></tr>
+<tr><td>Comparative</td><td>taller than</td><td>more beautiful than</td></tr>
+<tr><td>Superlative</td><td>the tallest</td><td>the most beautiful</td></tr>
+<tr><td>Inferior</td><td>less tall than</td><td>less beautiful than</td></tr>
+<tr><td>Least</td><td>the least tall</td><td>the least beautiful</td></tr>
+</table>
+<table>
+<tr><th>Spelling</th><th>Rule / Comparative / Superlative</th></tr>
+<tr><td>Consonant-Vowel-Consonant (1 syllable)</td><td>double consonant + er/est — bigger / biggest.</td></tr>
+<tr><td>Consonant + y</td><td>y→i + er/est — happier / happiest.</td></tr>
+<tr><td>silent e</td><td>+r/st — nicer / nicest.</td></tr>
+<tr><td>2+ syllables (most other 2-syllable)</td><td>more/most + Adjective — more careful / most careful.</td></tr>
+</table>
+<ul>
+<li>Irregular: good→better→best, bad→worse→worst, far→farther/further→farthest/furthest, little→less→least, many/much→more→most.</li>
+<li>fewer=countable (fewer books); less=uncountable (less water).</li>
+<li>Double comparative: more & more beautiful.</li>
+<li>Proportional: The more you study, the more you know.</li>
+</ul>
+
+<h2>4.5 Adverbs</h2>
+<h3>4.5.1 Types</h3>
+<ul><li>Adverb modify verb, adjective, adverb, or entire clauses.</li></ul>
+<table>
+<tr><th>Type</th><th>Question / Example</th></tr>
+<tr><td>Manner</td><td>How? — quickly, well, carefully, hard, fast.</td></tr>
+<tr><td>Place</td><td>Where? — here, there, everywhere.</td></tr>
+<tr><td>Time</td><td>When? — yesterday, now, later, soon.</td></tr>
+<tr><td>Frequency</td><td>How often? — always, usually, often, sometimes.</td></tr>
+<tr><td>Duration</td><td>How long? — briefly, permanently, temporarily.</td></tr>
+<tr><td>Degree</td><td>How much? — very, too, quite, rather, almost.</td></tr>
+<tr><td>Focusing</td><td>Restrictive(only, just, simply) | Additive(also, even, too).</td></tr>
+<tr><td>Sentence/Disjunct</td><td>Style(frankly, honestly) | Attitude(luckily, unfortunately, obviously).</td></tr>
+<tr><td>Conjunct/Linking</td><td>Additive(furthermore, moreover) | Adversative(however, nevertheless) | Causal(therefore, thus) | Temporal(then, meanwhile).</td></tr>
+<tr><td>Stance</td><td>Speaker comment — apparently, presumably.</td></tr>
+<tr><td>Flat adverbs</td><td>Same form as Adjective — fast, hard, late, high, straight.</td></tr>
+</table>
+
+<h3>4.5.2 Position Rules</h3>
+<ul><li>Position: Adverb Verb; Auxiliary Adverb Verb; Verb Object Adverb; Adverb Adjective; Adverb Adverb; Adverb, Subject Verb.</li></ul>
+<table>
+<tr><th>number</th><th>Position / Example</th></tr>
+<tr><td>1</td><td>Before main verb — She always eats.</td></tr>
+<tr><td>2</td><td>After be — He is always late.</td></tr>
+<tr><td>3</td><td>Between Auxiliary & Verb — He has never eaten.</td></tr>
+<tr><td>4</td><td>After intransitive verb — He runs fast.</td></tr>
+<tr><td>5</td><td>After Object — He eats rice quickly.</td></tr>
+<tr><td>6</td><td>Sentence-initial/final — Yesterday, I left.</td></tr>
+<tr><td>7</td><td>Before Adjective/Adverb — Very good.</td></tr>
+</table>
+<ul>
+<li>Multi-Adverb: Manner→Place→Time. She sang beautifully in Paris last night.</li>
+<li>already=sooner than expected; yet=up to now(question/negative); still=continuing.</li>
+<li>also(before main verb/after be, affirmative); too(end, affirmative); as well(end, affirmative); either(end, negative).</li>
+<li>Only position changes meaning: Only I saw him(affirmative); I only saw him(not speak); I saw only him(affirmative).</li>
+</ul>
+
+<h3>4.5.3 Comparison & Degree</h3>
+<table>
+<tr><th>Structure</th><th>Use / Example</th></tr>
+<tr><td>so + Adjective/Adverb</td><td>Degree — so beautiful, so fast.</td></tr>
+<tr><td>so + Adjective + a/an + Noun(singular)</td><td>Degree with singular countable — so beautiful a day.</td></tr>
+<tr><td>such + a/an + Adjective + Noun(singular)</td><td>Emphasis on noun — such a beautiful day.</td></tr>
+<tr><td>such + Adjective + plural/uncountable Noun</td><td>Emphasis on noun — such beautiful flowers.</td></tr>
+<tr><td>too + Adjective/Adverb [+for Object] + to-infinitive</td><td>Excess → negative result — too young to marry.</td></tr>
+<tr><td>Adjective/Adverb + enough [+for Object] + to-infinitive</td><td>Sufficiency — old enough to vote.</td></tr>
+<tr><td>enough + Noun</td><td>Sufficiency (noun) — enough money.</td></tr>
+</table>
+
+<h2>4.6 Determiners</h2>
+<h3>4.6.1 Predeterminers</h3>
+<ul><li>Precede central Determiner. Position: Predeterminer + Determiner + Noun.</li></ul>
+<table>
+<tr><th>Predeterminer</th><th>Use / Example</th></tr>
+<tr><td>all, both, half</td><td>All the students; both my friends; half an hour.</td></tr>
+<tr><td>double, twice, three times</td><td>Double the amount; twice the price.</td></tr>
+<tr><td>such, what</td><td>Such a shame; What a day!</td></tr>
+</table>
+
+<h3>4.6.2 Articles</h3>
+<ul>
+<li>Articles mark definiteness & select countability. Position: Determiner Adjective Noun.</li>
+</ul>
+<table>
+<tr><th>Article</th><th>Condition / Example</th></tr>
+<tr><td>a/an</td><td>First mention; jobs; singular countable; per-unit rate — a book, an apple, a doctor, a university, an hour, twice a week.</td></tr>
+<tr><td>the</td><td>Unique; second mention; superlatives; ordinals; rivers; ranges; inventions; instruments; specific groups — the sun, the Thames, the best, the guitar, the rich, the Vietnamese.</td></tr>
+<tr><td>zero (ø)</td><td>Meals; sports; languages; abstract(general); proper names; subjects; transport; institutions; plural generics — breakfast, football, English, Paris, by car, at school, Cats sleep.</td></tr>
+</table>
+<ul>
+<li>A versus An by pronunciation: an hour, an MBA; a university, a European.</li>
+<li>Abstract Noun: zero = general (Love is blind); the = specific (The love he felt).</li>
+<li>Plural countable Noun + zero = general class (Dogs bark; The dogs = specific pack).</li>
+<li>some in questions expecting affirmative: Would you like some coffee?</li>
+</ul>
+
+<h3>4.6.3 Demonstratives & Possessives</h3>
+<table>
+<tr><th>Type</th><th>singular</th><th>plural</th><th>Function</th></tr>
+<tr><td>Demonstrative</td><td>this, that</td><td>these, those</td><td>Near/far from speaker.</td></tr>
+<tr><td>Possessive determiner</td><td>my, your, his, her, its</td><td>our, your, their</td><td>Adjunct to noun.</td></tr>
+<tr><td>Possessive Pronoun</td><td>mine, yours, his, hers, its</td><td>ours, yours, theirs</td><td>Standalone Noun Phrase.</td></tr>
+</table>
+
+<h3>4.6.4 Quantifiers</h3>
+<table>
+<tr><th>Quantifier</th><th>countable</th><th>uncountable</th><th>Connotation</th></tr>
+<tr><td>many / a few / few</td><td>yes</td><td>no</td><td>a few(positive); few(negative).</td></tr>
+<tr><td>much / a little / little</td><td>no</td><td>yes</td><td>a little(positive); little(negative).</td></tr>
+<tr><td>plenty of / a lot of / lots of</td><td>yes</td><td>yes</td><td>informal.</td></tr>
+<tr><td>some / any</td><td>yes</td><td>yes</td><td>some(positive); any(question/negative).</td></tr>
+<tr><td>more / most</td><td>yes</td><td>yes</td><td>—</td></tr>
+</table>
+<ul>
+<li>much → mainly negative/question; a lot of/plenty of → affirmative.</li>
+<li>no + Noun = not any + Noun: I have no time = I don't have any time.</li>
+<li>Quantifier + of + Determiner: most of the, some of my, none of these.</li>
+<li>any + affirmative = "it does not matter which": You may take any book.</li>
+</ul>
+
+<h3>4.6.5 Group Quantifiers</h3>
+<table>
+<tr><th>Word</th><th>number / Use / Example</th></tr>
+<tr><td>each</td><td>≥2 — Individual members — Each student passed.</td></tr>
+<tr><td>every</td><td>≥3 — Group as whole — Every student passed.</td></tr>
+<tr><td>all</td><td>≥2 — Entire set — All students passed.</td></tr>
+<tr><td>both</td><td>2 — Pair together — Both students passed.</td></tr>
+<tr><td>either</td><td>2 — One of two — Either option works.</td></tr>
+<tr><td>neither</td><td>2 — not one of two — Neither option works.</td></tr>
+<tr><td>none</td><td>≥3 — not any — None of them passed.</td></tr>
+</table>
+<ul>
+<li>each ≥2 items; every ≥3.</li>
+<li>both / either / neither precede singular noun directly: both cars, either day, neither answer.</li>
+<li>All of / Both of / None of + Determiner + Noun: All of the students, None of my friends.</li>
+</ul>
+
+<h3>4.6.6 Numerals</h3>
+<table>
+<tr><th>Type</th><th>Form / Rule / Example</th></tr>
+<tr><td>Cardinal</td><td>one, two, twenty, hundred, thousand, million — No plural S when counting: two hundred. Plural in indefinites: hundreds of.</td></tr>
+<tr><td>Ordinal</td><td>first, second, third, + -th (fifth, twelfth, twentieth) — The first chapter.</td></tr>
+<tr><td>Fraction</td><td>1/2 = a half; 1/3 = a third; 2/3 = two-thirds (plural numerator >1) — three-quarters.</td></tr>
+<tr><td>Multiplicative</td><td>once, twice, three times.</td></tr>
+</table>
+
+<h3>4.6.7 Distributives</h3>
+<ul><li>Refer to members of a group individually — all, both, either, neither, each, every.</li></ul>
+
+<h3>4.6.8 Interrogatives</h3>
+<ul><li>which, what, whose — Which book? What colour? Whose car?</li></ul>
+
+<h3>4.6.9 Postdeterminers</h3>
+<ul><li>Follow central Determiner — many, several, few, last, next, past, cardinal/ordinal numerals: the many problems, the last time.</li></ul>
+
+<h3>4.6.10 Alternatives</h3>
+<table>
+<tr><th>Word</th><th>Use / Example</th></tr>
+<tr><td>another</td><td>+ singular noun (one more) — I need another cup.</td></tr>
+<tr><td>another</td><td>+ number + plural noun — I need another two days.</td></tr>
+<tr><td>other</td><td>+ plural noun (additional/different) — I have other books.</td></tr>
+<tr><td>others</td><td>= other + plural noun (indefinite remainder) — Some left; others stayed.</td></tr>
+<tr><td>the other</td><td>+ singular noun (second of two) — One is red, the other is blue.</td></tr>
+<tr><td>the others</td><td>= the other + plural noun (definite remainder) — Three came; the others stayed.</td></tr>
+</table>
+
+<h2>4.7 Prepositions</h2>
+<h3>4.7.1 Simple</h3>
+<ul><li>Single-word Preposition: in, on, at, by, with, from, to, for, of, about, into, onto, upon, off, out, over, under, through, during, before, after, above, below, up, down, between, among, within, without, against, along, around, behind, beside, beyond, despite, except, inside, outside, since, till, until, via, per, like, near, past, save, notwithstanding.</li></ul>
+
+<h3>4.7.2 Complex/Multi-word</h3>
+<ul><li>according to, ahead of, apart from, as for, as of, because of, close to, due to, except for, far from, in addition to, in back of, in case of, in front of, in lieu of, in place of, in spite of, instead of, near to, next to, on account of, on behalf of, on top of, out of, outside of, prior to, regardless of, subsequent to, thanks to, up to, with regard to.</li></ul>
+
+<h3>4.7.3 Semantic Categories</h3>
+<table>
+<tr><th>Category</th><th>Relation / Example</th></tr>
+<tr><td>Spatial</td><td>at(point), on(surface), in(area), above, below, between, among, behind, ...</td></tr>
+<tr><td>Temporal</td><td>at(hour), on(day), in(month/year), before, after, during, since, until, ...</td></tr>
+<tr><td>Logical/Abstract</td><td>because of, due to, in spite of, about, concerning, regarding, ...</td></tr>
+<tr><td>Movement</td><td>to, into, out of, through, across, along, up, down, ...</td></tr>
+<tr><td>Manner</td><td>by, with, without.</td></tr>
+<tr><td>Agent</td><td>Doer(passive) — by.</td></tr>
+<tr><td>Instrument</td><td>Tool — with.</td></tr>
+<tr><td>Reason</td><td>because of, due to, owing to, ...</td></tr>
+</table>
+
+<h3>4.7.4 Key Distinctions</h3>
+<table>
+<tr><th>Distinction</th><th>Rule / Example</th></tr>
+<tr><td>For versus Since</td><td>For + duration; Since + starting point — for two hours / since 2020.</td></tr>
+<tr><td>By versus Until</td><td>By=deadline; Until=continuation — Finish it by Friday / I waited until Friday.</td></tr>
+<tr><td>During versus While</td><td>During + Noun; While + clause — during the meeting / while we were meeting.</td></tr>
+<tr><td>During versus For</td><td>During + specific event/period; For + duration — during the war / for two hours.</td></tr>
+</table>
+
+<h3>4.7.5 Collocations</h3>
+<table>
+<tr><th>Dependent</th><th>Collocation / Example</th></tr>
+<tr><td>Verbs</td><td>listen to, depend on, wait for, look at, ...</td></tr>
+<tr><td>Adjectives</td><td>afraid of, good at, interested in, tired of, ...</td></tr>
+<tr><td>Nouns</td><td>reason for, cause of, solution to, increase in, ...</td></tr>
+</table>
+<ul>
+<li>formal: Preposition precedes Object (To whom did you speak?).</li>
+<li>informal: Preposition at clause end (Who did you speak to?).</li>
+</ul>
+
+<h2>4.8 Conjunctions</h2>
+<h3>4.8.1 Coordinating</h3>
+<ul>
+<li>Join elements of equal syntactic status. Position: Clause Conjunction Clause; X Conjunction Y.</li>
+<li>for, and, nor, but, or, yet, so (FANBOYS).</li>
+<li>Asyndetic = no Conjunction; Syndetic = one Conjunction; Polysyndetic = multiple Conjunctions.</li>
+</ul>
+
+<h3>4.8.2 Subordinating</h3>
+<table>
+<tr><th>Category</th><th>Conjunctions / Example</th></tr>
+<tr><td>Time</td><td>after, although, as, as soon as, before, once, since, till, until, when, whenever, while — When I came, he left.</td></tr>
+<tr><td>Place</td><td>where, wherever — Where there is smoke, there is fire.</td></tr>
+<tr><td>Manner</td><td>as, as if, as though, how — Do as I say.</td></tr>
+<tr><td>Reason/Cause</td><td>because, since, as, given that, inasmuch as, now that — Because it rained, we stayed.</td></tr>
+<tr><td>Purpose</td><td>so that, in order that, lest — He ran so that he could catch it.</td></tr>
+<tr><td>Result</td><td>so…that, such…that — He was so tired that he slept.</td></tr>
+<tr><td>Condition</td><td>if, unless, provided that, as long as, in case — If you try, you will win.</td></tr>
+<tr><td>Concession</td><td>although, though, even though, even if, while, whereas, albeit — Although it rained, we went.</td></tr>
+<tr><td>Comparison</td><td>than, as, as…as, whether — He is taller than I am.</td></tr>
+</table>
+<ul><li>Subordinating Conjunction → Dependent Clause; no comma when Dependent Clause follows main.</li></ul>
+
+<h3>4.8.3 Correlative</h3>
+<ul>
+<li>Paired parallel structure required.
+both…and, either…or, neither…nor, not only…but also, whether…or, as…as, such…that, so…that, no sooner…than, hardly…when.</li>
+</ul>
+
+<h3>4.8.4 Conjunctive Adverbs/Transitions</h3>
+<ul><li>however, therefore, moreover, furthermore, nevertheless, nonetheless, consequently, accordingly, hence, thus, otherwise, instead, besides, also, still, yet, meanwhile, subsequently, eventually, previously.</li></ul>
+
+<h2>4.9 Interjections</h2>
+<h3>4.9.1 Primary</h3>
+<ul><li>Express sudden emotion; grammatically independent. oh, ouch, wow, yay, yuck, eh, ah, er, um, huh, hey, hello, goodbye.</li></ul>
+
+<h3>4.9.2 Secondary/Grammaticalized</h3>
+<ul><li>well, now, so, why, here, there — Well, maybe. Now, listen. So, what next?</li></ul>
+
+<h3>4.9.3 Position</h3>
+<table>
+<tr><th>Position</th><th>Example</th></tr>
+<tr><td>Standalone</td><td>Wow! Ouch! Oops! Bravo!</td></tr>
+<tr><td>Clause-initial</td><td>Oh, I see. Hey, wait! Well, maybe.</td></tr>
+<tr><td>Parenthetical</td><td>The answer, alas, is no. He is, frankly, wrong.</td></tr>
+</table>
+
+<h2>4.10 Numerals</h2>
+<table>
+<tr><th>Type</th><th>Form / Example</th></tr>
+<tr><td>Cardinal</td><td>one, two, twenty, hundred — two hundred; hundreds of.</td></tr>
+<tr><td>Ordinal</td><td>first, second, third, fifth, twelfth, twentieth — the first chapter.</td></tr>
+<tr><td>Fractions</td><td>1/2 a half; 1/3 a third; 2/3 two-thirds; 3/4 three-quarters.</td></tr>
+<tr><td>Multipliers</td><td>single, double, triple, quadruple.</td></tr>
+<tr><td>Distributive numbers</td><td>one each, two each, singly, doubly.</td></tr>
+</table>
+
+<h1>5 PHRASE STRUCTURE: The Constituent Units</h1>
+
+<h2>5.1 Phrase Types</h2>
+<ul><li>Phrases = single grammatical units built around head word.</li></ul>
+<table>
+<tr><th>Type</th><th>Head</th><th>Structure / Example</th></tr>
+<tr><td>Noun Phrase</td><td>Noun</td><td>(Predeterminer) + (Determiner) + (Adjective Phrase) + Noun + (Prepositional Phrase/Relative Clause/Participle phrase/Infinitive phrase/Appositive phrase/Adjective phrase) — a very beautiful girl in red.</td></tr>
+<tr><td>Verb Phrase</td><td>Verb</td><td>Auxiliary/Modal + (Adverb) + Verb + (Object/Complement) — will quickly finish the work.</td></tr>
+<tr><td>Adjective Phrase</td><td>Adjective</td><td>(Adverb) + Adjective + (Prepositional Phrase/Clause) — extremely intelligent.</td></tr>
+<tr><td>Adverb Phrase</td><td>Adverb</td><td>(Adverb) + Adverb — very carefully.</td></tr>
+<tr><td>Prepositional Phrase</td><td>Preposition</td><td>Preposition + Noun Phrase/Pronoun/Clause — in the big city.</td></tr>
+</table>
+
+<h2>5.2 Phrase Structure Rules</h2>
+<h3>5.2.1 Functions within Phrases</h3>
+<ul>
+<li>Head: obligatory; determines phrase category.</li>
+<li>Specifier: marks phrase boundary — Determiner in Noun Phrase, degree word in Adjective Phrase.</li>
+<li>Modifier: optional; adds information — Premodifier(before head), Postmodifier(after head).</li>
+<li>Complement: completes head meaning; selected by head — transitive Verb → Object; Preposition → Noun Phrase.</li>
+</ul>
+
+<h3>5.2.2 Recursive Embedding</h3>
+<ul>
+<li>Phrases embed within phrases: Prepositional Phrase inside Noun Phrase (the man <u>in the hat</u>), Relative Clause inside Noun Phrase (the book <u>that I read</u>), clause inside Noun Phrase (the idea <u>that he left</u>).</li>
+<li>Recursion → indefinitely complex structures.</li>
+</ul>
+
+<h1>6 CLAUSE STRUCTURE: The Propositional Units</h1>
+
+<h2>6.1 Clause Elements</h2>
+<table>
+<tr><th>Element</th><th>Definition / Types / Example</th></tr>
+<tr><td>Subject</td><td>Simple, Compound, Complex, Expletive/Dummy(it, there), Implied(imperative). — The cat sleeps. / It is raining.</td></tr>
+<tr><td>Predicate</td><td>Verb + Objects/Complements/Adverbials.</td></tr>
+<tr><td>Verb</td><td>Finite, Non-finite.</td></tr>
+<tr><td>Object</td><td>Direct(gave a book), Indirect(gave me a book), Prepositional(gave a book to me), Retained(passive: I was given a book), Cognate(die a death).</td></tr>
+<tr><td>Complement</td><td>Subject Complement/Predicative(She is happy), Object Complement(They elected him leader).</td></tr>
+<tr><td>Adverbial / Adjunct</td><td>Time, Place, Manner, Reason, Purpose, Result, Condition, Concession, Degree, Frequency, Instrument, Agent, Standard, Accompaniment, Matter, Respect.</td></tr>
+<tr><td>Disjunct</td><td>Style(frankly) | Content(obviously).</td></tr>
+<tr><td>Conjunct</td><td>Linking adverbial — however, therefore.</td></tr>
+</table>
+
+<h2>6.2 Clause Types by Dependency</h2>
+<h3>6.2.1 Independent versus Dependent</h3>
+<ul>
+<li>Independent Clause: Subject + finite Verb; stands alone as sentence.</li>
+<li>Dependent Clause: Subject + finite Verb; cannot stand alone; functions as Subject|Object|Complement|modifier within matrix clause.</li>
+</ul>
+
+<h3>6.2.2 Coordination versus Subordination</h3>
+<ul>
+<li>Coordination: joins elements of equal syntactic status (Independent Clause+Independent Clause; Noun Phrase+Noun Phrase).</li>
+<li>Subordination: embeds Dependent Clause within matrix clause, creating asymmetry.</li>
+<li>Dependency: matrix clause = head; subordinate clauses = dependents.</li>
+</ul>
+
+<h3>6.2.3 Clause Types by Function</h3>
+<table>
+<tr><th>Type</th><th>Function</th><th>Introducer</th><th>Example</th></tr>
+<tr><td>Noun clause</td><td>Subject, Object, complement</td><td>that, whether, if, wh-words</td><td>I know that he is here.</td></tr>
+<tr><td>Relative (Adjective) clause</td><td>Postmodify noun</td><td>who, whom, which, that, whose, where, when, why</td><td>the man who lives here.</td></tr>
+<tr><td>Adverbial clause</td><td>Modify verb/clause</td><td>when, because, if, although, so that, ...</td><td>When I came, he left.</td></tr>
+</table>
+<ul><li>Restrictive vs Non-restrictive: Restrictive = essential identification, no commas; Non-restrictive = supplementary, commas.</li></ul>
+
+<h2>6.3 Clause Patterns</h2>
+<table>
+<tr><th>Pattern</th><th>Formula / Example</th></tr>
+<tr><td>SV</td><td>Subject + Verb(intransitive) — I sleep.</td></tr>
+<tr><td>SVO</td><td>Subject + Verb + Object(monotransitive) — I love English.</td></tr>
+<tr><td>SVC / SPC</td><td>Subject + Linking Verb + Complement — She looks happy.</td></tr>
+<tr><td>SVA</td><td>Subject + Verb(intransitive) + Adverbial — She lives in Paris.</td></tr>
+<tr><td>SVOO / SVIOO</td><td>Subject + Verb + Indirect Object + Direct Object — He gave me a gift.</td></tr>
+<tr><td>SVOC</td><td>Subject + Verb + Object + Complement — They elected him leader.</td></tr>
+<tr><td>SVOA</td><td>Subject + Verb + Object + Adverbial — She put the book on the shelf.</td></tr>
+</table>
+
+<h2>6.4 Non-finite Clauses</h2>
+<table>
+<tr><th>Type</th><th>Form / Example</th></tr>
+<tr><td>To-infinitive clause</td><td>To leave now would be rude.</td></tr>
+<tr><td>Bare infinitive clause</td><td>I saw him leave.</td></tr>
+<tr><td>-ing Participle clause</td><td>Walking down the street, he saw her.</td></tr>
+<tr><td>-ed Participle clause</td><td>Seen from above, the city looks small.</td></tr>
+<tr><td>Verbless clause</td><td>Whatever the reason, he refused.</td></tr>
+<tr><td>Small clause</td><td>Object + bare infinitive/Adjective/Noun without finite Verb — I saw him run; They made him angry.</td></tr>
+</table>
+
+<h2>6.5 Special Clause Types</h2>
+<h3>6.5.1 Cleft Sentences</h3>
+<ul><li>It is/was + [emphasised] + that/who/which + …</li></ul>
+<table>
+<tr><th>Type</th><th>Example</th></tr>
+<tr><td>It-cleft</td><td>It was John who broke the window. / It was yesterday that he left.</td></tr>
+<tr><td>Wh-cleft / Pseudo-cleft</td><td>What I need is more time.</td></tr>
+<tr><td>Inverted pseudo-cleft</td><td>More time is what I need.</td></tr>
+<tr><td>All-cleft</td><td>All I want is peace.</td></tr>
+</table>
+
+<h3>6.5.2 Existential there</h3>
+<ul><li>There + be + Noun Phrase — There is a book on the table. / There exist several solutions.</li></ul>
+
+<h3>6.5.3 Inversion</h3>
+<table>
+<tr><th>Trigger</th><th>Formula / Example</th></tr>
+<tr><td>Locative</td><td>Prepositional phrase + Verb + Subject — On the hill stood a castle.</td></tr>
+<tr><td>Negative adverbial</td><td>Never/Hardly/Scarcely/Rarely/Seldom/Little/Nowhere + Auxiliary + Subject + Verb — Never have I seen this.</td></tr>
+<tr><td>Subject-operator</td><td>Auxiliary/Be/Modal + Subject + main verb — Are you coming?</td></tr>
+<tr><td>Only + phrase</td><td>Only then/after/by… + Auxiliary + Subject + Verb — Only then did I understand.</td></tr>
+<tr><td>Not until</td><td>Not until + time + Auxiliary + Subject + Verb — Not until yesterday did I know.</td></tr>
+<tr><td>So + Adjective/Adverb + that</td><td>So + Adjective/Adverb + Auxiliary + Subject + Verb + that — So beautiful was she that everyone stared.</td></tr>
+<tr><td>Were/Should/Had (omitting if)</td><td>Were + Subject…, Should + Subject…, Had + Subject + past participle… — Were I you, I would go.</td></tr>
+<tr><td>Here/There</td><td>Here/There + Verb + Subject — Here comes the bus.</td></tr>
+</table>
+
+<h1>7 SENTENCE TAXONOMY: The Complete Units</h1>
+
+<h2>7.1 By Structure</h2>
+<table>
+<tr><th>Structure</th><th>Composition</th></tr>
+<tr><td>Simple</td><td>1 Independent Clause.</td></tr>
+<tr><td>Compound</td><td>2+ Independent Clauses (FANBOYS or ;).</td></tr>
+<tr><td>Complex</td><td>1 Independent Clause + 1+ Dependent Clauses.</td></tr>
+<tr><td>Compound-Complex</td><td>2+ Independent Clauses + 1+ Dependent Clauses.</td></tr>
+</table>
+
+<h2>7.2 By Purpose / Mood</h2>
+<h3>7.2.1 Declarative</h3>
+<ul><li>Statement — positive or negative. Subject + Verb + Object.</li></ul>
+
+<h3>7.2.2 Interrogative</h3>
+<table>
+<tr><th>Type</th><th>Formula / Example</th></tr>
+<tr><td>Polar/Yes-no</td><td>Auxiliary/Be/Modal + Subject + Verb? — Do you swim?</td></tr>
+<tr><td>Wh-/Constituent/Information</td><td>Wh-word + Auxiliary/Be/Modal + Subject + Verb? — Where did he go?</td></tr>
+<tr><td>Tag</td><td>Statement + mini-question — You are coming, aren't you?</td></tr>
+<tr><td>Alternative</td><td>Auxiliary + Subject + Verb, or …? — Do you want tea or coffee?</td></tr>
+<tr><td>Rhetorical</td><td>Question expecting no answer — Who cares?</td></tr>
+<tr><td>Declarative question</td><td>Statement intonation rising — You're leaving?</td></tr>
+<tr><td>Echo question</td><td>Repeat for clarification — He did what?</td></tr>
+</table>
+
+<h3>7.2.3 Imperative</h3>
+<table>
+<tr><th>Type</th><th>Form / Example</th></tr>
+<tr><td>Second person</td><td>Bare infinitive — (You) Sit down.</td></tr>
+<tr><td>First person inclusive</td><td>Let's + bare infinitive — Let's go.</td></tr>
+<tr><td>Third person</td><td>Let him/her/them + bare infinitive — Let them eat cake.</td></tr>
+<tr><td>Negative</td><td>Do not/Don't + bare infinitive — Don't touch. / Let's not argue.</td></tr>
+<tr><td>Emphatic</td><td>Do + bare infinitive — Do sit down.</td></tr>
+</table>
+
+<h3>7.2.4 Exclamatory</h3>
+<ul>
+<li>What + (a/an) + Adjective + Noun — What a day!</li>
+<li>How + Adjective/Adverb + Subject + Verb — How fast he runs!</li>
+<li>Such + (a/an) + Adjective + Noun — Such a beautiful day!</li>
+<li>So + Adjective/Adverb — So beautiful!</li>
+</ul>
+
+<h2>7.3 By Form / Completeness</h2>
+<table>
+<tr><th>Form</th><th>Definition / Example</th></tr>
+<tr><td>Major sentence</td><td>Full Subject + Predicate structure.</td></tr>
+<tr><td>Minor sentence</td><td>Elliptical(Yes.), Formulaic(Hello.), Exclamatory(Wow!), Interjectional(Ouch!).</td></tr>
+<tr><td>Fragment</td><td>Incomplete — Because it rained. (fix: attach to main).</td></tr>
+<tr><td>Run-on / Fused sentence</td><td>Two Independent Clauses without punctuation/Conjunction — The movie was entertaining it kept us engaged. (fix: add period, semicolon, or Conjunction).</td></tr>
+<tr><td>Comma splice</td><td>Two Independent Clauses joined by comma only — The movie was entertaining, it kept us engaged. (fix: add Conjunction or use ;/.).</td></tr>
+</table>
+
+<h2>7.4 Sentence Styles</h2>
+<table>
+<tr><th>Style</th><th>Definition / Example</th></tr>
+<tr><td>Periodic / Suspensive</td><td>Main clause last; builds suspense — Despite the rain, because he had promised, he went.</td></tr>
+<tr><td>Loose / Cumulative</td><td>Main clause first; modifiers follow — He went, despite the rain, because he had promised.</td></tr>
+<tr><td>Balanced / Parallel</td><td>Equal structure on both sides — It was the best of times, it was the worst of times.</td></tr>
+<tr><td>Paratactic</td><td>Clauses of equal weight, often coordinated — I came, I saw, I conquered.</td></tr>
+<tr><td>Hypotactic</td><td>Subordination of clauses — When I arrived, because I had been summoned, I entered.</td></tr>
+</table>
+
+<h1>8 THE CORE GRAMMATICAL SYSTEMS</h1>
+
+<h2>8.1 Tense</h2>
+<h3>8.1.1 Present</h3>
+<table>
+<tr><th>Form</th><th>Formula</th><th>Use / Markers</th></tr>
+<tr><td>Simple</td><td>Verb(-s/-es)</td><td>Habit, fact, schedule — always, usually, every day.</td></tr>
+<tr><td>Continuous</td><td>am/is/are + verb-ing</td><td>Now, temporary, future plan — now, currently, today.</td></tr>
+<tr><td>Perfect</td><td>have/has + past participle</td><td>Past→now, experience, result — just, already, yet, ever, never, since, for.</td></tr>
+<tr><td>Perfect Continuous</td><td>have/has been + verb-ing</td><td>Duration up to now — all day, for hours, lately.</td></tr>
+</table>
+
+<h3>8.1.2 Past</h3>
+<table>
+<tr><th>Form</th><th>Formula</th><th>Use / Markers</th></tr>
+<tr><td>Simple</td><td>past tense/-ed</td><td>Completed past — yesterday, ago, last week.</td></tr>
+<tr><td>Continuous</td><td>was/were + verb-ing</td><td>Interrupted action, background — at 8pm yesterday, while.</td></tr>
+<tr><td>Perfect</td><td>had + past participle</td><td>Earlier past — before, by the time, already.</td></tr>
+<tr><td>Perfect Continuous</td><td>had been + verb-ing</td><td>Duration before past point — for hours, since morning.</td></tr>
+</table>
+
+<h3>8.1.3 Future</h3>
+<table>
+<tr><th>Form</th><th>Formula</th><th>Use / Markers</th></tr>
+<tr><td>Simple</td><td>will + Verb</td><td>Prediction, promise — tomorrow, next week, soon.</td></tr>
+<tr><td>Continuous</td><td>will be + verb-ing</td><td>In progress at future time — at this time tomorrow.</td></tr>
+<tr><td>Perfect</td><td>will have + past participle</td><td>Completed before future point — by tomorrow, by 2030.</td></tr>
+<tr><td>Perfect Continuous</td><td>will have been + verb-ing</td><td>Duration up to future point — by next year, for ten years.</td></tr>
+</table>
+<ul>
+<li>Other future expressions: be going to(intention/evidence), present progressive(fixed arrangement), simple present(schedule), be about to(imminent), be to(formal plan/order), be due to(scheduled expectation), be bound to(certainty), be likely/unlikely to(probability).</li>
+<li>Future in the Past: He said he would go. / I was going to call.</li>
+<li>Time Clause Constraint: Present tense for future meaning in subordinate time/condition clauses — When I arrive, I will call you.</li>
+</ul>
+
+<h2>8.2 Aspect</h2>
+<table>
+<tr><th>Aspect</th><th>Meaning</th></tr>
+<tr><td>Simple</td><td>Complete fact, habit, general truth.</td></tr>
+<tr><td>Progressive/Continuous</td><td>Ongoing, temporary, background, process.</td></tr>
+<tr><td>Perfect</td><td>Before another time point; current relevance.</td></tr>
+<tr><td>Perfect Progressive/Continuous</td><td>Duration up to a time point; temporary + complete.</td></tr>
+</table>
+
+<h2>8.3 Mood</h2>
+<h3>8.3.1 Indicative</h3>
+<ul><li>Default mood for statements, questions, & factual assertions.</li></ul>
+
+<h3>8.3.2 Imperative</h3>
+<ul>
+<li>Bare infinitive form; implied Subject you.</li>
+<li>Negative: Do not + bare infinitive. / Let's not + bare infinitive.</li>
+</ul>
+
+<h3>8.3.3 Subjunctive</h3>
+<table>
+<tr><th>Type</th><th>Form / Trigger / Example</th></tr>
+<tr><td>Mandative/Present</td><td>that + Subject + bare infinitive after demand/suggestion — I suggest that he go. (Verbs: suggest, demand, order, insist, require, recommend, propose, advise).</td></tr>
+<tr><td>Were-subjunctive/Past</td><td>were for all persons in formal English — If I were rich / I wish he were here / as it were.</td></tr>
+<tr><td>Formulaic</td><td>Frozen expressions — long live, be that as it may, come what may, God save.</td></tr>
+</table>
+
+<h3>8.3.4 Conditional</h3>
+<table>
+<tr><th>Type</th><th>If-clause</th><th>Main clause</th><th>Use</th></tr>
+<tr><td>0</td><td>If + Simple Present</td><td>Simple Present</td><td>Universal truth.</td></tr>
+<tr><td>1</td><td>If + Simple Present</td><td>will/can/may + Verb</td><td>Real future possibility.</td></tr>
+<tr><td>2</td><td>If + Simple Past (were)</td><td>would/could/might + Verb</td><td>Unreal present.</td></tr>
+<tr><td>3</td><td>If + Past Perfect</td><td>would/could/might have + past participle</td><td>Unreal past.</td></tr>
+<tr><td>Mixed</td><td>If + Past Perfect</td><td>would/could + Verb</td><td>Past condition → present result.</td></tr>
+<tr><td>Inverted (no if)</td><td>Had/Should/Were + Subject…</td><td>main clause</td><td>formal equivalent.</td></tr>
+</table>
+<table>
+<tr><th>Variation</th><th>Meaning</th></tr>
+<tr><td>Unless</td><td>= if…not.</td></tr>
+<tr><td>Provided (that) / As long as</td><td>Conditional requirement.</td></tr>
+<tr><td>But for + Noun</td><td>= if it were not for / if it had not been for.</td></tr>
+<tr><td>Otherwise / Or else</td><td>negative result.</td></tr>
+<tr><td>In case + clause</td><td>Precaution (do X to prevent Y).</td></tr>
+</table>
+<ul>
+<li>Inverted: Were I you, I would go. / Had I known, I would have acted. / Should you see him, tell him.</li>
+<li>In case(precaution) versus If(condition): Take an umbrella in case it rains. / If it rains, take an umbrella.</li>
+</ul>
+
+<h2>8.4 Voice</h2>
+<table>
+<tr><th>Voice</th><th>Definition / Example</th></tr>
+<tr><td>Active</td><td>Subject performs action — The dog bit the man.</td></tr>
+<tr><td>Passive</td><td>Subject receives action — The man was bitten by the dog. Formula: Subject + BE + past participle/-ed [+ by-agent].</td></tr>
+<tr><td>Long agentive passive</td><td>by-phrase included — The cake was eaten by the children.</td></tr>
+<tr><td>Short agentless passive</td><td>No by-phrase — The cake was eaten.</td></tr>
+<tr><td>Get-passive</td><td>Informal — He got fired.</td></tr>
+<tr><td>Stative passive</td><td>State, not action — The door is closed.</td></tr>
+<tr><td>Adjectival passive</td><td>Participle as Adjective — I am interested.</td></tr>
+<tr><td>Middle</td><td>No agent; generic Subject — The book sells well. / This car drives smoothly.</td></tr>
+</table>
+
+<h3>8.4.1 Passive by Tense</h3>
+<table>
+<tr><th>Tense</th><th>Passive Formula</th></tr>
+<tr><td>Simple Present</td><td>am/is/are + past participle</td></tr>
+<tr><td>Present Continuous</td><td>am/is/are being + past participle</td></tr>
+<tr><td>Present Perfect</td><td>have/has been + past participle</td></tr>
+<tr><td>Simple Past</td><td>was/were + past participle</td></tr>
+<tr><td>Past Continuous</td><td>was/were being + past participle</td></tr>
+<tr><td>Past Perfect</td><td>had been + past participle</td></tr>
+<tr><td>Simple Future</td><td>will be + past participle</td></tr>
+<tr><td>Future Perfect</td><td>will have been + past participle</td></tr>
+<tr><td>Modal</td><td>modal + be + past participle</td></tr>
+<tr><td>Modal Perfect</td><td>modal + have been + past participle</td></tr>
+</table>
+
+<h3>8.4.2 Special Cases</h3>
+<table>
+<tr><th>Case</th><th>Active / Passive</th></tr>
+<tr><td>Double object</td><td>He gave me a book. → I was given a book. / A book was given to me.</td></tr>
+<tr><td>Object complement</td><td>They elected him leader. → He was elected leader.</td></tr>
+<tr><td>Reporting</td><td>People say that he left. → It is said that he left. / He is said to have left.</td></tr>
+</table>
+<ul><li>Phrasal Verb retain particle in passive: The meeting was called off.</li></ul>
+
+<h2>8.5 Modality</h2>
+<table>
+<tr><th>Type</th><th>Meaning / Example</th></tr>
+<tr><td>Epistemic</td><td>possibility, probability, necessity, deduction, prediction — He must be tired(deduction).</td></tr>
+<tr><td>Deontic</td><td>permission, obligation, prohibition, recommendation — You must leave(obligation).</td></tr>
+<tr><td>Dynamic</td><td>ability, willingness, volition, habit — I can swim(ability). / He will help(willingness).</td></tr>
+</table>
+
+<h2>8.6 Negation</h2>
+<table>
+<tr><th>Type</th><th>Form / Example</th></tr>
+<tr><td>Not-negation</td><td>Subject + Auxiliary + not + Verb — I have not seen it.</td></tr>
+<tr><td>No-negation</td><td>No + Noun — I have no time.</td></tr>
+<tr><td>Never-negation</td><td>Never + Auxiliary + Subject + Verb — Never have I seen this.</td></tr>
+<tr><td>Neither/nor negation</td><td>Neither/Nor + Auxiliary + Subject — Neither do I.</td></tr>
+<tr><td>Transferred negation</td><td>I don't think he is here, is he?</td></tr>
+<tr><td>Double negative / Negative concord</td><td>Two negatives reinforce in non-standard; cancel in standard.</td></tr>
+<tr><td>Non-assertive forms</td><td>any, ever, yet, anymore — I don't have any.</td></tr>
+</table>
+<ul>
+<li>Do-support: no Auxiliary/Modal present → insert do/does/did: I do not eat. / He does not go. / They did not leave.</li>
+<li>Required for: questions(Do you go?); negation(I don't go); emphasis(I do go); substitution(He likes it more than I do).</li>
+<li>Blocked when Auxiliary/Modal present: Are you going? /*Do you be going?/</li>
+</ul>
+
+<h2>8.7 Agreement / Concord</h2>
+<table>
+<tr><th>Pattern</th><th>Verb / Example</th></tr>
+<tr><td>Subject1 & Subject2 (separate)</td><td>plural — Cats & dogs are cute.</td></tr>
+<tr><td>Subject1 & Subject2 (compound)</td><td>singular — Bread & butter is breakfast.</td></tr>
+<tr><td>Everyone/Someone/Each/Every/No one/Neither/Either</td><td>singular — Everyone has a dream.</td></tr>
+<tr><td>Gerund/Infinitive/Clause as Subject</td><td>singular — Swimming is good.</td></tr>
+<tr><td>Money/time/distance as unit</td><td>singular — Ten dollars is enough.</td></tr>
+<tr><td>Neither…nor / Either…or / Not only…but also</td><td>Nearest Subject — Either you or he is wrong. / Not only the teacher but also the students are here.</td></tr>
+<tr><td>Subject1 + along with / as well as / together with</td><td>Follows Subject1 — I, as well as them, am here.</td></tr>
+<tr><td>A number of + plural Noun</td><td>plural — A number of students are absent.</td></tr>
+<tr><td>The number of + plural Noun</td><td>singular — The number is 50.</td></tr>
+<tr><td>The + Adjective (group)</td><td>plural — The rich are not always happy.</td></tr>
+<tr><td>Fraction/percentage + of + Noun</td><td>Follows Noun — 50% of the water is gone.</td></tr>
+<tr><td>Collective Noun (team, family…)</td><td>Unit=singular; members=plural — The team is winning / are arguing.</td></tr>
+</table>
+<ul><li>None: formal singular(None is); widely accepted plural(None are).</li></ul>
+
+<h2>8.8 Question Formation</h2>
+<table>
+<tr><th>Type</th><th>Formula / Example</th></tr>
+<tr><td>Yes/No</td><td>Auxiliary/Be/Modal + Subject + Verb? — Do you swim? / Is he here?</td></tr>
+<tr><td>Wh-Subject</td><td>Wh-word + Verb? (no inversion) — Who broke it? / What happened?</td></tr>
+<tr><td>Wh-Object/Adverb</td><td>Wh-word + Auxiliary/Be/Modal + Subject + Verb? — Where did he go?</td></tr>
+<tr><td>Choice</td><td>Auxiliary + Subject + Verb, or …? — Do you want tea or coffee?</td></tr>
+<tr><td>Embedded</td><td>Subject + Verb + wh-word + Subject + Verb — I know where he is.</td></tr>
+<tr><td>Negative</td><td>Auxiliary + not + Subject + Verb? — Don't you like it?</td></tr>
+<tr><td>Why + bare infinitive</td><td>Why + bare infinitive? — Why leave now?</td></tr>
+</table>
+<ul>
+<li>Embedded questions use statement word order; no inversion or question mark.</li>
+<li>Negative questions express confirmation, exasperation, or invitations.</li>
+</ul>
+
+<h3>8.8.1 Tag Questions</h3>
+<table>
+<tr><th>Main Clause</th><th>Tag</th></tr>
+<tr><td>I am…</td><td>aren't I?</td></tr>
+<tr><td>Let's…</td><td>shall we?</td></tr>
+<tr><td>Imperative</td><td>will you? / won't you?</td></tr>
+<tr><td>Nobody/Nothing/Never/Hardly/Scarcely/Seldom</td><td>affirmative tag</td></tr>
+<tr><td>There is/are</td><td>isn't/aren't there?</td></tr>
+<tr><td>This/That/These/Those + be</td><td>isn't/aren't it/they?</td></tr>
+<tr><td>Have (possession)</td><td>haven't/hasn't…?</td></tr>
+<tr><td>Had better</td><td>hadn't…?</td></tr>
+<tr><td>Used to</td><td>didn't…? / usedn't…?</td></tr>
+</table>
+<ul><li>Transfer of negation: I don't think he is here, is he?</li></ul>
+
+<h3>8.8.2 Short Answers & Agreement</h3>
+<table>
+<tr><th>Function</th><th>Formula / Example</th></tr>
+<tr><td>Affirmative short answer</td><td>Yes, Subject + Auxiliary — Yes, I do.</td></tr>
+<tr><td>Negative short answer</td><td>No, Subject + Auxiliary + not — No, I don't.</td></tr>
+<tr><td>Affirmative agreement</td><td>So + Auxiliary + Subject — So do I.</td></tr>
+<tr><td>Negative agreement</td><td>Neither/Nor + Auxiliary + Subject — Neither do I.</td></tr>
+</table>
+<ul>
+<li>Agreement inversions require same Auxiliary as original clause. I like it. → So do I. / I can swim. → So can I.</li>
+<li>So + Subject + Auxiliary = affirmation, not agreement. You like it. → So I do. (=indeed)</li>
+</ul>
+
+<h2>8.9 Causative</h2>
+<table>
+<tr><th>Structure</th><th>Meaning / Example</th></tr>
+<tr><td>have + Object + bare infinitive</td><td>Cause somebody to do — I had him repair it.</td></tr>
+<tr><td>have + Object + past participle</td><td>Arrange / experience — I had my car repaired. / I had my wallet stolen.</td></tr>
+<tr><td>get + Object + to-infinitive</td><td>Persuade / cause — I got him to repair it.</td></tr>
+<tr><td>get + Object + past participle</td><td>Arrange — I got my car repaired.</td></tr>
+<tr><td>make + Object + bare infinitive</td><td>Force / compel — He made me laugh.</td></tr>
+<tr><td>let + Object + bare infinitive</td><td>Allow / permit — Let me go.</td></tr>
+</table>
+<ul><li>Have somebody do(they do it). Get somebody to do(persuade). Make somebody do(force). Let somebody do(allow).</li></ul>
+
+<h1>9 PUNCTUATION, MECHANICS & COHESION</h1>
+
+<h2>9.1 Terminal Marks</h2>
+<table>
+<tr><th>Mark</th><th>Function</th></tr>
+<tr><td>Period / Full stop</td><td>End declarative sentence, abbreviation.</td></tr>
+<tr><td>Question mark</td><td>End direct question.</td></tr>
+<tr><td>Exclamation mark</td><td>End exclamation, command, interjection.</td></tr>
+</table>
+
+<h2>9.2 Internal Pauses & Connectors</h2>
+<h3>9.2.1 Comma</h3>
+<table>
+<tr><th>Use</th><th>Pattern / Example</th></tr>
+<tr><td>FANBOYS</td><td>Independent Clause , coordinating conjunction Independent Clause — She ran, but he walked.</td></tr>
+<tr><td>Introductory</td><td>Word/phrase/clause before main clause — However, I disagree.</td></tr>
+<tr><td>Non-restrictive</td><td>Element not essential to identity — My brother, a doctor, lives here.</td></tr>
+<tr><td>Series</td><td>Three or more items (Oxford optional) — red, white, & blue.</td></tr>
+<tr><td>Direct address</td><td>Name or title — John, please stop.</td></tr>
+<tr><td>Dates/Addresses</td><td>Separate elements — 4 July 2026 / Austin, Texas.</td></tr>
+<tr><td>Tag question</td><td>Before tag — You are coming, aren't you?</td></tr>
+<tr><td>Coordinate adjectives</td><td>Adjectives independently modifying noun — a big, red car.</td></tr>
+<tr><td>Parenthetical</td><td>Interrupter — The answer, however, is no.</td></tr>
+<tr><td>Direct speech tag</td><td>He said, "I am tired."</td></tr>
+<tr><td>Vocative</td><td>Direct address — Sir, please.</td></tr>
+<tr><td>Absolute phrase</td><td>Weather permitting, we will go.</td></tr>
+</table>
+
+<h3>9.2.2 Semicolon</h3>
+<ul>
+<li>Join closely related Independent Clauses without coordinator — She ran; he walked.</li>
+<li>Complex series with internal commas — Paris, France; Berlin, Germany; Rome, Italy.</li>
+<li>Before conjunctive Adverb — He ran; however, she walked.</li>
+</ul>
+
+<h3>9.2.3 Colon</h3>
+<ul>
+<li>After Independent Clause before list/explanation/quotation — He had one goal: to win.</li>
+<li>Apposition, title/subtitle, ratio, time, formal letter salutation.</li>
+</ul>
+
+<h3>9.2.4 Dash / Em-dash</h3>
+<ul>
+<li>Parenthetical break, emphasis, interruption, appositive, summary, afterthought — The answer — though surprising — was yes.</li>
+</ul>
+
+<h3>9.2.5 En-dash</h3>
+<ul>
+<li>Ranges, compound adjectives — pages 5–10, the London–Paris flight.</li>
+</ul>
+
+<h3>9.2.6 Hyphen</h3>
+<ul>
+<li>Compound modifier before Noun — well-known author.</li>
+<li>Compound numbers — twenty-one.</li>
+<li>Prefixes before proper Noun — anti-American.</li>
+<li>Word division at line break.</li>
+<li>Suspended compounds — three- and four-year-olds.</li>
+</ul>
+
+<h3>9.2.7 Ellipsis</h3>
+<ul>
+<li>Omission, hesitation, trailing off — "I wonder…"</li>
+</ul>
+
+<h3>9.2.8 Apostrophe</h3>
+<table>
+<tr><th>Use</th><th>Rule / Example</th></tr>
+<tr><td>Possession</td><td>Section 4.1.3. Mark: 's, '.</td></tr>
+<tr><td>Contraction</td><td>Omitted letters — it's, don't, can't.</td></tr>
+<tr><td>Plural of letters/numbers/words</td><td>'s (to avoid confusion) — mind your p's & q's, the 1990's.</td></tr>
+</table>
+<ul>
+<li>Apostrophes do not form plural of ordinary Noun: apples (not apple's).</li>
+<li>it's=it is; its=possessive. Same for who's/whose, you're/your.</li>
+</ul>
+
+<h3>9.2.9 Parentheses / Brackets</h3>
+<table>
+<tr><th>Type</th><th>Use</th></tr>
+<tr><td>Round ( )</td><td>Supplementary info, asides.</td></tr>
+<tr><td>Square [ ]</td><td>Editorial insertion, clarification.</td></tr>
+<tr><td>Curly { }</td><td>Sets, mathematical notation.</td></tr>
+<tr><td>Angle &lt; &gt;</td><td>Technical notation, URLs, placeholders.</td></tr>
+</table>
+
+<h3>9.2.10 Quotation Marks</h3>
+<ul>
+<li>Double " " : American direct speech, titles of short works.</li>
+<li>Single ' ' : British outer quotation, nested quotation inside double.</li>
+</ul>
+
+<h3>9.2.11 Slash / Virgule</h3>
+<ul>
+<li>Alternatives — and/or.</li>
+<li>Fractions — 3/4.</li>
+<li>Per — km/h.</li>
+<li>Line breaks in poetry or URLs.</li>
+</ul>
+
+<h3>9.2.12 Other Marks</h3>
+<table>
+<tr><th>Mark</th><th>Use</th></tr>
+<tr><td>Ampersand &</td><td>Names, informal lists — Smith & Jones.</td></tr>
+<tr><td>Bullet point •</td><td>List items.</td></tr>
+<tr><td>Asterisk *</td><td>Footnote, wildcard, omission.</td></tr>
+</table>
+
+<h2>9.3 Mechanical Conventions</h2>
+<table>
+<tr><th>Convention</th><th>Use / Example</th></tr>
+<tr><td>Italics</td><td>Titles of long works, foreign words, emphasis, words as words — Hamlet, et cetera, the word hello.</td></tr>
+<tr><td>Underlining</td><td>Titles, emphasis (digital equivalent of italics).</td></tr>
+<tr><td>Capitals</td><td>sentence-initial, proper nouns, I, days/months, holidays, brand names, acronyms, personifications, titles before names, first word in quoted speech, salutations/closings. Section 2.5.</td></tr>
+</table>
+
+<h2>9.4 Cohesion Devices</h2>
+<h3>9.4.1 Reference</h3>
+<table>
+<tr><th>Type</th><th>Definition / Example</th></tr>
+<tr><td>Anaphoric</td><td>Refers back — John arrived. <u>He</u> was late.</td></tr>
+<tr><td>Cataphoric</td><td>Refers forward — <u>Here</u> it is: the answer.</td></tr>
+<tr><td>Exophoric</td><td>Refers outside text — <u>That</u> man over there.</td></tr>
+<tr><td>Personal</td><td>he, she, it, they.</td></tr>
+<tr><td>Demonstrative</td><td>this, that, these, those.</td></tr>
+<tr><td>Comparative</td><td>same, similar, different, better, more.</td></tr>
+</table>
+
+<h3>9.4.2 Substitution</h3>
+<table>
+<tr><th>Type</th><th>Form / Example</th></tr>
+<tr><td>Nominal</td><td>one, ones, same — I need a red one.</td></tr>
+<tr><td>Verbal</td><td>do — He likes it more than I do.</td></tr>
+<tr><td>Clausal</td><td>so, not — I think so. / I hope not.</td></tr>
+</table>
+
+<h3>9.4.3 Ellipsis</h3>
+<table>
+<tr><th>Type</th><th>Omitted Element / Example</th></tr>
+<tr><td>Nominal</td><td>Repeated Noun after modifier — The red dress is beautiful, but the blue, even more so.</td></tr>
+<tr><td>Verbal</td><td>Repeated Verb after auxiliary — I hadn't noticed, but my son had.</td></tr>
+<tr><td>Clausal</td><td>Everything but wh-word — Jane is planning something, but I don't know what.</td></tr>
+</table>
+
+<h3>9.4.4 Conjunction/Conjunctives</h3>
+<table>
+<tr><th>Category</th><th>Items / Example</th></tr>
+<tr><td>Additive</td><td>and, also, besides, furthermore, in addition, moreover, or, alternatively.</td></tr>
+<tr><td>Adversative</td><td>but, however, nevertheless, nonetheless, still, yet, though, although, instead, conversely, on the other hand, in contrast.</td></tr>
+<tr><td>Causal</td><td>so, thus, therefore, consequently, hence, accordingly, because, for this reason, as a result.</td></tr>
+<tr><td>Temporal</td><td>then, next, after that, subsequently, finally, eventually, previously, first, second, last, meanwhile, hitherto.</td></tr>
+</table>
+
+<h3>9.4.5 Lexical Cohesion</h3>
+<table>
+<tr><th>Type</th><th>Definition / Example</th></tr>
+<tr><td>Repetition</td><td>Same word — The <u>car</u> was fast. The <u>car</u> won.</td></tr>
+<tr><td>Synonymy</td><td>Near-same meaning — The <u>car</u> was fast. The <u>vehicle</u> won.</td></tr>
+<tr><td>Antonymy/Contrast</td><td>Opposite meaning — The <u>car</u> was fast. The <u>truck</u> was slow.</td></tr>
+<tr><td>Hyponymy</td><td>Specific–general — The <u>rose</u> bloomed. The <u>flower</u> was red.</td></tr>
+<tr><td>Meronymy</td><td>Part–whole — The <u>wheel</u> spun. The <u>car</u> moved.</td></tr>
+<tr><td>Collocation</td><td>Expected co-occurrence — make a decision, heavy rain.</td></tr>
+</table>
+
+</body>
+</html>

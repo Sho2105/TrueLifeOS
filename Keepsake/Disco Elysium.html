@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE VAULT — Cognitive Archive</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg-pane: #0f0f0f;
+    --bg-right: #0c0c0c;
+    --border: #262626;
+    --border-light: #333333;
+    --text-narrative: #bfbaa8;
+    --text-ui: #6e6e6e;
+    --text-ui-hover: #a0a0a0;
+    --text-header: #d4af37;
+    --accent-gold: #d4af37;
+
+    --logic: #7eb8da;
+    --encyclopedia: #e6d8a0;
+    --rhetoric: #d67c6c;
+    --drama: #c98bb9;
+    --conceptualization: #a89bd6;
+    --visual-calculus: #7ab8b8;
+    --volition: #e6c860;
+    --inland-empire: #9b8ec7;
+    --empathy: #a8d5a2;
+    --authority: #b84a4a;
+    --suggestion: #d49b5e;
+    --electrochemistry: #b8d67a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text-narrative);
+    font-family: Georgia, 'Times New Roman', serif;
+    overflow: hidden;
+  }
+
+  /* Film grain overlay */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    opacity: 0.04;
+    z-index: 9999;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  }
+
+  #app {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* LEFT PANE — The Archive */
+  .left-pane {
+    flex: 1;
+    background: var(--bg-pane);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px 28px 40px 24px;
+    border-right: 1px solid var(--border);
+    position: relative;
+  }
+
+  .left-pane::-webkit-scrollbar { width: 6px; }
+  .left-pane::-webkit-scrollbar-track { background: transparent; }
+  .left-pane::-webkit-scrollbar-thumb { background: var(--border-light); }
+
+  .entry {
+    margin-bottom: 32px;
+    max-width: 720px;
+  }
+
+  .entry-header {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-ui);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .entry-header .num { color: var(--accent-gold); font-weight: bold; }
+  .entry-header .title { color: var(--text-ui-hover); }
+  .entry-header .meta { font-size: 9px; color: var(--text-ui); }
+
+  .entry-body {
+    font-size: 15.5px;
+    line-height: 1.5;
+    color: var(--text-narrative);
+    text-align: justify;
+    hyphens: auto;
+  }
+
+  .entry-body p {
+    margin-bottom: 12px;
+    text-indent: 0;
+  }
+
+  .entry-body p + p {
+    text-indent: 1.6em;
+  }
+
+  /* Skill Highlights */
+  .highlight {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 1px dotted transparent;
+    font-weight: 600;
+  }
+
+  .highlight:hover {
+    border-bottom-style: solid;
+  }
+
+  .skill-logic { color: var(--logic); border-bottom-color: var(--logic); }
+  .skill-encyclopedia { color: var(--encyclopedia); border-bottom-color: var(--encyclopedia); }
+  .skill-rhetoric { color: var(--rhetoric); border-bottom-color: var(--rhetoric); }
+  .skill-drama { color: var(--drama); border-bottom-color: var(--drama); }
+  .skill-conceptualization { color: var(--conceptualization); border-bottom-color: var(--conceptualization); }
+  .skill-visual-calculus { color: var(--visual-calculus); border-bottom-color: var(--visual-calculus); }
+  .skill-volition { color: var(--volition); border-bottom-color: var(--volition); }
+  .skill-inland-empire { color: var(--inland-empire); border-bottom-color: var(--inland-empire); }
+  .skill-empathy { color: var(--empathy); border-bottom-color: var(--empathy); }
+  .skill-authority { color: var(--authority); border-bottom-color: var(--authority); }
+  .skill-suggestion { color: var(--suggestion); border-bottom-color: var(--suggestion); }
+  .skill-electrochemistry { color: var(--electrochemistry); border-bottom-color: var(--electrochemistry); }
+
+  /* Filtering states */
+  .left-pane.filtering .entry-body { opacity: 0.25; transition: opacity 0.3s; }
+  .left-pane.filtering .highlight { opacity: 0.25; }
+  .left-pane.filtering .highlight.active-skill {
+    opacity: 1;
+    text-shadow: 0 0 12px currentColor;
+    border-bottom-style: solid;
+  }
+
+  /* RIGHT PANE — Controls */
+  .right-pane {
+    width: 340px;
+    min-width: 280px;
+    background: var(--bg-right);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+    border-right: 12px solid #050505;
+  }
+
+  /* Film sprocket edge */
+  .right-pane::after {
+    content: "";
+    position: absolute;
+    right: -12px;
+    top: 0;
+    bottom: 0;
+    width: 12px;
+    background: repeating-linear-gradient(
+      to bottom,
+      #050505 0px, #050505 10px,
+      #2a2a2a 10px, #2a2a2a 20px
+    );
+    pointer-events: none;
+  }
+
+  .right-pane::-webkit-scrollbar { width: 0px; }
+
+  .rp-section {
+    border-bottom: 1px solid var(--border);
+    padding: 10px 14px;
+  }
+
+  .rp-header {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--text-ui);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .rp-header::before {
+    content: "■";
+    font-size: 6px;
+    color: var(--border-light);
+  }
+
+  /* Status Line */
+  .status-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 12px 14px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .status-title {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--text-header);
+    font-weight: bold;
+  }
+  .status-time {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10px;
+    color: var(--text-ui);
+    text-align: right;
+    line-height: 1.4;
+  }
+  .status-time .time { color: var(--text-ui-hover); font-size: 12px; }
+
+  /* Skill Grid */
+  .skill-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+
+  .skill-cell {
+    background: var(--bg-right);
+    padding: 5px 2px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: center;
+    cursor: pointer;
+    color: var(--text-ui);
+    transition: all 0.2s;
+    line-height: 1.2;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .skill-cell:hover {
+    color: #fff;
+    background: var(--border-light);
+  }
+
+  .skill-cell.active {
+    font-weight: bold;
+    color: #fff;
+  }
+
+  .skill-cell.active::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+    opacity: 0.15;
+    background: currentColor;
+  }
+
+  .skill-cell[data-skill="logic"] { color: var(--logic); }
+  .skill-cell[data-skill="encyclopedia"] { color: var(--encyclopedia); }
+  .skill-cell[data-skill="rhetoric"] { color: var(--rhetoric); }
+  .skill-cell[data-skill="drama"] { color: var(--drama); }
+  .skill-cell[data-skill="conceptualization"] { color: var(--conceptualization); }
+  .skill-cell[data-skill="visual-calculus"] { color: var(--visual-calculus); }
+  .skill-cell[data-skill="volition"] { color: var(--volition); }
+  .skill-cell[data-skill="inland-empire"] { color: var(--inland-empire); }
+  .skill-cell[data-skill="empathy"] { color: var(--empathy); }
+  .skill-cell[data-skill="authority"] { color: var(--authority); }
+  .skill-cell[data-skill="suggestion"] { color: var(--suggestion); }
+  .skill-cell[data-skill="electrochemistry"] { color: var(--electrochemistry); }
+
+  /* Index */
+  .index-list {
+    list-style: none;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  .index-list li {
+    color: var(--text-ui);
+    cursor: pointer;
+    padding: 2px 0;
+    border-bottom: 1px dotted var(--border);
+    display: flex;
+    justify-content: space-between;
+    transition: color 0.2s;
+  }
+
+  .index-list li:hover {
+    color: var(--text-ui-hover);
+    background: rgba(255,255,255,0.03);
+  }
+
+  .index-list li .idx-num { color: var(--accent-gold); margin-right: 6px; }
+  .index-list li .idx-meta { color: var(--text-ui); font-size: 9px; }
+
+  /* System / Controls */
+  .system-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-ui-hover);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11px;
+    padding: 4px 0;
+    margin-bottom: 10px;
+    outline: none;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .system-input::placeholder { color: var(--text-ui); }
+  .system-input:focus { border-bottom-color: var(--accent-gold); }
+
+  .controls-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .ctrl-btn {
+    flex: 1;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-ui);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 6px 0;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .ctrl-btn:hover {
+    border-color: var(--border-light);
+    color: var(--text-ui-hover);
+    background: rgba(255,255,255,0.03);
+  }
+
+  .ctrl-btn.primary {
+    border-color: var(--border-light);
+    color: var(--text-ui-hover);
+  }
+
+  /* Footer / Collider */
+  .rp-footer {
+    margin-top: auto;
+    padding: 10px 14px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 9px;
+    color: var(--text-ui);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-top: 1px solid var(--border);
+    line-height: 1.4;
+  }
+
+  /* Tooltip custom */
+  .highlight[data-tip]::after {
+    content: attr(data-tip);
+    position: absolute;
+    background: #1a1a1a;
+    border: 1px solid var(--border-light);
+    color: var(--text-ui-hover);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: 100;
+    margin-top: 18px;
+    margin-left: -20px;
+  }
+  .highlight[data-tip]:hover::after { opacity: 1; }
+
+  /* Search highlight */
+  .search-match {
+    background: rgba(212, 175, 55, 0.15);
+    outline: 1px solid rgba(212, 175, 55, 0.3);
+  }
+
+  /* Responsive collapse */
+  @media (max-width: 800px) {
+    .right-pane { width: 260px; }
+  }
+</style>
+<base target="_blank">
+</head>
+<body>
+
+<div id="app">
+  <!-- LEFT: Archive Content -->
+  <div class="left-pane" id="leftPane">
+
+    <div class="entry" id="entry-01">
+      <div class="entry-header">
+        <span><span class="num">01.</span> <span class="title">THE PALE</span></span>
+        <span class="meta">METAPHYSICS // REVACHOL</span>
+      </div>
+      <div class="entry-body">
+        <p>The <span class="highlight skill-encyclopedia" data-tip="Encyclopedia — World Knowledge" onclick="toggleSkill('encyclopedia')">Pale</span> is not merely an absence, but a <span class="highlight skill-conceptualization" data-tip="Conceptualization — Abstract Thought" onclick="toggleSkill('conceptualization')">presence</span> that consumes history itself. Where it advances, the <span class="highlight skill-logic" data-tip="Logic — Deductive Reasoning" onclick="toggleSkill('logic')">continuum</span> of human experience collapses into a <span class="highlight skill-visual-calculus" data-tip="Visual Calculus — Spatial Reasoning" onclick="toggleSkill('visual-calculus')">singularity</span> of forgetting. The <span class="highlight skill-rhetoric" data-tip="Rhetoric — Persuasion" onclick="toggleSkill('rhetoric')">Moralist International</span> maintains that the Pale grows at a rate of 2.5 millimeters per year, though <span class="highlight skill-encyclopedia" data-tip="Encyclopedia" onclick="toggleSkill('encyclopedia')">empirical</span> measurements vary wildly depending on the <span class="highlight skill-visual-calculus" data-tip="Visual Calculus" onclick="toggleSkill('visual-calculus')">instrument</span> used.</p>
+        <p>In <span class="highlight skill-encyclopedia" data-tip="Encyclopedia" onclick="toggleSkill('encyclopedia')">Martinaise</span>, the harbor district of <span class="highlight skill-encyclopedia" data-tip="Encyclopedia" onclick="toggleSkill('encyclopedia')">Revachol</span>, citizens report <span class="highlight skill-perception" data-tip="Perception — Sensory Awareness" onclick="toggleSkill('perception')">auditory</span> phenomena — a low <span class="highlight skill-empathy" data-tip="Empathy — Emotional Insight" onclick="toggleSkill('empathy')">hum</span> that persists at the threshold of perception. This is not <span class="highlight skill-logic" data-tip="Logic" onclick="toggleSkill('logic')">tinnitus</span>, but rather the <span class="highlight skill-inland-empire" data-tip="Inland Empire — Intuition" onclick="toggleSkill('inland-empire')">Shivers</span>: the city itself attempting to <span class="highlight skill-empathy" data-tip="Empathy" onclick="toggleSkill('empathy')">communicate</span> across the <span class="highlight skill-conceptualization" data-tip="Conceptualization" onclick="toggleSkill('conceptualization')">membrane</span> of reality. The <span class="highlight skill-logic" data-tip="Logic" onclick="toggleSkill('logic')">Logic</span> is inescapable. If the Pale represents the <span class="highlight skill-conceptualization" data-tip="Conceptualization" onclick="toggleSkill('conceptualization')">end</span> of all <span class="highlight skill-encyclopedia" data-tip="Encyclopedia" onclick="toggleSkill('encyclopedia')">recorded</span> thought, then our <span class="highlight skill-encyclopedia" data-tip="Encyclopedia" onclick="toggleSkill('encyclopedia')">Encyclopedia</span> of human endeavor is already <span class="highlight skill-volition" data-tip="Volition — Willpower" onclick="toggleSkill('volition')">incomplete</span>. We are living in the <span class="highlight skill-drama" data-tip="Drama — Performance" onclick="toggleSkill('drama')">footnotes</span> of a history that will never be <span class="highlight skill-authority" data-tip="Authority — Command" onclick="toggleSkill('authority')">bound</span>.</p>
+      </div>
+    </div>
+
+    <div class="entry" id="entry-02">
+      <div class="entry-header">
+        <span><span class="num">02.</span> <span class="title">REVACHOL ECHEM</span></span>
+        <span class="meta">CHEMISTRY // DISTRICT 8</span>
+      </div>
+      <div class="entry-body">
+        <p>The <span class="highlight skill-electrochemistry" data-tip="Electrochemistry — Substance" onclick="toggleSkill('electrochemistry')">smell</span> of the bay is unmistakable — a <span class="highlight skill-logic" data-tip="Logic" onclick="toggleSkill('logic')">compound</span> mixture of <span class="highlight skill-encyclopedia" data-tip="Encyclopedia" onclick="toggleSkill('encyclopedia')">iodine</span>, <span class="highlight skill-electrochemistry" data-tip="Electrochemistry" onclick="toggleSkill('electrochemistry')">diesel</span>, and <span class="highlight skill-electrochemistry" data-tip="Electrochemistry" onclick="toggleSkill('electrochemistry')">decay</span>. To walk the <span class="highlight skill-visual-calculus" data-tip="Visual Calculus" onclick="toggleSkill('visual-calculus')">streets</span> at <span class="highlight skill-encyclopedia" data-tip="Encyclopedia" onclick="toggleSkill('encyclopedia')">Hour 08:43</span> is to subject the <span class="highlight skill-empathy" data-tip="Empathy" onclick="toggleSkill('empathy')">olfactory</span> system to a <span class="highlight skill-visual-calculus" data-tip="Visual Calculus" onclick="toggleSkill('visual-calculus')">stress test</span> of <span class="highlight skill-encyclopedia" data-tip="Encyclopedia" onclick="toggleSkill('encyclopedia')">industrial</span> proportions. Yet beneath the <span class="highlight skill-authority" data-tip="Authority" onclick="toggleSkill('authority')">Physical</span> <span class="highlight skill-visual-calculus" data-tip="Visual Calculus" onclick="toggleSkill('visual-calculus')">Instrument</span> of this <span class="highlight skill-empathy" data-tip="Empathy" onclick="toggleSkill('empathy')">sensory</span> assault lies a deeper <span class="highlight skill-inland-empire" data-tip="Inland Empire" onclick="toggleSkill('inland-empire')">truth</span>: the city is <span class="highlight skill-electrochemistry" data-tip="Electrochemistry" onclick="toggleSkill('electrochemistry')">chemically</span> <span class="highlight skill-electrochemistry" data-tip="Electrochemistry" onclick="toggleSkill('electrochemistry')">dependent</span> on its own <span class="highlight skill-rhetoric" data-tip="Rhetoric" onclick="toggleSkill('rhetoric')">ruin</span>.</p>
+        <p>The <span class="highlight skill-electrochemistry" data-tip="Electrochemistry" onclick="toggleSkill('electrochemistry')">Electrochemistry</span> of <span class="highlight skill-empathy" data-tip="Empathy" onclick="toggleSkill('empathy')">grief</span> and <span class="highlight skill-electrochemistry" data-tip="Electrochemistry" onclick="toggleSkill('electrochemistry')">opiates</span> flows through the <span class="highlight skill-visual-calculus" data-tip="Visual Calculus" onclick="toggleSkill('visual-calculus')">veins</span> of the <span class="highlight skill-encyclopedia" data-tip="Encyclopedia" onclick="toggleSkill('encyclopedia')">district</span> like a <span class="highlight skill-logic" data-tip="Logic" onclick="toggleSkill('logic')">second</span> <span class="highlight skill-encyclopedia" data-tip="Encyclopedia" onclick="toggleSkill('encyclopedia')">circulatory</span> system. The <span class="highlight skill-drama" data-tip="Drama" onclick="toggleSkill('drama')">youth</span> inhale <span class="highlight skill-electrochemistry" data-tip="Electrochemistry" onclick="toggleSkill('electrochemistry')">solvents</span> not to <span class="highlight skill-volition" data-tip="Volition" onclick="toggleSkill('volition')">escape</span>, but to <span class="highlight skill-suggestion" data-tip="Suggestion — Influence" onclick="toggleSkill('suggestion')">interface</span> more directly with the <span class="highlight skill-conceptualization" data-tip="Conceptualization" onclick="toggleSkill('conceptualization')">architecture</span> of <span class="highlight skill-rhetoric" data-tip="Rhetoric" onclick="toggleSkill('rhetoric')">collapse</span>. It is a <span class="highlight skill-empathy" data-tip="Empathy" onclick="toggleSkill('empathy')">Perception</span> few possess, and fewer still <span class="highlight skill-volition" data-tip="Volition" onclick="toggleSkill('volition')">survive</span>.</p>
+      </div>
+    </div>
+
+    <div class="entry" id="entry-03">
+      <div class="entry-header">
+        <span><span class="num">03.</span> <span class="title">MORALIST INTL</span></span>
+        <span class="meta">POLITICAL // RHETORIC</span>
+      </div>
+      <div class="entry-body">
+        <p>Their <span class="highlight skill-rhetoric" data-tip="Rhetoric" onclick="toggleSkill('rhetoric')">language</span> is <span class="highlight skill-logic" data-tip="Logic" onclick="toggleSkill('logic')">sterile</span>, <span class="highlight skill-visual-calculus" data-tip="Visual Calculus" onclick="toggleSkill('visual-calculus')">antiseptic</span>, designed to <span class="highlight skill-suggestion" data-tip="Suggestion" onclick="toggleSkill('suggestion')">obscure</span> the <span class="highlight skill-authority" data-tip="Authority" onclick="toggleSkill('authority')">violence</span> inherent in <span class="highlight skill-authority" data-tip="Authority" onclick="toggleSkill('authority')">order</span>. Every <span class="highlight skill-rhetoric" data-tip="Rhetoric" onclick="toggleSkill('rhetoric')">pronouncement</span> from the <span class="highlight skill-authority" data-tip="Authority" onclick="toggleSkill('authority')">Committee</span> carries the <span class="highlight skill-authority" data-tip="Authority" onclick="toggleSkill('authority')">weight</span> of <span class="highlight skill-authority" data-tip="Authority" onclick="toggleSkill('authority')">Authority</span>, delivered with the <span class="highlight skill-empathy" data-tip="Empathy" onclick="toggleSkill('empathy')">calm</span> <span class="highlight skill-visual-calculus" data-tip="Visual Calculus" onclick="toggleSkill('visual-calculus')">assurance</span> of those who have never <span class="highlight skill-volition" data-tip="Volition" onclick="toggleSkill('volition')">questioned</span> their right to <span class="highlight skill-authority" data-tip="Authority" onclick="toggleSkill('authority')">govern</span>. But <span class="highlight skill-rhetoric" data-tip="Rhetoric" onclick="toggleSkill('rhetoric')">Rhetoric</span> is a <span class="highlight skill-logic" data-tip="Logic" onclick="toggleSkill('logic')">double-edged</span> <span class="highlight skill-visual-calculus" data-tip="Visual Calculus" onclick="toggleSkill('visual-calculus')">instrument</span>.</p>
+        <p>Listen closely to the <span class="highlight skill-empathy" data-tip="Empathy" onclick="toggleSkill('empathy')">pauses</span>, the <span class="highlight skill-drama" data-tip="Drama" onclick="toggleSkill('drama')">stammering</span> of <span class="highlight skill-encyclopedia" data-tip="Encyclopedia" onclick="toggleSkill('encyclopedia')">bureaucrats</span> when confronted with the <span class="highlight skill-inland-empire" data-tip="Inland Empire" onclick="toggleSkill('inland-empire')">irrational</span> — there, in the <span class="highlight skill-empathy" data-tip="Empathy" onclick="toggleSkill('empathy')">hesitation</span>, you find the <span class="highlight skill-empathy" data-tip="Empathy" onclick="toggleSkill('empathy')">Empathy</span> they <span class="highlight skill-authority" data-tip="Authority" onclick="toggleSkill('authority')">suppress</span>. The <span class="highlight skill-suggestion" data-tip="Suggestion" onclick="toggleSkill('suggestion')">Suggestion</span> that <span class="highlight skill-encyclopedia" data-tip="Encyclopedia" onclick="toggleSkill('encyclopedia')">mankind</span> is <span class="highlight skill-conceptualization" data-tip="Conceptualization" onclick="toggleSkill('conceptualization')">inherently</span> <span class="highlight skill-volition" data-tip="Volition" onclick="toggleSkill('volition')">moral</span> is the <span class="highlight skill-rhetoric" data-tip="Rhetoric" onclick="toggleSkill('rhetoric')">greatest</span> <span class="highlight skill-conceptualization" data-tip="Conceptualization" onclick="toggleSkill('conceptualization')">Conceptualization</span> ever <span class="highlight skill-suggestion" data-tip="Suggestion" onclick="toggleSkill('suggestion')">sold</span>. It <span class="highlight skill-authority" data-tip="Authority" onclick="toggleSkill('authority')">permits</span> the <span class="highlight skill-authority" data-tip="Authority" onclick="toggleSkill('authority')">powerful</span> to <span class="highlight skill-empathy" data-tip="Empathy" onclick="toggleSkill('empathy')">sleep</span> while the <span class="highlight skill-inland-empire" data-tip="Inland Empire" onclick="toggleSkill('inland-empire')">disenfranchised</span> <span class="highlight skill-inland-empire" data-tip="Inland Empire" onclick="toggleSkill('inland-empire')">shiver</span>.</p>
+      </div>
+    </div>
+
+    <div class="entry" id="entry-04">
+      <div class="entry-header">
+        <span><span class="num">04.</span> <span class="title">INLAND EMPIRE</span></span>
+        <span class="meta">UNCONSCIOUS // ARCHIVE</span>
+      </div>
+      <div class="entry-body">
+        <p>There is a <span class="highlight skill-conceptualization" data-tip="Conceptualization" onclick="toggleSkill('conceptualization')">door</span> in your <span class="highlight skill-inland-empire" data-tip="Inland Empire" onclick="toggleSkill('inland-empire')">mind</span> that should remain <span class="highlight skill-volition" data-tip="Volition" onclick="toggleSkill('volition')">closed</span>. Behind it, the <span class="highlight skill-inland-empire" data-tip="Inland Empire" onclick="toggleSkill('inland-empire')">Inland Empire</span> <span class="highlight skill-visual-calculus" data-tip="Visual Calculus" onclick="toggleSkill('visual-calculus')">stretches</span> — not a <span class="highlight skill-encyclopedia" data-tip="Encyclopedia" onclick="toggleSkill('encyclopedia')">place</span>, but a <span class="highlight skill-logic" data-tip="Logic" onclick="toggleSkill('logic')">topology</span> of <span class="highlight skill-empathy" data-tip="Empathy" onclick="toggleSkill('empathy')">impulses</span>, <span class="highlight skill-drama" data-tip="Drama" onclick="toggleSkill('drama')">fears</span>, and <span class="highlight skill-conceptualization" data-tip="Conceptualization" onclick="toggleSkill('conceptualization')">half-formed</span> <span class="highlight skill-encyclopedia" data-tip="Encyclopedia" onclick="toggleSkill('encyclopedia')">certainties</span>. The <span class="highlight skill-encyclopedia" data-tip="Encyclopedia" onclick="toggleSkill('encyclopedia')">Vault</span> does not <span class="highlight skill-rhetoric" data-tip="Rhetoric" onclick="toggleSkill('rhetoric')">merely</span> <span class="highlight skill-encyclopedia" data-tip="Encyclopedia" onclick="toggleSkill('encyclopedia')">store</span> <span class="highlight skill-encyclopedia" data-tip="Encyclopedia" onclick="toggleSkill('encyclopedia')">knowledge</span>; it <span class="highlight skill-electrochemistry" data-tip="Electrochemistry" onclick="toggleSkill('electrochemistry')">generates</span> it from the <span class="highlight skill-electrochemistry" data-tip="Electrochemistry" onclick="toggleSkill('electrochemistry')">raw</span> <span class="highlight skill-logic" data-tip="Logic" onclick="toggleSkill('logic')">material</span> of <span class="highlight skill-inland-empire" data-tip="Inland Empire" onclick="toggleSkill('inland-empire')">doubt</span>.</p>
+        <p>When you <span class="highlight skill-empathy" data-tip="Empathy" onclick="toggleSkill('empathy')">read</span> these <span class="highlight skill-encyclopedia" data-tip="Encyclopedia" onclick="toggleSkill('encyclopedia')">entries</span>, something <span class="highlight skill-inland-empire" data-tip="Inland Empire" onclick="toggleSkill('inland-empire')">reads</span> you back. A <span class="highlight skill-visual-calculus" data-tip="Visual Calculus" onclick="toggleSkill('visual-calculus')">cold</span> <span class="highlight skill-empathy" data-tip="Empathy" onclick="toggleSkill('empathy')">sensation</span> at the <span class="highlight skill-visual-calculus" data-tip="Visual Calculus" onclick="toggleSkill('visual-calculus')">nape</span> of the <span class="highlight skill-visual-calculus" data-tip="Visual Calculus" onclick="toggleSkill('visual-calculus')">neck</span>. The <span class="highlight skill-logic" data-tip="Logic" onclick="toggleSkill('logic')">certainty</span> that you are being <span class="highlight skill-empathy" data-tip="Empathy" onclick="toggleSkill('empathy')">observed</span> by a <span class="highlight skill-conceptualization" data-tip="Conceptualization" onclick="toggleSkill('conceptualization')">version</span> of <span class="highlight skill-empathy" data-tip="Empathy" onclick="toggleSkill('empathy')">yourself</span> that made <span class="highlight skill-logic" data-tip="Logic" onclick="toggleSkill('logic')">different</span> <span class="highlight skill-volition" data-tip="Volition" onclick="toggleSkill('volition')">choices</span>. This is not <span class="highlight skill-rhetoric" data-tip="Rhetoric" onclick="toggleSkill('rhetoric')">paranoia</span>. This is the <span class="highlight skill-empathy" data-tip="Empathy" onclick="toggleSkill('empathy')">Esprit de Corps</span> of the <span class="highlight skill-inland-empire" data-tip="Inland Empire" onclick="toggleSkill('inland-empire')">solitary</span> — the <span class="highlight skill-logic" data-tip="Logic" onclick="toggleSkill('logic')">understanding</span> that even in <span class="highlight skill-empathy" data-tip="Empathy" onclick="toggleSkill('empathy')">isolation</span>, you are <span class="highlight skill-drama" data-tip="Drama" onclick="toggleSkill('drama')">legion</span>.</p>
+      </div>
+    </div>
+
+    <div style="height: 60px;"></div>
+  </div>
+
+  <!-- RIGHT: Controls -->
+  <div class="right-pane" id="rightPane">
+
+    <div class="status-line">
+      <div class="status-title">ARCHIVE CONTROLS</div>
+      <div class="status-time">
+        <div class="time">08:43</div>
+        <div>DAY 01</div>
+      </div>
+    </div>
+
+    <div class="rp-section">
+      <div class="rp-header">Neural Pathways</div>
+      <div class="skill-grid" id="skillGrid">
+        <div class="skill-cell" data-skill="logic" onclick="toggleSkill('logic')">Logic</div>
+        <div class="skill-cell" data-skill="encyclopedia" onclick="toggleSkill('encyclopedia')">Encyclopedia</div>
+        <div class="skill-cell" data-skill="rhetoric" onclick="toggleSkill('rhetoric')">Rhetoric</div>
+        <div class="skill-cell" data-skill="drama" onclick="toggleSkill('drama')">Drama</div>
+        <div class="skill-cell" data-skill="conceptualization" onclick="toggleSkill('conceptualization')">Conceptualization</div>
+        <div class="skill-cell" data-skill="visual-calculus" onclick="toggleSkill('visual-calculus')">Visual Calculus</div>
+        <div class="skill-cell" data-skill="volition" onclick="toggleSkill('volition')">Volition</div>
+        <div class="skill-cell" data-skill="inland-empire" onclick="toggleSkill('inland-empire')">Inland Empire</div>
+        <div class="skill-cell" data-skill="empathy" onclick="toggleSkill('empathy')">Empathy</div>
+        <div class="skill-cell" data-skill="authority" onclick="toggleSkill('authority')">Authority</div>
+        <div class="skill-cell" data-skill="suggestion" onclick="toggleSkill('suggestion')">Suggestion</div>
+        <div class="skill-cell" data-skill="electrochemistry" onclick="toggleSkill('electrochemistry')">Electrochemistry</div>
+      </div>
+    </div>
+
+    <div class="rp-section">
+      <div class="rp-header">Archive Index</div>
+      <ul class="index-list" id="indexList">
+        <li onclick="scrollToEntry('entry-01')"><span><span class="idx-num">01.</span> THE PALE</span> <span class="idx-meta">METAPHYSICS</span></li>
+        <li onclick="scrollToEntry('entry-02')"><span><span class="idx-num">02.</span> REVACHOL ECHEM</span> <span class="idx-meta">CHEMISTRY</span></li>
+        <li onclick="scrollToEntry('entry-03')"><span><span class="idx-num">03.</span> MORALIST INTL</span> <span class="idx-meta">POLITICAL</span></li>
+        <li onclick="scrollToEntry('entry-04')"><span><span class="idx-num">04.</span> INLAND EMPIRE</span> <span class="idx-meta">UNCONSCIOUS</span></li>
+      </ul>
+    </div>
+
+    <div class="rp-section">
+      <div class="rp-header">System Commands</div>
+      <input type="text" class="system-input" id="searchInput" placeholder="> SEARCH ARCHIVE..." oninput="performSearch(this.value)">
+      <div class="controls-row">
+        <button class="ctrl-btn" onclick="navigate(-1)">[ &lt; PREV ]</button>
+        <button class="ctrl-btn" onclick="navigate(1)">[ NEXT &gt; ]</button>
+      </div>
+      <div class="controls-row">
+        <button class="ctrl-btn primary" onclick="randomEntry()" style="flex:1;">[ ??? RANDOM ]</button>
+      </div>
+    </div>
+
+    <div class="rp-footer">
+      SYSTEM STATUS: STABLE<br>
+      COGNITIVE LOAD: MINIMAL<br>
+      ARCHIVE VERSION 0.4.1
+    </div>
+  </div>
+</div>
+
+<script>
+  let activeSkill = null;
+  const entries = ['entry-01', 'entry-02', 'entry-03', 'entry-04'];
+  let currentEntry = 0;
+
+  function toggleSkill(skill) {
+    const leftPane = document.getElementById('leftPane');
+    const cells = document.querySelectorAll('.skill-cell');
+    const highlights = document.querySelectorAll('.highlight');
+
+    // If clicking same skill, clear filter
+    if (activeSkill === skill) {
+      activeSkill = null;
+      leftPane.classList.remove('filtering');
+      cells.forEach(c => c.classList.remove('active'));
+      highlights.forEach(h => h.classList.remove('active-skill'));
+      return;
+    }
+
+    activeSkill = skill;
+    leftPane.classList.add('filtering');
+
+    cells.forEach(c => {
+      c.classList.toggle('active', c.dataset.skill === skill);
+    });
+
+    highlights.forEach(h => {
+      h.classList.toggle('active-skill', h.classList.contains('skill-' + skill));
+    });
+  }
+
+  function scrollToEntry(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Update current index
+    const idx = entries.indexOf(id);
+    if (idx !== -1) currentEntry = idx;
+  }
+
+  function navigate(dir) {
+    currentEntry += dir;
+    if (currentEntry < 0) currentEntry = entries.length - 1;
+    if (currentEntry >= entries.length) currentEntry = 0;
+    scrollToEntry(entries[currentEntry]);
+  }
+
+  function randomEntry() {
+    let r;
+    do { r = Math.floor(Math.random() * entries.length); } while (r === currentEntry && entries.length > 1);
+    currentEntry = r;
+    scrollToEntry(entries[currentEntry]);
+  }
+
+  function performSearch(query) {
+    const leftPane = document.getElementById('leftPane');
+    const allHighlights = document.querySelectorAll('.highlight');
+
+    // Clear previous search marks
+    document.querySelectorAll('.search-match').forEach(el => {
+      el.classList.remove('search-match');
+    });
+
+    if (!query) {
+      leftPane.classList.remove('filtering');
+      return;
+    }
+
+    leftPane.classList.add('filtering');
+    const q = query.toLowerCase();
+    let matches = 0;
+
+    // Simple search: highlight paragraphs containing query, dim others
+    document.querySelectorAll('.entry').forEach(entry => {
+      const text = entry.innerText.toLowerCase();
+      const paragraphs = entry.querySelectorAll('p');
+      if (text.includes(q)) {
+        paragraphs.forEach(p => {
+          if (p.innerText.toLowerCase().includes(q)) {
+            p.style.opacity = '1';
+            matches++;
+          } else {
+            p.style.opacity = '0.25';
+          }
+        });
+        entry.style.opacity = '1';
+      } else {
+        entry.style.opacity = '0.25';
+        paragraphs.forEach(p => p.style.opacity = '');
+      }
+    });
+
+    // Also highlight matching skill names if query matches a skill
+    allHighlights.forEach(h => {
+      if (h.dataset.tip && h.dataset.tip.toLowerCase().includes(q)) {
+        h.classList.add('active-skill');
+        h.style.opacity = '1';
+      } else {
+        h.classList.remove('active-skill');
+      }
+    });
+  }
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') navigate(-1);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') navigate(1);
+    if (e.key === 'r' || e.key === 'R') randomEntry();
+    if (e.key === 'Escape' && activeSkill) toggleSkill(activeSkill); // clear
+  });
+</script>
+
+</body>
+</html>
